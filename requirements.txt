@@ -1,0 +1,9 @@
+mujoco
+numpy
+onnxruntime
+pyyaml
+pillow
+ultralytics
+openai
+# google-genai        # if using Gemini
+# dashscope           # if using Alibaba Cloud Qwen (OpenAI-compatible endpoint also works)

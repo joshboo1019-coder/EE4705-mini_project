@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+runs/
+*.log
+
+# never commit API keys or credentials
+.env
+*.key
+
+# large/generated assets students fetch locally
+quadruped_mujoco/
+*.onnx
+*.pt
