@@ -25,8 +25,8 @@ Confirm the demo works before touching any of the backbone code:
 
 ```bash
 cd quadruped_mujoco
-python eg/play.py                # native viewer — W/S/A/D/Q/E/R/F/T
-python eg/play.py --gui          # browser panel at http://localhost:8765
+python eg/play.py                # native viewer — W/S/A/D/Q/E/R/F/T  **evdev is need to enable robot control in native viewer
+python eg/play.py --gui          # browser panel at http://localhost:8765 
 ```
 
 If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=egl`.
