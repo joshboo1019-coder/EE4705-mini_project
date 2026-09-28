@@ -20,17 +20,33 @@ from ultralytics import YOLO
 
 class RealPerception(PerceptionAPI):
     def __init__(self, model_path: str = config.YOLO_MODEL):
-        # TODO(Student C): self.model = YOLO(model_path)
         self.model = YOLO(model_path)
         self.conf_threshold = config.YOLO_CONF_THRESHOLD
 
     def detect(self, frame: np.ndarray) -> List[Detection]:
-        # TODO(Student C):
-        #   1. results = self.model.predict(frame, conf=self.conf_threshold, verbose=False)
-        #   2. for each box: class_name = COCO name, bbox = (x1,y1,x2,y2)
-        #   3. color = self._grounded_color(frame, bbox)
-        #   4. print("[DETECT] class=... color=... conf=... bbox=...")
-        raise NotImplementedError
+        results = self.model.predict(
+            frame, conf=self.conf_threshold, verbose=False
+        )
+        detections = []
+        for result in results:
+            for box in result.boxes:
+                conf = float(box.conf[0].item())
+                bbox = tuple(float(value) for value in box.xyxy[0].tolist())
+                class_id = int(box.cls[0].item())
+                class_name = self.model.names[class_id]
+                color = self._grounded_color(frame, bbox)
+                detection = Detection(
+                    class_name=class_name,
+                    color=color,
+                    conf=conf,
+                    bbox=bbox,
+                )
+                detections.append(detection)
+                print(
+                    f"[DETECT] class={detection.class_name} color={detection.color} "
+                    f"conf={detection.conf:.2f} bbox={list(detection.bbox)}"
+                )
+        return detections
 
     def _grounded_color(self, frame: np.ndarray, bbox: tuple) -> str:
         """Median-hue-in-HSV color classification over the pixels inside
