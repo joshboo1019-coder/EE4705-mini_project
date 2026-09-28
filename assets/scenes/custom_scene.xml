@@ -14,6 +14,9 @@
       green_chair        (2.0,  1.0)
       red_chair          (2.0, -1.0)
       orange_sports ball (3.5,  0.0)
+      red_stop sign      (1.0,  2.0)
+      yellow_stop sign   (1.0, -2.0)
+      green_stop sign    (4.5,  1.5)
 
     Names on bodies/geoms below are just for readability — compose_scene
     rewrites every body/geom name itself (mapbody_<map>_N / map_<map>_N),
@@ -40,6 +43,10 @@
     <material name="chair_green_mat" rgba="0.10 0.55 0.15 1" specular="0.1" shininess="0.1"/>
     <material name="chair_red_mat"   rgba="0.75 0.10 0.10 1" specular="0.1" shininess="0.1"/>
     <material name="ball_orange_mat" rgba="0.95 0.55 0.10 1" specular="0.3" shininess="0.4"/>
+    <material name="sign_pole_mat"   rgba="0.35 0.35 0.35 1" specular="0.2" shininess="0.2"/>
+    <material name="sign_red_mat"    rgba="0.80 0.05 0.05 1" specular="0.2" shininess="0.2"/>
+    <material name="sign_yellow_mat" rgba="0.95 0.80 0.05 1" specular="0.2" shininess="0.2"/>
+    <material name="sign_green_mat"  rgba="0.10 0.60 0.20 1" specular="0.2" shininess="0.2"/>
   </asset>
 
   <worldbody>
@@ -66,6 +73,24 @@
     <!-- orange sports ball @ (3.5, 0.0) — core.config.OBJECT_POSITIONS["orange_sports ball"] -->
     <body name="orange_sports_ball" pos="3.5 0.0 0.11">
       <geom type="sphere" size="0.11" material="ball_orange_mat"/>
+    </body>
+
+    <!-- red stop sign @ (1.0, 2.0) — core.config.OBJECT_POSITIONS["red_stop sign"] -->
+    <body name="red_stop_sign" pos="1.0 2.0 0">
+      <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat"/>
+      <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_red_mat"/>
+    </body>
+
+    <!-- yellow stop sign @ (1.0, -2.0) — core.config.OBJECT_POSITIONS["yellow_stop sign"] -->
+    <body name="yellow_stop_sign" pos="1.0 -2.0 0">
+      <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat"/>
+      <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_yellow_mat"/>
+    </body>
+
+    <!-- green stop sign @ (4.5, 1.5) — core.config.OBJECT_POSITIONS["green_stop sign"] -->
+    <body name="green_stop_sign" pos="4.5 1.5 0">
+      <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat"/>
+      <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_green_mat"/>
     </body>
   </worldbody>
 </mujoco>
