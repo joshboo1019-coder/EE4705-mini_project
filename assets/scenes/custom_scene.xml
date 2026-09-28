@@ -1,0 +1,71 @@
+<mujoco model="custom_scene">
+  <!--
+    Task 2.iii custom scene — Student A.
+
+    Registered as a MapSpec (see skills/skills_real.py: MapSpec(custom))
+    with default strict=True, so this file must be terrain-only: every
+    <body> below has NO <joint>/<freejoint> — they are rigidly welded to
+    the world, as compose_scene()/MapSpec require (verified against the
+    platform's src/runtime_control/map_manager.py: `_imported_world_elements`
+    raises "not terrain-only" if any imported body contains a joint).
+
+    Object classes/colors/positions here MUST match core.config.OBJECT_POSITIONS
+    exactly (Task 4's distance logging keys off "<color>_<class>"):
+      green_chair        (2.0,  1.0)
+      red_chair          (2.0, -1.0)
+      orange_sports ball (3.5,  0.0)
+
+    Names on bodies/geoms below are just for readability — compose_scene
+    rewrites every body/geom name itself (mapbody_<map>_N / map_<map>_N),
+    so there is no need to worry about clashing with the robot's own names.
+
+    Chairs are built from primitive geoms (4 legs + seat + backrest) at
+    real-world human-chair scale (~0.45m seat height), not scaled down to
+    the robot, so YOLO — trained on real photos — has the best chance of
+    recognizing the silhouette. This is a deliberate engineering trade-off:
+    plain-color primitive props are not photorealistic, so detection
+    confidence on these WILL likely need calibration (lowering
+    config.YOLO_CONF_THRESHOLD and/or reporting the actual confidence
+    values you observe) — that calibration step is expected, not a bug.
+
+    NOTE: this file has not been run through mujoco/compose_scene, since
+    mujoco is not installed in the sandbox that generated it. It is
+    well-formed XML and follows every structural rule in map_manager.py
+    that could be verified by reading source, but it must still be test-
+    loaded on your machine (RealSkills(scene_path=...) will pick it up
+    automatically once this file exists) before you trust it for grading.
+  -->
+
+  <asset>
+    <material name="chair_green_mat" rgba="0.10 0.55 0.15 1" specular="0.1" shininess="0.1"/>
+    <material name="chair_red_mat"   rgba="0.75 0.10 0.10 1" specular="0.1" shininess="0.1"/>
+    <material name="ball_orange_mat" rgba="0.95 0.55 0.10 1" specular="0.3" shininess="0.4"/>
+  </asset>
+
+  <worldbody>
+    <!-- green_chair @ (2.0, 1.0) — core.config.OBJECT_POSITIONS["green_chair"] -->
+    <body name="green_chair" pos="2.0 1.0 0">
+      <geom type="box" size="0.02 0.02 0.21" pos=" 0.18  0.18 0.21" material="chair_green_mat"/>
+      <geom type="box" size="0.02 0.02 0.21" pos=" 0.18 -0.18 0.21" material="chair_green_mat"/>
+      <geom type="box" size="0.02 0.02 0.21" pos="-0.18  0.18 0.21" material="chair_green_mat"/>
+      <geom type="box" size="0.02 0.02 0.21" pos="-0.18 -0.18 0.21" material="chair_green_mat"/>
+      <geom type="box" size="0.22 0.22 0.02" pos="0 0 0.44" material="chair_green_mat"/>
+      <geom type="box" size="0.22 0.02 0.22" pos="0 -0.20 0.66" material="chair_green_mat"/>
+    </body>
+
+    <!-- red_chair @ (2.0, -1.0) — core.config.OBJECT_POSITIONS["red_chair"] -->
+    <body name="red_chair" pos="2.0 -1.0 0">
+      <geom type="box" size="0.02 0.02 0.21" pos=" 0.18  0.18 0.21" material="chair_red_mat"/>
+      <geom type="box" size="0.02 0.02 0.21" pos=" 0.18 -0.18 0.21" material="chair_red_mat"/>
+      <geom type="box" size="0.02 0.02 0.21" pos="-0.18  0.18 0.21" material="chair_red_mat"/>
+      <geom type="box" size="0.02 0.02 0.21" pos="-0.18 -0.18 0.21" material="chair_red_mat"/>
+      <geom type="box" size="0.22 0.22 0.02" pos="0 0 0.44" material="chair_red_mat"/>
+      <geom type="box" size="0.22 0.02 0.22" pos="0 -0.20 0.66" material="chair_red_mat"/>
+    </body>
+
+    <!-- orange sports ball @ (3.5, 0.0) — core.config.OBJECT_POSITIONS["orange_sports ball"] -->
+    <body name="orange_sports_ball" pos="3.5 0.0 0.11">
+      <geom type="sphere" size="0.11" material="ball_orange_mat"/>
+    </body>
+  </worldbody>
+</mujoco>
