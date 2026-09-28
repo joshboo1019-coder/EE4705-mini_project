@@ -15,6 +15,9 @@ OBJECT_POSITIONS = {
     "green_chair": (2.0, 1.0),
     "red_chair": (2.0, -1.0),
     "orange_sports ball": (3.5, 0.0),
+    "red_stop sign": (1.0, 2.0),
+    "yellow_stop sign": (1.0, -2.0),
+    "green_stop sign": (4.5, 1.5),
 }
 
 # --- Task 3 (Student B) -----------------------------------------------------
