@@ -46,6 +46,11 @@ def main():
                      help="use perception.perception_mock.MockPerception "
                           "instead of the real YOLO detector (logic-only "
                           "check, no camera/YOLO needed)")
+     ap.add_argument("--camera", default="dog_front_camera",
+                     help='which browser-panel camera is selected on load: '
+                          '"dog_front_camera" (default, robot POV), '
+                          '"tracking" (third-person follow), '
+                          '"dog_rear_overhead_camera", or "dog_top_camera"')
     args = ap.parse_args()
 
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
