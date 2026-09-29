@@ -115,7 +115,13 @@ def main():
         while True:
             time.sleep(1.0)
     except KeyboardInterrupt:
-        skills.stop()
+        # See visual_test_task2.py's comment on this same spot: stop()
+        # alone leaves the daemon sim thread (and, with --native, the
+        # GLFW window) running, and tearing the process down around
+        # them is what segfaults on exit. shutdown() joins the thread
+        # and closes the native viewer first.
+        print("\nShutting down...")
+        skills.shutdown()
 
 
 if __name__ == "__main__":
