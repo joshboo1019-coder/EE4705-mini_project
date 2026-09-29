@@ -47,7 +47,7 @@ def goto_object(object_class: str, color: str,
 
         consecutive_misses = 0
 
-        if not _steer_to_center(target, skills):
+        if not _steer_to_center(target, skills, frame.shape[1]):
             # not centered yet — small turn step and re-detect next loop
             continue
 
@@ -77,15 +77,21 @@ def _pick_target(detections, object_class: str, color: str):
     return None
 
 
-def _steer_to_center(detection, skills: SkillsAPI) -> bool:
+def _steer_to_center(detection, skills: SkillsAPI,
+                     frame_width: int = 320) -> bool:
     """Proportional steering on wz from the bbox-center pixel offset.
     Returns True once roughly centered within config.CENTER_TOLERANCE_PX."""
-    # TODO(Student C):
-    #   1. compute bbox center x, compare to frame width / 2
-    #   2. if |offset| > tolerance: skills.move(vx=0, vy=0, wz=k*offset, duration=short)
-    #      and return False
-    #   3. else return True
-    raise NotImplementedError
+    x1, _, x2, _ = detection.bbox
+    bbox_center_x = (x1 + x2) / 2.0
+    offset_x = bbox_center_x - frame_width / 2.0
+
+    if abs(offset_x) <= config.CENTER_TOLERANCE_PX:
+        return True
+
+    # Positive wz turns left, so a target right of center requires a right turn.
+    wz = max(-0.5, min(0.5, -offset_x / (frame_width / 2.0)))
+    skills.move(vx=0.0, vy=0.0, wz=wz, duration=0.1)
+    return False
 
 
 def _ground_truth_distance(pose: RobotPose, object_class: str, color: str) -> float:
