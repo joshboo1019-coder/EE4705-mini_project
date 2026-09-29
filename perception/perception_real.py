@@ -82,8 +82,7 @@ class RealPerception(PerceptionAPI):
         return detections
 
     def _grounded_color(self, frame: np.ndarray, bbox: tuple) -> str:
-        """Median-hue-in-HSV color classification over the pixels inside
-        bbox. Do NOT rely on YOLO to know colors — compute it yourself."""
+        """Classify rendered RGB pixels inside the detection, independently of YOLO."""
         if frame.ndim < 3 or frame.shape[2] < 3 or len(bbox) != 4:
             return "unknown"
 
@@ -96,17 +95,29 @@ class RealPerception(PerceptionAPI):
         if x2 <= x1 or y2 <= y1:
             return "unknown"
 
-        rgb = frame[y1:y2, x1:x2, :3].astype(np.float32)
+        box_width = x2 - x1
+        box_height = y2 - y1
+        inner_x1 = x1 + box_width // 4
+        inner_x2 = x2 - box_width // 4
+        inner_y1 = y1 + box_height // 4
+        inner_y2 = y2 - box_height // 4
+        rgb = frame[inner_y1:inner_y2, inner_x1:inner_x2, :3]
         if rgb.size == 0:
             return "unknown"
-        if rgb.max() > 1.0:
-            rgb /= 255.0
-        rgb = np.clip(rgb, 0.0, 1.0)
+
+        if rgb.dtype != np.uint8:
+            rgb = rgb.astype(np.float32)
+            if rgb.max() <= 1.0:
+                rgb *= 255.0
+            rgb = np.clip(rgb, 0.0, 255.0).astype(np.uint8)
+
+        # MuJoCo's renderer returns RGB with scene lighting already applied.
+        # HSV hue keeps the material color stable as that lighting changes value.
         hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
-        hue = hsv[..., 0]
+        hue = hsv[..., 0].astype(np.float32) * 2.0
         saturation = hsv[..., 1]
         value = hsv[..., 2]
-        valid_hues = hue[(saturation >= 0.2) & (value >= 0.15)]
+        valid_hues = hue[(saturation >= 64) & (value >= 32)]
         if valid_hues.size == 0:
             if self.debug_dir is not None:
                 print("[HSV] no pixels passed saturation/value filters")
@@ -122,8 +133,9 @@ class RealPerception(PerceptionAPI):
         median_hue = float(np.median(unwrapped) % 360.0)
         if self.debug_dir is not None:
             print(
-                f"[HSV] hue={median_hue:.1f} sat={float(np.median(saturation)):.3f} "
-                f"value={float(np.median(value)):.3f}"
+                f"[HSV] hue={median_hue:.1f} "
+                f"sat={float(np.median(saturation)) / 255.0:.3f} "
+                f"value={float(np.median(value)) / 255.0:.3f}"
             )
 
         if median_hue < 15.0 or median_hue >= 345.0:
