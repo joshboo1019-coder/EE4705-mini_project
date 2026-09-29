@@ -16,11 +16,19 @@ LOGIC without YOLO installed (it always "finds" a fake green chair after
 a few misses, so it can't verify real detection/color-grounding, only
 the navigation state machine).
 
+The browser panel defaults to the robot's own onboard front camera
+(rather than the platform's usual third-person follow view), since what
+matters here is seeing what the robot's camera sees -- the same frames
+perception.detect() is actually running on -- not a spectator's-eye view
+of the robot from outside. Pass --camera to pick a different one; the
+panel's dropdown still lists all of them regardless.
+
 RUN (from the project root):
     python tools/visual_test_task4.py
     python tools/visual_test_task4.py --class chair --color green
     python tools/visual_test_task4.py --class "stop sign" --color red
     python tools/visual_test_task4.py --mock-perception
+    python tools/visual_test_task4.py --camera tracking   # third-person instead
 """
 
 import argparse
@@ -54,7 +62,7 @@ def main():
     args = ap.parse_args()
 
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
-    skills = RealSkills(gui=True)
+    skills = RealSkills(gui=True, default_camera=args.camera)
     time.sleep(1.0)
 
     if args.mock_perception:
