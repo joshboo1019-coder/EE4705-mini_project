@@ -73,7 +73,16 @@ def main():
         while True:
             time.sleep(1.0)
     except KeyboardInterrupt:
-        skills.stop()
+        # skills.stop() alone only zeroes the velocity command -- it
+        # leaves the daemon sim thread running and (with --native) the
+        # GLFW window's context still open. Tearing the Python process
+        # down with that thread still mid-flight inside native
+        # GLFW/MuJoCo calls is what caused the "Segmentation fault (core
+        # dumped)" on exit -- shutdown() joins the thread and closes the
+        # native viewer cleanly first, so nothing is torn down while
+        # still in use.
+        print("\nShutting down...")
+        skills.shutdown()
 
 
 if __name__ == "__main__":
