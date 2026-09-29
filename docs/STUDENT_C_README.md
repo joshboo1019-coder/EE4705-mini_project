@@ -1,30 +1,30 @@
 # Student C — Task 4: YOLO Detection, Color Grounding, Search & Approach (60%)
-
+ 
 You own the entire `perception/` folder: `perception_real.py`,
 `navigation.py`. It's your own directory — nobody else edits inside it.
-
+ 
 You do **not** need Student A's simulation running or Student B's LLM
 parser finished. `perception_real.py` only needs image arrays in, and
 `navigation.py` only talks to `core.interfaces.SkillsAPI` /
 `core.interfaces.PerceptionAPI`. Develop against `skills/skills_mock.py`
 and saved test images first. Run everything from the project root
 (`minilab_1_3/`).
-
+ 
 ## 1. Setup on your laptop
-
+ 
 ```bash
 conda create -n quadruped_mujoco python=3.11 -y
 conda activate quadruped_mujoco
 pip install ultralytics opencv-python numpy pillow
 ```
-
+ 
 The first `ultralytics` import will auto-download the YOLO weights
 (`core.config.YOLO_MODEL`, default `yolo11n.pt`) — do this once while you have
 internet, it's cached afterward. CPU inference at the resolutions used
 here is real-time on a laptop; no GPU needed.
-
+ 
 ## 2. What you're building
-
+ 
 1. **`perception_real.RealPerception.detect(frame)`** — runs YOLO on a
    camera frame, then determines each detection's color from the pixels
    inside its bounding box (e.g. median hue in HSV via `cv2.cvtColor`).
@@ -52,17 +52,16 @@ here is real-time on a laptop; no GPU needed.
    - full turn with no detection, or timeout (`core.config.APPROACH_TIMEOUT_S`,
      default 60 s) → `[MISSION] status=FAIL reason=...`
    - success → `[MISSION] status=SUCCESS`
-
 ## 3. Test entirely on your own
-
+ 
 ```bash
 # perception, against a saved image — no sim needed
 python -m perception.perception_real --image test_frame.png
-
+ 
 # navigation state machine, against MockSkills — no sim needed
 python tests/test_student_c.py
 ```
-
+ 
 `MockPerception` (already provided) returns "not found" for the first
 couple of calls and then a detection, so the navigation test exercises
 both the `[SEARCH]` branch and the `[FOUND]`/steering branch without
@@ -70,20 +69,48 @@ needing your real detector finished yet either. Get a few frames from
 Student A early (even before their sim is fully wired) to validate
 detection on your actual scene objects — that's the Task 2.iii/4.ii
 "verify detection early" screenshot for the report.
-
+ 
+### Watch it run in the simulation
+ 
+`tools/visual_test_task4.py` boots the real `RealSkills` + real
+`RealPerception` and calls `navigation.goto_object()` directly against
+the objects placed in `assets/scenes/custom_scene.xml`, so you can watch
+the `[SEARCH]`/`[DETECT]`/`[FOUND]`/`[MISSION]` sequence happen live,
+without needing Student B's LLM parser finished at all:
+ 
+```bash
+python tools/visual_test_task4.py --class chair --color green
+python tools/visual_test_task4.py --class "stop sign" --color red
+python tools/visual_test_task4.py --mock-perception   # state-machine only, no YOLO
+```
+ 
+`--mock-perception` swaps in `MockPerception` so you can verify the
+search/steer/approach *logic* even before `perception_real.py`'s
+`detect()` is finished — it can't verify real detection or color
+grounding that way, only the navigation state machine.
+ 
+`tools/check_status.py` is a separate, faster sanity check (no
+simulation): it scans `perception/perception_real.py` and
+`perception/navigation.py` for leftover `NotImplementedError`/TODO
+markers.
+ 
+```bash
+python tools/check_status.py
+```
+ 
 ## 4. Handing off to the group
-
+ 
 No changes needed elsewhere — `navigation.py` and `perception_real.py`
 were written entirely against the interfaces. Once your standalone tests
 pass:
-
+ 
 ```python
 # main.py
 USE_REAL_PERCEPTION = True
 ```
-
+ 
 ## 5. Deliverables checklist (Task 4)
-
+ 
 - [ ] Detection method (YOLO + color grounding approach) summarized/justified in report
 - [ ] `[DETECT]` lines with class, color, confidence, bbox
 - [ ] `goto_object()` implements search, steer-to-center, approach, stop
@@ -97,3 +124,4 @@ USE_REAL_PERCEPTION = True
       `[CMD]` / `[SEARCH]` / `[DETECT]` / `[FOUND]` / `[MISSION]` lines,
       for ≥2 objects including one not-initially-visible and one
       same-class disambiguation
+ 
