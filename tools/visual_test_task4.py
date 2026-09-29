@@ -46,7 +46,7 @@ def main():
                      help="use perception.perception_mock.MockPerception "
                           "instead of the real YOLO detector (logic-only "
                           "check, no camera/YOLO needed)")
-     ap.add_argument("--camera", default="dog_front_camera",
+    ap.add_argument("--camera", default="dog_front_camera",
                      help='which browser-panel camera is selected on load: '
                           '"dog_front_camera" (default, robot POV), '
                           '"tracking" (third-person follow), '
