@@ -1,36 +1,36 @@
 # Student Guide — MiniLab 1.3 Backbone
- 
+
 **Start here if you're new to this codebase.** For your own task's
 setup/build/test/checklist, jump to your guide: [A](STUDENT_A_README.md) ·
 [B](STUDENT_B_README.md) · [C](STUDENT_C_README.md).
- 
+
 Our goal is to make a simulated quadruped follow typed English commands
 such as:
- 
+
 > "walk forward for three seconds, then turn back" — then later —
 > "go to the green chair"
- 
+
 We split this into three jobs:
- 
+
 | Student | Your job in simple words | Example output | Main file to edit |
 | --- | --- | --- | --- |
 | **A — Task 2: platform** | Set up the simulated robot, its camera, the scene, and the two motion moves (a timed move and a closed-loop turn) everyone else calls. | `[TURN] target=180.0 deg final_error=1.8 deg` | `skills/skills_real.py` |
 | **B — Task 3: dialogue (your role)** | Turn one typed English sentence into an ordered list of robot actions, run them, and keep the chat responsive. | `[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2` | `dialogue/llm_parser.py`, `dialogue/executor.py`, `dialogue/chat_interface.py` |
 | **C — Task 4: perception** | Detect objects and their colors in the camera feed, then search for and approach the requested one. | `[FOUND] class=chair color=green t=14.2 s d=0.61 m` | `perception/perception_real.py`, `perception/navigation.py` |
- 
+
 All three students also share Task 1 (comparing LLM-to-robot approaches, in
 the report) and Task 5 (integration, videos, submission). See the handout.
- 
+
 **You can start separately.** A does not need to know anything about the
 LLM parser. B can develop against a mock robot and a mock detector before
 A's simulation or C's YOLO detector exist. C can develop the search/steer
 logic against that same mock robot before A's simulation exists either.
- 
+
 ## The idea
- 
+
 Three people cannot productively edit one simulation loop at once. So the
 whole codebase is split two ways at once, and they reinforce each other:
- 
+
 1. **By folder, one per task** — `skills/` (Task 2), `dialogue/` (Task 3),
    `perception/` (Task 4) — so each student has their own directory and
    never needs to edit someone else's files.
@@ -39,8 +39,9 @@ whole codebase is split two ways at once, and they reinforce each other:
    Student C's `perception/` folder each implement one; Student B's
    `dialogue/` folder (the parser, executor, chat loop) only ever talks
    to those two interfaces — never to MuJoCo or YOLO directly.
+
 That combination means:
- 
+
 - Student B can build and fully test the entire command pipeline today,
   using `skills/skills_mock.py` / `perception/perception_mock.py` as
   stand-ins, without waiting for the simulation or the detector to exist.
@@ -51,12 +52,13 @@ That combination means:
 - Student A can build and keyboard-test `skills/skills_real.py`
   completely on its own (`python -m skills.skills_real`), with no
   knowledge of the LLM parser or YOLO at all.
+
 Integration is then a five-minute step: flip `USE_REAL_SKILLS` and
 `USE_REAL_PERCEPTION` to `True` in `main.py` once each real module passes
 its own standalone test. Nobody has to touch anyone else's folder to do this.
- 
+
 ## Day one (10-minute kickoff, all three present)
- 
+
 1. Confirm `core/schema.py`'s command shapes match what you'll actually need.
 2. Confirm `core/interfaces.py`'s two abstract classes are enough — add
    methods now if you already know you'll need them; changing them later
@@ -64,10 +66,11 @@ its own standalone test. Nobody has to touch anyone else's folder to do this.
    [`docs/DECISIONS.md`](DECISIONS.md) for why they're shaped this way).
 3. Agree on `core/config.OBJECT_POSITIONS` key convention (`"<color>_<class>"`).
 4. Check the shared backbone works before anyone writes task-specific code:
+
 ```bash
 python -m pytest -q tests/
 ```
- 
+
 `test_student_a.py`, `test_architecture.py`, and `test_handoff.py` are
 pytest-discoverable and should all **pass** on day one — they only
 exercise the mocks and the wiring, nothing Student B or C have written
@@ -76,47 +79,65 @@ them directly, not through pytest — see below); on day one they're
 expected to stop with a `NotImplementedError` at the one TODO each
 depends on (`_call_llm` for B, `_steer_to_center` for C). That's the
 correct starting state, not a bug.
- 
+
 5. Split and go — from here on, each student mostly lives inside their
    own folder. First commands (run from the project root):
+
 ```bash
 # Student A
 python tests/test_student_a.py          # contract check against the mock
 python -m skills.skills_real            # once implemented
- 
+
 # Student B
 python tests/test_student_b.py
- 
+
 # Student C
 python tests/test_student_c.py
 python -m perception.perception_real --image test_frame.png
 ```
- 
+
 ## Watching your task run in the simulation
- 
+
 Each task has a script under `tools/` that boots the **real** simulation
 (not the mock) and drives it so you can actually watch the robot, instead
 of only reading printed log lines:
- 
+
 ```bash
 python tools/visual_test_task2.py     # Student A: fixed move/turn choreography
 python tools/visual_test_task3.py     # Student B: executor + real skills (falls back to a fixed batch until _call_llm() is done)
 python tools/visual_test_task4.py --class chair --color green   # Student C: search/steer/approach on the real scene
 ```
- 
-All three open the browser control panel (`gui=True`) — that's what to
-have open in a tab while they run. See your own guide (linked at the top)
-for the flags each script supports. `tools/check_status.py` is the
-faster, no-simulation companion — a sweep for leftover
+
+All three default to opening the browser control panel (`gui=True`) —
+that's what to have open in a tab while they run. See your own guide
+(linked at the top) for the flags each script supports. `tools/check_status.py`
+is the faster, no-simulation companion — a sweep for leftover
 `NotImplementedError`/TODO stubs plus the dependency-light contract
 check, worth running before any of the three above.
- 
+
 ```bash
 python tools/check_status.py
 ```
- 
+
+### Browser panel or native viewer
+
+Every script above (and `python -m skills.skills_real`) also accepts
+`--native`, which opens a native MuJoCo (GLFW) window instead of the
+browser panel — no separate web server, nothing to open in a tab. It's
+been verified end-to-end on the team's own WSL2 machine: a full scripted
+move/turn/strafe sequence runs cleanly, and Ctrl+C exits without
+crashing (an earlier version of these scripts *did* segfault on exit
+under `--native` — traced to `skills.stop()` alone not actually
+shutting the background sim thread / GLFW window down before Python
+tore the process down around them; every script now wraps its run in
+`try/except KeyboardInterrupt/finally: skills.shutdown()` so that always
+happens cleanly, on a crash or an early exit too, not just Ctrl+C).
+`--gui` and `--native` are mutually exclusive; `--gui` stays the
+default since it's the longer-confirmed path, but `--native` is a fine
+choice if you'd rather not deal with the browser/port.
+
 ## Integration order (suggested)
- 
+
 1. Student A finishes `skills/skills_real.py` -> flip `USE_REAL_SKILLS = True`
    in `main.py`, re-run Student B's and C's mock-based tests against the
    real sim — they should still pass since nothing but the flag changed.
@@ -125,8 +146,9 @@ python tools/check_status.py
 3. Run `python main.py` end-to-end for the reference scenario in the
    handout (walk-forward-then-turn, then go-to-the-green-chair).
 4. Record `Video_Task2`, `Video_Task3`, `Video_Task4` per the spec.
+
 ## What NOT to do
- 
+
 - Don't import `skills.skills_real` or `perception.perception_real` from
   anywhere except `main.py` — that coupling is exactly what breaks
   parallel development (`tests/test_architecture.py` enforces this).
@@ -137,8 +159,9 @@ python tools/check_status.py
 - Don't edit `core/schema.py` / `core/interfaces.py` solo — a silent
   field rename breaks the other two people's folders without a merge
   conflict to warn you.
+
 ## Common problems
- 
+
 | What you see | What to do |
 | --- | --- |
 | `ModuleNotFoundError: No module named 'core'` | Run from the project root (`minilab_1_3/`), not from inside a subfolder |
@@ -150,6 +173,5 @@ python tools/check_status.py
 | `[MISSION] status=FAIL reason=timeout` every time | Check `_steer_to_center`'s centering tolerance and `config.APPROACH_TIMEOUT_S` before assuming the detector is at fault |
 | `pytest` fails collecting `test_student_b.py` / `test_student_c.py` | Expected — they're plain scripts, not pytest test files; run them directly (`python tests/test_student_b.py`) |
 | Integration flag flipped but `main.py` still uses the mock | Check you edited `USE_REAL_SKILLS` / `USE_REAL_PERCEPTION` in `main.py` itself, not a local copy |
- 
+
 Owner: backbone (ALL).
- 
