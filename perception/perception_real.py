@@ -14,7 +14,7 @@ import argparse
 from dataclasses import asdict
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
@@ -24,24 +24,50 @@ from core.schema import Detection
 from core import config
 
 class RealPerception(PerceptionAPI):
-    def __init__(self, model_path: str = config.YOLO_MODEL):
+    def __init__(self, model_path: str = config.YOLO_MODEL,
+                 debug_dir: Optional[str] = None):
         from ultralytics import YOLO
 
         self.model = YOLO(model_path)
         self.conf_threshold = config.YOLO_CONF_THRESHOLD
+        self.debug_dir = Path(debug_dir) if debug_dir else None
+        self._debug_frame_index = 0
+        if self.debug_dir is not None:
+            self.debug_dir.mkdir(parents=True, exist_ok=True)
 
     def detect(self, frame: np.ndarray) -> List[Detection]:
+        frame_index = self._debug_frame_index
+        if self.debug_dir is not None:
+            self._debug_frame_index += 1
+            Image.fromarray(np.asarray(frame, dtype=np.uint8)).save(
+                self.debug_dir / f"frame_{frame_index:06d}.png"
+            )
+
         results = self.model.predict(
             frame, conf=self.conf_threshold, verbose=False
         )
         detections = []
         for result in results:
-            for box in result.boxes:
+            for box_index, box in enumerate(result.boxes):
                 conf = float(box.conf[0].item())
                 bbox = tuple(float(value) for value in box.xyxy[0].tolist())
                 class_id = int(box.cls[0].item())
                 class_name = self.model.names[class_id]
                 color = self._grounded_color(frame, bbox)
+                if self.debug_dir is not None:
+                    height, width = frame.shape[:2]
+                    x1, y1, x2, y2 = bbox
+                    x1 = max(0, min(width, int(np.floor(x1))))
+                    y1 = max(0, min(height, int(np.floor(y1))))
+                    x2 = max(0, min(width, int(np.ceil(x2))))
+                    y2 = max(0, min(height, int(np.ceil(y2))))
+                    if x2 > x1 and y2 > y1:
+                        crop = np.asarray(frame[y1:y2, x1:x2], dtype=np.uint8)
+                        safe_name = class_name.replace(" ", "_").replace("/", "_")
+                        Image.fromarray(crop).save(
+                            self.debug_dir
+                            / f"frame_{frame_index:06d}_box_{box_index:02d}_{safe_name}.png"
+                        )
                 detection = Detection(
                     class_name=class_name,
                     color=color,
@@ -82,6 +108,8 @@ class RealPerception(PerceptionAPI):
         value = hsv[..., 2]
         valid_hues = hue[(saturation >= 0.2) & (value >= 0.15)]
         if valid_hues.size == 0:
+            if self.debug_dir is not None:
+                print("[HSV] no pixels passed saturation/value filters")
             return "unknown"
 
         # Unwrap at the largest hue gap so red hues on either side of 0/360
@@ -92,6 +120,11 @@ class RealPerception(PerceptionAPI):
         start = (gap_index + 1) % ordered_hues.size
         unwrapped = np.concatenate((ordered_hues[start:], ordered_hues[:start] + 360.0))
         median_hue = float(np.median(unwrapped) % 360.0)
+        if self.debug_dir is not None:
+            print(
+                f"[HSV] hue={median_hue:.1f} sat={float(np.median(saturation)):.3f} "
+                f"value={float(np.median(value)):.3f}"
+            )
 
         if median_hue < 15.0 or median_hue >= 345.0:
             return "red"
