@@ -78,10 +78,16 @@ def main():
                                        "then turn left 180 degrees",
                      help="sample English sentence to send to the real LLM "
                           "parser, if it's implemented")
+    ap.add_argument("--native", action="store_true",
+                     help="open the native MuJoCo window instead of the "
+                          "browser panel -- no keyboard is wired up here, "
+                          "so the WSL2 on-keypress crash shouldn't trigger, "
+                          "but it's unverified; fall back to the default "
+                          "browser panel if it's unstable")
     args = ap.parse_args()
 
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
-    skills = RealSkills(gui=True)
+    skills = RealSkills(gui=not args.native, native_viewer=args.native)
     time.sleep(1.0)
 
     if args.real_perception:
