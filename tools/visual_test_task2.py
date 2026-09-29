@@ -7,18 +7,27 @@ drives it through a fixed choreography (forward, strafe, closed-loop
 turns, stop) so you can watch it happen instead of typing keys yourself.
 
 HOW TO WATCH IT:
-  Native MuJoCo viewer under WSL2 is unreliable (see docs/DECISIONS.md /
-  your own troubleshooting notes on WSLg), so this defaults to gui=True,
-  which opens RealSkills' browser control panel — that's what you should
-  have open in a browser tab while this runs.
+  Defaults to gui=True, which opens RealSkills' browser control panel —
+  that's what you should have open in a browser tab while this runs.
+  This is the team's confirmed-working display path (see
+  docs/DECISIONS.md / earlier WSLg troubleshooting notes).
+
+  Pass --native to try the native MuJoCo window instead. That path
+  segfaulted intermittently under WSL2 in earlier testing, but
+  specifically ON KEYPRESS through the window's key_callback — this
+  script never presses a key into it (only move()/turn()/stop() calls),
+  so that trigger shouldn't fire. Unverified on your machine; if it's
+  unstable, drop back to the default --gui.
 
 RUN (from the project root):
     python tools/visual_test_task2.py
+    python tools/visual_test_task2.py --native   # try the native window
 
 This is also a good source clip for the handout's Video_Task2 — it's a
 short, repeatable, unattended sequence rather than you live-typing keys.
 """
 
+import argparse
 import sys
 import time
 from pathlib import Path
@@ -29,8 +38,14 @@ from skills.skills_real import RealSkills
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--native", action="store_true",
+                     help="open the native MuJoCo window instead of the "
+                          "browser panel (see module docstring)")
+    args = ap.parse_args()
+
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
-    skills = RealSkills(gui=True)
+    skills = RealSkills(gui=not args.native, native_viewer=args.native)
     time.sleep(1.0)  # let the first frame/pose settle before moving
 
     steps = [
