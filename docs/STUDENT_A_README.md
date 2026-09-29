@@ -92,6 +92,22 @@ If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=eg
    scene file under `assets/scenes/`. Record each object's world `(x, y)`
    in `core.config.OBJECT_POSITIONS` using the `"<color>_<class>"` key —
    Student C's `[FOUND]` distance logging reads this directly.
+
+   The current `assets/scenes/custom_scene.xml` builds on top of the
+   example platform's own bundled `rc26_track` obstacle course rather
+   than an empty scene — its terrain geoms were imported programmatically
+   from `quadruped_mujoco/src/runtime_control/maps/26rc_track.xml`
+   (registered upstream as `"rc26_track"` in
+   `src/runtime_control/resources.py`; full citation in the scene file's
+   own header comment), with the graded objects placed on top of it. If
+   you replace this with your own from-scratch scene, keep
+   `core.config.OBJECT_POSITIONS` in sync with wherever you actually put
+   each object, and double-check clearance to any terrain you add —
+   see `assets/scenes/README.md` for how the current positions were
+   verified (a first attempt at placing objects on this terrain
+   overlapped several of them with track geoms; positions were
+   re-derived from an actual programmatic clearance scan, not eyeballed,
+   after that).
 4. **Motion skills** — the two methods everyone else calls (see
    [`docs/DECISIONS.md`](DECISIONS.md) §2 for why these are two separate
    methods rather than one general `drive()`):
@@ -158,6 +174,15 @@ Open the browser panel it starts (same one `--gui` already uses) to
 actually watch the robot. Because the sequence is fixed and repeatable,
 it's also a convenient source clip for `Video_Task2` — re-run it as many
 times as you need for a clean take.
+
+Pass `--native` instead to open a native MuJoCo window rather than the
+browser panel — no server/port needed. Confirmed working end-to-end
+(full sequence + clean Ctrl+C exit) on WSL2; `--gui`/`--native` are
+mutually exclusive.
+
+```bash
+python tools/visual_test_task2.py --native
+```
 
 `tools/check_status.py` is a separate, faster sanity check (no
 simulation): it scans `skills/skills_real.py` and
