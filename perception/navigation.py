@@ -10,8 +10,8 @@ skills_mock.MockSkills before Student A's simulation exists:
     python tests/test_navigation_with_mock.py
 
 Ground-truth object positions (config.OBJECT_POSITIONS, filled in by
-Student A during Task 2 scene building) are used ONLY to compute the
-distance for the [FOUND] log line — never to steer the robot.
+Student A during Task 2 scene building) are used ONLY for the planar
+distance check and [FOUND] log — never to steer the robot.
 """
 
 import time
@@ -23,7 +23,7 @@ from core import config
 def goto_object(object_class: str, color: str,
                  skills: SkillsAPI, perception: PerceptionAPI) -> bool:
     """Runs the full search -> steer -> approach -> stop behavior.
-    Returns True iff [MISSION] status=SUCCESS was printed."""
+    Returns True iff the target is visible when stopped within found distance."""
     t0 = time.time()
     consecutive_misses = 0
     degrees_turned = 0.0
@@ -51,18 +51,30 @@ def goto_object(object_class: str, color: str,
             # not centered yet — small turn step and re-detect next loop
             continue
 
-        # centered: step forward, then re-check distance/found condition
+        # Centered: step forward, then check whether a stop-time verification is due.
         skills.move(vx=config.APPROACH_VX, vy=0.0, wz=0.0,
                      duration=config.APPROACH_STEP_S)
 
         pose = skills.get_robot_pose()
         d = _ground_truth_distance(pose, object_class, color)
         if d <= config.FOUND_DISTANCE_M:
+            skills.stop()
+
+            # Require a fresh camera classification at the stopped position.
+            pose = skills.get_robot_pose()
+            frame = skills.get_camera_frame()
+            detections = perception.detect(frame)
+            if _pick_target(detections, object_class, color) is None:
+                continue
+
+            d = _ground_truth_distance(pose, object_class, color)
+            if d > config.FOUND_DISTANCE_M:
+                continue
+
             elapsed = time.time() - t0
             print(f"[FOUND] class={object_class} color={color} "
                   f"t={elapsed:.1f} s d={d:.2f} m")
             print("[MISSION] status=SUCCESS")
-            skills.stop()
             return True
 
     print("[MISSION] status=FAIL reason=timeout")
@@ -95,7 +107,8 @@ def _steer_to_center(detection, skills: SkillsAPI,
 
 
 def _ground_truth_distance(pose: RobotPose, object_class: str, color: str) -> float:
-    """For [FOUND] logging / evaluation only — never used to steer."""
+    """Planar trunk-to-object distance for the [FOUND] check and log only."""
     key = f"{color}_{object_class}"
-    ox, oy = config.OBJECT_POSITIONS[key]
-    return ((pose.x - ox) ** 2 + (pose.y - oy) ** 2) ** 0.5
+    x_obj, y_obj = config.OBJECT_POSITIONS[key]
+    x_base, y_base = pose.x, pose.y
+    return ((x_base - x_obj) ** 2 + (y_base - y_obj) ** 2) ** 0.5
