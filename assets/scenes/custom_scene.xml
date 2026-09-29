@@ -40,17 +40,33 @@
 
     Object classes/colors/positions here MUST match core.config.OBJECT_POSITIONS
     exactly (Task 4's distance logging keys off "<color>_<class>"):
-      green_chair        (2.0,  1.0)
-      red_chair          (2.0, -1.0)
-      orange_sports ball (3.5,  0.0)
-      red_stop sign      (1.0,  2.0)
-      yellow_stop sign   (1.0, -2.0)
-      green_stop sign    (4.5,  1.5)
-    rc26_track's own obstacle course occupies a separate area (roughly
-    x=[0,7], y=[-13,-2], centered near (3.7,-9) per its <statistic> tag)
-    well clear of these object positions and of the robot's (0,0) spawn,
-    so the two shouldn't intersect — worth a visual check on first load
-    regardless.
+      green_chair        (-2.0,  2.0)
+      red_chair          (-2.0, -2.0)
+      orange_sports ball (-3.5,  0.0)
+      red_stop sign      (-1.3,  0.0)
+      yellow_stop sign   (-4.5,  2.0)
+      green_stop sign    (-4.5, -2.0)
+
+    IMPORTANT, corrected from an earlier version of this file: rc26_track's
+    152 terrain geoms are NOT confined to one tidy corner — its actual
+    footprint (computed programmatically from every geom's pos + size) is
+    x=[-2.6, 7.3], y=[-13.0, 7.0], i.e. it also reaches into positive y and
+    slightly negative x near the robot's own spawn. The FIRST version of
+    these object positions (all near x=[1,4.5], y=[-2,2]) was placed by
+    eyeballing the track's <statistic> tag alone and turned out to
+    overlap/embed several objects directly inside track geoms (e.g. the
+    red stop sign was ~1m INSIDE one). The positions above were instead
+    found by scanning a grid of candidate (x,y) points, computing each
+    one's actual clearance to the nearest track geom (center distance
+    minus that geom's half-extent), and picking a cluster of points west
+    of the spawn (negative x) where the track has comparatively little
+    presence. Verified clearances: every object is >=1.3m from the
+    nearest track geom (most are 2m+), and every pair of objects is
+    >=2.1m apart from each other — comfortably more than any object's own
+    footprint (chairs ~0.3m half-width, signs ~0.2m half-width, ball
+    0.11m radius), so nothing here should be touching anything else. This
+    was computed, not eyeballed — still worth a visual check on first
+    load, same as everything else in this file.
 
     Stop signs are simplified as a pole + a sign face made of TWO
     perpendicular square plates (a "+" cross seen from above), not one
@@ -245,7 +261,7 @@
     <geom pos="-0.43033316974190594 6.283676056613722 -0.25" type="box" size="0.2432692787269645 0.2742601402399693 0.2689467974776609" quat="0.9989897410981501 0.0047037010179340685 0.0014590493232283363 -0.04466814919444852" />
     <geom pos="-0.43033316974190594 6.458239009480634 -0.25" type="box" size="0.2474330649412728 0.2551435998627988 0.23002773988805483" quat="0.9982311862818315 0.0506459597703481 0.025989046975463247 -0.01714802993392417" />
     <geom pos="-0.43033316974190594 6.703309377175586 -0.25" type="box" size="0.2301029552870502 0.2556223065028505 0.2349557527965884" quat="0.9948672058648923 -0.034182171957127715 -0.0030330068097560517 -0.09519255582537542" />
-    <body name="green_chair" pos="2.0 1.0 0">
+    <body name="green_chair" pos="-2.0 2.0 0">
       <geom type="box" size="0.02 0.02 0.21" pos=" 0.18  0.18 0.21" material="chair_green_mat" />
       <geom type="box" size="0.02 0.02 0.21" pos=" 0.18 -0.18 0.21" material="chair_green_mat" />
       <geom type="box" size="0.02 0.02 0.21" pos="-0.18  0.18 0.21" material="chair_green_mat" />
@@ -253,7 +269,7 @@
       <geom type="box" size="0.22 0.22 0.02" pos="0 0 0.44" material="chair_green_mat" />
       <geom type="box" size="0.22 0.02 0.22" pos="0 -0.20 0.66" material="chair_green_mat" />
     </body>
-    <body name="red_chair" pos="2.0 -1.0 0">
+    <body name="red_chair" pos="-2.0 -2.0 0">
       <geom type="box" size="0.02 0.02 0.21" pos=" 0.18  0.18 0.21" material="chair_red_mat" />
       <geom type="box" size="0.02 0.02 0.21" pos=" 0.18 -0.18 0.21" material="chair_red_mat" />
       <geom type="box" size="0.02 0.02 0.21" pos="-0.18  0.18 0.21" material="chair_red_mat" />
@@ -261,20 +277,20 @@
       <geom type="box" size="0.22 0.22 0.02" pos="0 0 0.44" material="chair_red_mat" />
       <geom type="box" size="0.22 0.02 0.22" pos="0 -0.20 0.66" material="chair_red_mat" />
     </body>
-    <body name="orange_sports_ball" pos="3.5 0.0 0.11">
+    <body name="orange_sports_ball" pos="-3.5 0.0 0.11">
       <geom type="sphere" size="0.11" material="ball_orange_mat" />
     </body>
-    <body name="red_stop_sign" pos="1.0 2.0 0">
+    <body name="red_stop_sign" pos="-1.3 0.0 0">
       <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat" />
       <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_red_mat" />
       <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_red_mat" />
     </body>
-    <body name="yellow_stop_sign" pos="1.0 -2.0 0">
+    <body name="yellow_stop_sign" pos="-4.5 2.0 0">
       <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat" />
       <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_yellow_mat" />
       <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_yellow_mat" />
     </body>
-    <body name="green_stop_sign" pos="4.5 1.5 0">
+    <body name="green_stop_sign" pos="-4.5 -2.0 0">
       <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat" />
       <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_green_mat" />
       <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_green_mat" />
