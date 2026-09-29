@@ -125,17 +125,40 @@ from runtime_control import (  # noqa: E402
 NUM_ONE_STEP_OBS = 46
 HISTORY_LEN = 6
 NUM_ACTIONS = 12
+
+# This file lives at <project_root>/skills/skills_real.py, so its own
+# location pins down the project root regardless of the CURRENT WORKING
+# DIRECTORY the interpreter happens to be launched from. That matters
+# because config.SCENE_PATH ("assets/scenes/custom_scene.xml") is a
+# relative path: resolving it against cwd instead of this would silently
+# fall back to the platform's bundled (empty) rc26_track map any time
+# something is run from outside the project root -- e.g. `cd tools &&
+# python visual_test_task2.py`, or an IDE "Run" button whose cwd isn't the
+# project root -- with no error, just a scene with none of the graded
+# objects in it.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 # ---------------------------------------------------------------------------
 
 
 class RealSkills(SkillsAPI):
-    def __init__(self, scene_path: str = config.SCENE_PATH, gui: bool = False):
+    def __init__(self, scene_path: str = config.SCENE_PATH, gui: bool = False,
+                 default_camera: Optional[str] = None):
         """Builds the MuJoCo scene, loads the ONNX policy, and starts a
         persistent background thread that keeps physics+policy stepping at
         the platform's real-time-locked rate. move()/turn()/stop() just
         read/write the shared command array that thread consumes; they
         never step physics themselves, so the robot keeps standing/moving
         between calls exactly like it would under a human at the keyboard.
+
+        default_camera: which browser-panel camera is selected when the
+        panel first loads (gui=True). One of platform.CAMERA_OPTIONS's
+        keys -- "tracking" (third-person follow, the platform's own
+        default), "dog_front_camera" (onboard front/first-person),
+        "dog_rear_overhead_camera", or "dog_top_camera". None (default)
+        leaves the platform's own default ("tracking") unchanged. The
+        panel's camera dropdown still lists all of them regardless --
+        this only picks which one is selected before you touch it.
         """
         # play.py loads its own yaml.dog.yaml directly at module/main scope
         # rather than through a public loader function, so we read the same
@@ -160,15 +183,29 @@ class RealSkills(SkillsAPI):
         # graded objects) if it exists; otherwise fall back to the
         # platform's own bundled rc26_track so this file still runs before
         # the custom scene is built (Task 2.iii).
+        #
+        # scene_path is normally config.SCENE_PATH, a path RELATIVE to the
+        # project root -- resolve it against PROJECT_ROOT (this file's own
+        # location), not against whatever the current working directory
+        # happens to be, so the custom scene loads correctly no matter
+        # where the interpreter was launched from. An absolute scene_path
+        # (if a caller ever passes one) is used as-is.
         map_specs = dict(platform.MAP_SPECS)
         custom = Path(scene_path)
+        if not custom.is_absolute():
+            custom = (PROJECT_ROOT / custom).resolve()
         if custom.is_file():
             from runtime_control import MapSpec
 
             map_specs = {"custom_scene": MapSpec(custom)}
             default_map = "custom_scene"
+            print(f"[SCENE] using custom scene: {custom}")
         else:
             default_map = "rc26_track"
+            print(f"[SCENE] custom scene not found at {custom} -- falling "
+                  f"back to the platform's bundled rc26_track (no graded "
+                  f"objects). If that's not what you expected, check that "
+                  f"assets/scenes/custom_scene.xml exists in the project.")
 
         runtime_config = make_runtime_config(
             gui=gui,
@@ -188,6 +225,20 @@ class RealSkills(SkillsAPI):
             cameras=platform.CAMERA_OPTIONS,
             port=8765,
         )
+
+        # make_runtime_config() picks its own default_camera as the FIRST
+        # key of the `cameras` dict it was given (platform.CAMERA_OPTIONS,
+        # whose first key is "tracking" -- third-person). Override that
+        # choice post-hoc, rather than reordering CAMERA_OPTIONS itself, so
+        # every other camera stays selectable in the panel's dropdown; this
+        # only changes which one is selected when the panel first loads.
+        if default_camera is not None:
+            if default_camera not in runtime_config["runtime_ui"]["cameras"]:
+                raise ValueError(
+                    f"default_camera={default_camera!r} is not one of "
+                    f"{list(runtime_config['runtime_ui']['cameras'])}"
+                )
+            runtime_config["runtime_ui"]["default_camera"] = default_camera
 
         self._scene = RuntimeScene(
             robot_xml=platform.DEFAULT_ROBOT_XML,
@@ -290,9 +341,19 @@ class RealSkills(SkillsAPI):
         target_yaw = start_yaw + angle_deg
 
         tolerance_deg = 2.0
-        kp_turn = 1.0          # wz (rad/s, normalized command) per degree of error
+        # Retuned from 0.1 -> 1.0 after on-robot testing: at kp_turn=1.0 the
+        # command saturates to full power (wz=+-1.0, matching what a held
+        # 'q'/'e' keypress sends in play.py's get_commands()) for any error
+        # above ~1 deg, i.e. near-bang-bang control with only the last
+        # degree or so of proportional ramp-down. Empirically this converges
+        # reliably to within ~2 deg of target across repeated trials (see
+        # Task 2 report), so it's kept over the gentler 0.1 ramp.
+        kp_turn = 1.0
         max_wz = 1.0
-        timeout_s = max(5.0, abs(angle_deg) / 6.0 + 3.0)  # generous ceiling for robot to turn complete
+        # Generous ceiling so a slow but correct turn still finishes instead
+        # of timing out early, even though kp_turn=1.0 usually converges
+        # well before this deadline.
+        timeout_s = max(5.0, abs(angle_deg) / 6.0 + 3.0)
 
         deadline = self._get_sim_time() + timeout_s
         final_error = angle_deg
@@ -515,6 +576,18 @@ def _wrap_deg(angle_deg: float) -> float:
     signed path toward the target."""
     return (angle_deg + 180.0) % 360.0 - 180.0
 
+
+# ---------------------------------------------------------------------------
+# standalone test harness — Task 2.i deliverable.
+#
+# Deliberately does NOT use evdev / the native GLFW viewer: on this team's
+# WSL2 laptop, evdev can't see /dev/input at all (no physical-keyboard
+# path exists there) and the native viewer has intermittently segfaulted
+# on keypress. Per the team's own decision (docs/DECISIONS.md), keyboard
+# control goes through the platform's browser panel instead when a visual
+# is wanted; this harness's default mode is a typed-command loop that
+# needs no viewer at all, so it also works over SSH / in CI.
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import argparse
