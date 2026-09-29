@@ -32,11 +32,15 @@ behavior than a human-at-a-keyboard demo:
     array and a background thread that steps physics+policy continuously
     at the real-time-locked rate — move()/turn() just set that shared
     command and block, they don't run their own physics loop.
-  - the native GLFW viewer / evdev keyboard capture. Per the WSL2 crash
-    already diagnosed on Student A's laptop, this module runs headless
-    (no viewer) by default so it works identically on any machine; the
-    standalone test harness at the bottom can optionally open the browser
-    control panel (`--gui`) purely as a visual/manual sanity check.
+  - evdev keyboard capture: nothing here reads a physical keyboard, since
+    move()/turn()/stop() are called programmatically. This module runs
+    headless (no viewer) by default so it works identically on any
+    machine and over SSH/CI; the standalone test harness at the bottom
+    can optionally open a visual -- the browser control panel (`--gui`,
+    the team's confirmed-working path) or the native MuJoCo window
+    (`--native`, untested here but worth trying since the one documented
+    WSL2 crash was specifically on-keypress and nothing in this codebase
+    ever presses a key into that window).
 
 --------------------------------------------------------------------------
 Setting PLATFORM_ROOT
@@ -55,6 +59,7 @@ from the project root so the `core` package resolves):
     python -m skills.skills_real            # headless, typed-command test
     python -m skills.skills_real --gui      # browser control panel at
                                              # http://localhost:8765
+    python -m skills.skills_real --native   # native MuJoCo window (try me)
 """
 
 import math
@@ -143,7 +148,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 class RealSkills(SkillsAPI):
     def __init__(self, scene_path: str = config.SCENE_PATH, gui: bool = False,
-                 default_camera: Optional[str] = None):
+                 default_camera: Optional[str] = None,
+                 native_viewer: bool = False):
         """Builds the MuJoCo scene, loads the ONNX policy, and starts a
         persistent background thread that keeps physics+policy stepping at
         the platform's real-time-locked rate. move()/turn()/stop() just
@@ -159,6 +165,22 @@ class RealSkills(SkillsAPI):
         leaves the platform's own default ("tracking") unchanged. The
         panel's camera dropdown still lists all of them regardless --
         this only picks which one is selected before you touch it.
+        Ignored when native_viewer=True (the native window has no camera
+        dropdown; see setup_tracking_camera below).
+
+        native_viewer: open the native MuJoCo (GLFW) window instead of the
+        browser panel, mutually exclusive with gui (native_viewer=True
+        forces the browser panel off, since running both doubles the
+        render work and the platform's own viewer_context() only allows
+        one at a time). The WSL2 crash noted in this file's module
+        docstring was specifically "on keypress" through the native
+        window's key_callback; our test scripts never press a key (they
+        only ever call move()/turn()/stop() programmatically), so that
+        specific trigger never fires here -- but this sandbox has no
+        display to actually verify that on, so treat this as worth
+        TRYING on your own machine, not as a guaranteed fix. If it
+        crashes, go back to gui=True (the browser panel), which is the
+        one path the team has confirmed works reliably.
         """
         # play.py loads its own yaml.dog.yaml directly at module/main scope
         # rather than through a public loader function, so we read the same
@@ -207,8 +229,18 @@ class RealSkills(SkillsAPI):
                   f"objects). If that's not what you expected, check that "
                   f"assets/scenes/custom_scene.xml exists in the project.")
 
+        if native_viewer and gui:
+            raise ValueError(
+                "native_viewer=True and gui=True can't both be set -- the "
+                "platform only supports one display at a time (running "
+                "both renders every frame twice). Pick one."
+            )
+        # The browser panel (RuntimeControl's own gui flag) and the native
+        # GLFW window are mutually exclusive display paths; native_viewer
+        # forces the browser panel off here so scene.viewer(browser_only=
+        # False) below is the only thing rendering.
         runtime_config = make_runtime_config(
-            gui=gui,
+            gui=gui and not native_viewer,
             title="MiniLab 1.3 — RealSkills",
             maps={k: k for k in map_specs},
             map_spawns={
@@ -254,6 +286,54 @@ class RealSkills(SkillsAPI):
         self._model.opt.timestep = self.simulation_dt
         self._data = self._scene.data
         self._runtime = self._scene.runtime
+
+        # Native viewer setup. No key_callback is passed (None), since
+        # nothing here ever drives it by keyboard -- the whole point of
+        # trying this path is that our test scripts don't press keys.
+        # launch_passive() opens a real GLFW window and can fail (missing
+        # display, no GLFW libs, etc.) or -- per this file's WSL2 history --
+        # crash outright; either way that shouldn't take the whole harness
+        # down silently; a clean ImportError/RuntimeError is caught and
+        # reported, but a genuine native segfault is a process-level crash
+        # no try/except here can catch. That's the actual risk being taken
+        # by opting into native_viewer=True.
+        self._native_viewer_cm = None
+        self._native_viewer = None
+        if native_viewer:
+            try:
+                self._native_viewer_cm = self._scene.viewer(
+                    browser_only=False, key_callback=None
+                )
+                self._native_viewer = self._native_viewer_cm.__enter__()
+                # default_camera picks a fixed onboard camera (e.g.
+                # "dog_front_camera") the same way it does for the browser
+                # panel; "tracking" (or None) falls back to a third-person
+                # follow cam, same framing as play.py's non-gui default.
+                if default_camera and default_camera != "tracking":
+                    cam_id = mujoco.mj_name2id(
+                        self._model, mujoco.mjtObj.mjOBJ_CAMERA, default_camera
+                    )
+                    if cam_id < 0:
+                        raise ValueError(
+                            f"default_camera={default_camera!r} is not a "
+                            f"camera in the composed model"
+                        )
+                    self._native_viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
+                    self._native_viewer.cam.fixedcamid = cam_id
+                else:
+                    from runtime_control.integration import setup_tracking_camera
+                    setup_tracking_camera(
+                        self._native_viewer, self._model, "trunk",
+                        distance=2.0, azimuth=135.0, elevation=-25.0,
+                    )
+                print("[VIEWER] native MuJoCo window opened (no keyboard "
+                      "wired up -- close the window or Ctrl+C to stop).")
+            except Exception as exc:
+                print(f"[VIEWER] native viewer failed to open ({exc!r}); "
+                      f"continuing headless. Use gui=True for the browser "
+                      f"panel instead.")
+                self._native_viewer_cm = None
+                self._native_viewer = None
 
         platform.reset_robot(self._model, self._data, platform.DEFAULT_ANGLES_MUJOCO)
 
@@ -544,6 +624,14 @@ class RealSkills(SkillsAPI):
 
             self._publish_pose()
             self._maybe_render_camera(self._get_sim_time())
+            if self._native_viewer is not None:
+                try:
+                    self._native_viewer.sync()
+                except Exception:
+                    # Window closed, or a non-fatal viewer error -- stop
+                    # trying to sync it but keep the sim thread (and any
+                    # browser/headless consumers) running normally.
+                    self._native_viewer = None
 
             elapsed = time.time() - step_start
             sleep_left = self.simulation_dt - elapsed
@@ -553,6 +641,11 @@ class RealSkills(SkillsAPI):
     def shutdown(self) -> None:
         self._stop_event.set()
         self._sim_thread.join(timeout=2.0)
+        if self._native_viewer_cm is not None:
+            try:
+                self._native_viewer_cm.__exit__(None, None, None)
+            except Exception:
+                pass  # best-effort close; a crashed/closed window is fine here
         self._scene.close()
 
 
@@ -580,13 +673,17 @@ def _wrap_deg(angle_deg: float) -> float:
 # ---------------------------------------------------------------------------
 # standalone test harness — Task 2.i deliverable.
 #
-# Deliberately does NOT use evdev / the native GLFW viewer: on this team's
-# WSL2 laptop, evdev can't see /dev/input at all (no physical-keyboard
-# path exists there) and the native viewer has intermittently segfaulted
-# on keypress. Per the team's own decision (docs/DECISIONS.md), keyboard
-# control goes through the platform's browser panel instead when a visual
-# is wanted; this harness's default mode is a typed-command loop that
-# needs no viewer at all, so it also works over SSH / in CI.
+# Deliberately defaults to no viewer at all (headless): on this team's
+# WSL2 laptop, evdev can't see /dev/input (no physical-keyboard path
+# exists there), and the native GLFW viewer has intermittently segfaulted
+# on keypress -- specifically on keypress, through its key_callback. Per
+# the team's own decision (docs/DECISIONS.md), keyboard control goes
+# through the platform's browser panel (--gui) when a visual is wanted,
+# since nothing here has ever pressed a key INTO the native window itself.
+# --native opts into that native window anyway, on the theory that since
+# this harness (and tools/visual_test_task*.py) never sends it a
+# keypress, the one documented crash trigger never fires -- try it, but
+# fall back to --gui if it's unstable on your machine.
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -597,17 +694,30 @@ if __name__ == "__main__":
         "--gui", action="store_true", help="also open the browser control panel for a visual"
     )
     parser.add_argument(
+        "--native", action="store_true",
+        help="open the native MuJoCo (GLFW) window instead of the browser "
+             "panel -- no keyboard is wired up, so the documented "
+             "on-keypress WSL2 crash shouldn't trigger, but this is "
+             "unverified on your machine; fall back to --gui if it's "
+             "unstable. Mutually exclusive with --gui.",
+    )
+    parser.add_argument(
         "--compare-turn",
         action="store_true",
         help="run the open-loop-vs-closed-loop turn comparison for the Task 2 report",
     )
     args = parser.parse_args()
+    if args.gui and args.native:
+        parser.error("--gui and --native are mutually exclusive -- pick one display")
 
     print("Booting RealSkills (this loads the ONNX policy and opens the MuJoCo scene)...")
-    skills = RealSkills(gui=args.gui)
+    skills = RealSkills(gui=args.gui, native_viewer=args.native)
     print("Ready.")
     if args.gui:
         print("Browser panel: http://localhost:8765")
+    elif args.native:
+        print("Native viewer: check for a MuJoCo window (or console output "
+              "above if it failed to open).")
 
     if args.compare_turn:
         print("\n--- Closed-loop turn ---")
