@@ -1,30 +1,30 @@
 # Student C — Task 4: YOLO Detection, Color Grounding, Search & Approach (60%)
- 
+
 You own the entire `perception/` folder: `perception_real.py`,
 `navigation.py`. It's your own directory — nobody else edits inside it.
- 
+
 You do **not** need Student A's simulation running or Student B's LLM
 parser finished. `perception_real.py` only needs image arrays in, and
 `navigation.py` only talks to `core.interfaces.SkillsAPI` /
 `core.interfaces.PerceptionAPI`. Develop against `skills/skills_mock.py`
 and saved test images first. Run everything from the project root
 (`minilab_1_3/`).
- 
+
 ## 1. Setup on your laptop
- 
+
 ```bash
 conda create -n quadruped_mujoco python=3.11 -y
 conda activate quadruped_mujoco
 pip install ultralytics opencv-python numpy pillow
 ```
- 
+
 The first `ultralytics` import will auto-download the YOLO weights
 (`core.config.YOLO_MODEL`, default `yolo11n.pt`) — do this once while you have
 internet, it's cached afterward. CPU inference at the resolutions used
 here is real-time on a laptop; no GPU needed.
- 
+
 ## 2. What you're building
- 
+
 1. **`perception_real.RealPerception.detect(frame)`** — runs YOLO on a
    camera frame, then determines each detection's color from the pixels
    inside its bounding box (e.g. median hue in HSV via `cv2.cvtColor`).
@@ -33,6 +33,18 @@ here is real-time on a laptop; no GPU needed.
    Design your test scene's objects (with Student A) around classes
    YOLO's 80 COCO classes can actually detect — untextured boxes will
    not register as "chair".
+
+   The current `_grounded_color()` has two robustness tweaks worth
+   knowing about if a color still looks wrong: it shrinks the bbox 15%
+   in from every edge before sampling (a loose box on a thin-legged
+   prop like a chair otherwise lets background bleed in through the
+   gaps and skew the read — this is what caused an early "chair reads
+   blue instead of green" bug), and classifies by the **mode** of a
+   10°-wide hue histogram rather than the median, logging
+   `hue/sat/val/n_valid_px` on every `[DETECT]` line so a bad read is
+   visible in the console instead of silently averaged away. Use
+   `tools/visual_test_task4.py --debug-frames DIR` (see below) if you
+   need to see the exact pixels a detection's color came from.
 2. **`navigation.goto_object(class, color, skills, perception)`** — the
    search/steer/approach state machine (why this lives here and not in
    `dialogue/`: [`docs/DECISIONS.md`](DECISIONS.md) §3):
@@ -52,16 +64,17 @@ here is real-time on a laptop; no GPU needed.
    - full turn with no detection, or timeout (`core.config.APPROACH_TIMEOUT_S`,
      default 60 s) → `[MISSION] status=FAIL reason=...`
    - success → `[MISSION] status=SUCCESS`
+
 ## 3. Test entirely on your own
- 
+
 ```bash
 # perception, against a saved image — no sim needed
 python -m perception.perception_real --image test_frame.png
- 
+
 # navigation state machine, against MockSkills — no sim needed
 python tests/test_student_c.py
 ```
- 
+
 `MockPerception` (already provided) returns "not found" for the first
 couple of calls and then a detection, so the navigation test exercises
 both the `[SEARCH]` branch and the `[FOUND]`/steering branch without
@@ -69,48 +82,66 @@ needing your real detector finished yet either. Get a few frames from
 Student A early (even before their sim is fully wired) to validate
 detection on your actual scene objects — that's the Task 2.iii/4.ii
 "verify detection early" screenshot for the report.
- 
+
 ### Watch it run in the simulation
- 
+
 `tools/visual_test_task4.py` boots the real `RealSkills` + real
 `RealPerception` and calls `navigation.goto_object()` directly against
 the objects placed in `assets/scenes/custom_scene.xml`, so you can watch
 the `[SEARCH]`/`[DETECT]`/`[FOUND]`/`[MISSION]` sequence happen live,
 without needing Student B's LLM parser finished at all:
- 
+
 ```bash
 python tools/visual_test_task4.py --class chair --color green
 python tools/visual_test_task4.py --class "stop sign" --color red
 python tools/visual_test_task4.py --mock-perception   # state-machine only, no YOLO
 ```
- 
+
 `--mock-perception` swaps in `MockPerception` so you can verify the
 search/steer/approach *logic* even before `perception_real.py`'s
 `detect()` is finished — it can't verify real detection or color
 grounding that way, only the navigation state machine.
- 
+
+Other flags worth knowing:
+
+```bash
+python tools/visual_test_task4.py --camera dog_front_camera   # default: robot POV, the same feed detect() sees
+python tools/visual_test_task4.py --camera tracking           # third-person instead
+python tools/visual_test_task4.py --debug-frames /tmp/color_debug   # dump every frame + bbox crop as PNGs
+python tools/visual_test_task4.py --native                    # native MuJoCo window instead of the browser panel
+```
+
+`--debug-frames DIR` saves the full camera frame and each detection's
+(shrunk) bbox crop as PNGs under `DIR`, alongside the hue/sat/val stats
+already logged on `[DETECT]` — the fastest way to check a suspicious
+color result against the actual pixels instead of guessing. `--native`
+opens a native MuJoCo window instead of the browser panel (confirmed
+working end-to-end, including a clean Ctrl+C exit, on WSL2); it also
+respects `--camera`, switching the native window to whichever fixed
+camera you asked for. `--gui`/`--native` are mutually exclusive.
+
 `tools/check_status.py` is a separate, faster sanity check (no
 simulation): it scans `perception/perception_real.py` and
 `perception/navigation.py` for leftover `NotImplementedError`/TODO
 markers.
- 
+
 ```bash
 python tools/check_status.py
 ```
- 
+
 ## 4. Handing off to the group
- 
+
 No changes needed elsewhere — `navigation.py` and `perception_real.py`
 were written entirely against the interfaces. Once your standalone tests
 pass:
- 
+
 ```python
 # main.py
 USE_REAL_PERCEPTION = True
 ```
- 
+
 ## 5. Deliverables checklist (Task 4)
- 
+
 - [ ] Detection method (YOLO + color grounding approach) summarized/justified in report
 - [ ] `[DETECT]` lines with class, color, confidence, bbox
 - [ ] `goto_object()` implements search, steer-to-center, approach, stop
@@ -124,4 +155,3 @@ USE_REAL_PERCEPTION = True
       `[CMD]` / `[SEARCH]` / `[DETECT]` / `[FOUND]` / `[MISSION]` lines,
       for ≥2 objects including one not-initially-visible and one
       same-class disambiguation
- 
