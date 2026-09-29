@@ -15,6 +15,7 @@ from dataclasses import asdict
 import json
 from pathlib import Path
 from typing import List
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -75,25 +76,11 @@ class RealPerception(PerceptionAPI):
         if rgb.max() > 1.0:
             rgb /= 255.0
         rgb = np.clip(rgb, 0.0, 1.0)
-
-        red, green, blue = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-        maximum = np.max(rgb, axis=2)
-        minimum = np.min(rgb, axis=2)
-        delta = maximum - minimum
-
-        hue = np.zeros_like(maximum)
-        chromatic = delta > 0
-        red_max = chromatic & (maximum == red)
-        green_max = chromatic & (maximum == green)
-        blue_max = chromatic & (maximum == blue)
-        hue[red_max] = 60.0 * np.mod((green[red_max] - blue[red_max]) / delta[red_max], 6.0)
-        hue[green_max] = 60.0 * ((blue[green_max] - red[green_max]) / delta[green_max] + 2.0)
-        hue[blue_max] = 60.0 * ((red[blue_max] - green[blue_max]) / delta[blue_max] + 4.0)
-
-        saturation = np.zeros_like(maximum)
-        non_black = maximum > 0
-        saturation[non_black] = delta[non_black] / maximum[non_black]
-        valid_hues = hue[(saturation >= 0.2) & (maximum >= 0.15)]
+        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+        hue = hsv[..., 0]
+        saturation = hsv[..., 1]
+        value = hsv[..., 2]
+        valid_hues = hue[(saturation >= 0.2) & (value >= 0.15)]
         if valid_hues.size == 0:
             return "unknown"
 
