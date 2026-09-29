@@ -16,12 +16,22 @@ LOGIC without YOLO installed (it always "finds" a fake green chair after
 a few misses, so it can't verify real detection/color-grounding, only
 the navigation state machine).
 
-The browser panel defaults to the robot's own onboard front camera
-(rather than the platform's usual third-person follow view), since what
-matters here is seeing what the robot's camera sees -- the same frames
-perception.detect() is actually running on -- not a spectator's-eye view
-of the robot from outside. Pass --camera to pick a different one; the
-panel's dropdown still lists all of them regardless.
+The browser panel (default) or native window (--native) both default to
+the robot's own onboard front camera (rather than the platform's usual
+third-person follow view), since what matters here is seeing what the
+robot's camera sees -- the same frames perception.detect() is actually
+running on -- not a spectator's-eye view of the robot from outside. Pass
+--camera to pick a different one; in the browser the panel's dropdown
+still lists all of them regardless, and in the native window --camera
+tracking switches to the same third-person follow view.
+
+--native opens the native MuJoCo window instead of the browser panel.
+The WSL2 crash noted for this platform was specifically on-keypress
+through the native window's key_callback; this script never sends it a
+keypress (only navigation.goto_object() driving move()/turn()/stop()
+programmatically), so that trigger shouldn't fire -- but it's unverified
+on your machine, so fall back to the default browser panel if it's
+unstable.
 
 RUN (from the project root):
     python tools/visual_test_task4.py
@@ -29,6 +39,8 @@ RUN (from the project root):
     python tools/visual_test_task4.py --class "stop sign" --color red
     python tools/visual_test_task4.py --mock-perception
     python tools/visual_test_task4.py --camera tracking   # third-person instead
+    python tools/visual_test_task4.py --debug-frames /tmp/color_debug  # dump crops
+    python tools/visual_test_task4.py --native             # native window
 """
 
 import argparse
@@ -55,14 +67,27 @@ def main():
                           "instead of the real YOLO detector (logic-only "
                           "check, no camera/YOLO needed)")
     ap.add_argument("--camera", default="dog_front_camera",
-                     help='which browser-panel camera is selected on load: '
+                     help='which camera is selected on load: '
                           '"dog_front_camera" (default, robot POV), '
                           '"tracking" (third-person follow), '
-                          '"dog_rear_overhead_camera", or "dog_top_camera"')
+                          '"dog_rear_overhead_camera", or "dog_top_camera" '
+                          '-- applies to both the browser panel and '
+                          '--native')
+    ap.add_argument("--debug-frames", metavar="DIR", default=None,
+                     help="dump every camera frame plus each detection's "
+                          "(shrunk) bbox crop as PNGs into DIR, and log "
+                          "each detection's hue/sat/val stats -- use this "
+                          "to see exactly which pixels color grounding is "
+                          "reading when a color looks wrong (e.g. a chair "
+                          "coming back \"blue\" instead of \"green\")")
+    ap.add_argument("--native", action="store_true",
+                     help="open the native MuJoCo window instead of the "
+                          "browser panel (see module docstring)")
     args = ap.parse_args()
 
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
-    skills = RealSkills(gui=True, default_camera=args.camera)
+    skills = RealSkills(gui=not args.native, default_camera=args.camera,
+                         native_viewer=args.native)
     time.sleep(1.0)
 
     if args.mock_perception:
@@ -73,7 +98,9 @@ def main():
         perception = MockPerception()
     else:
         from perception.perception_real import RealPerception
-        perception = RealPerception()
+        perception = RealPerception(debug_dir=args.debug_frames)
+        if args.debug_frames:
+            print(f"[DEBUG] saving frames + bbox crops to {args.debug_frames}/")
 
     print(f"\ngoto_object(object_class={args.object_class!r}, "
           f"color={args.color!r}) -- watch the browser panel.\n")
