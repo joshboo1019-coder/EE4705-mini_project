@@ -25,9 +25,52 @@ Confirm the demo works before touching any of the backbone code:
 
 ```bash
 cd quadruped_mujoco
-python eg/play.py                # native viewer — W/S/A/D/Q/E/R/F/T  **evdev is need to enable robot control in native viewer
-python eg/play.py --gui          # browser panel at http://localhost:8765 
+python eg/play.py                # native viewer: keyboard needs evdev (Linux only, not WSL)
+python eg/play.py --gui          # browser panel at http://localhost:8765
 ```
+
+### Browser panel keyboard shortcuts (WSL / no evdev)
+
+Without `evdev` (e.g. on WSL2), the native viewer cannot read the keyboard,
+and pressing keys in the MuJoCo window may crash it. Use the browser panel
+instead (`python eg/play.py --gui`, then open http://localhost:8765 and click
+on the page):
+
+| Key | Action |
+|-----|--------|
+| W/S | forward / back |
+| A/D | strafe left / right |
+| Q/E | turn left / right |
+| X   | E-Stop (same as the red **E-Stop** button) |
+| T   | Reset Robot (same as the **Reset Robot** button) |
+
+X and T require a one-line change to `src/runtime_control/panel.py`. If it
+is not already in your copy, run this from the repository root
+(`EE4705-mini_project/`):
+
+```bash
+python - <<'EOF'
+from pathlib import Path
+p = Path("quadruped_mujoco/src/runtime_control/panel.py")
+s = p.read_text()
+old = "actionKeys=new Map(Object.entries(customActions).filter(([k,v])=>v.shortcut).map(([k,v])=>[v.shortcut,k]));"
+new = "actionKeys=new Map([['x','stop'],['t','reset'],...Object.entries(customActions).filter(([k,v])=>v.shortcut).map(([k,v])=>[v.shortcut,k])]);"
+assert s.count(old) == 1, "line not found - already patched or file differs"
+Path(str(p) + ".bak").write_text(s)
+p.write_text(s.replace(old, new))
+print("patched")
+EOF
+```
+
+Check it worked:
+
+```bash
+grep -c "\['x','stop'\]" quadruped_mujoco/src/runtime_control/panel.py   # should print 1
+```
+
+After patching, restart `python eg/play.py --gui` and press **Ctrl+Shift+R**
+in the browser to reload the page. R/F/Z/Y remain evdev-only; use the
+panel's height controls instead.
 
 If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=egl`.
 
@@ -122,4 +165,4 @@ only ever written against `core.interfaces.SkillsAPI`.
 - [ ] `move()` and `turn()` implemented and keyboard-tested
 - [ ] Table/plot: open-loop vs. closed-loop turn accuracy
 - [ ] `Video_Task2`: scene + objects, onboard camera view, a timed move,
-      a closed-loop turn with `[TURN]` visible in the terminal
+      a closed-loop turn with `[TURN]` visibleal
