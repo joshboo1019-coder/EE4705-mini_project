@@ -1,20 +1,20 @@
 # Student B — Task 3: LLM Command Parser & Chat Interface (60%)
- 
+
 You own the entire `dialogue/` folder: `llm_parser.py`, `executor.py`,
 `chat_interface.py`. It's your own directory — nobody else edits inside it.
- 
+
 You do **not** need Student A's simulation or Student C's YOLO to be ready.
 Your code only ever talks to `core.interfaces.SkillsAPI` /
 `core.interfaces.PerceptionAPI`, and you already have working stand-ins
 for both (`skills/skills_mock.py`, `perception/perception_mock.py`). Build
 and test your whole pipeline today. Run everything from the project root
 (`minilab_1_3/`).
- 
+
 ## 1. Setup on your laptop
- 
+
 You don't need MuJoCo installed to develop your part (though installing it
 per the main README lets you eventually run the full system). You do need:
- 
+
 ```bash
 conda create -n quadruped_mujoco python=3.11 -y
 conda activate quadruped_mujoco
@@ -24,20 +24,20 @@ pip install google-genai      # for Gemini
 # Alibaba Cloud Model Studio (Qwen) exposes an OpenAI-compatible endpoint,
 # so the `openai` package works for it too — just point base_url at it.
 ```
- 
+
 Get API keys / free-tier access for **at least two** services (pick from
 the handout's Section V table — OpenAI, Alibaba Cloud Qwen, Google
 Gemini, or local Ollama). Export them as environment variables, never
 commit them:
- 
+
 ```bash
 export OPENAI_API_KEY=sk-...
 export DASHSCOPE_API_KEY=...      # Alibaba Cloud (Qwen)
 export GOOGLE_API_KEY=...         # Gemini
 ```
- 
+
 ## 2. What you're building
- 
+
 1. **`dialogue/llm_parser.parse_command(user_text, history)`** — turns one
    utterance into a `core.schema.ParseResult` using the JSON command
    schema already defined in `core/schema.py` / documented in
@@ -58,39 +58,40 @@ export GOOGLE_API_KEY=...         # Gemini
    interfaces — you shouldn't need to touch this unless you're adding a
    new command type. (Why validation lives entirely in the parser and the
    executor stays a pure dispatcher: [`docs/DECISIONS.md`](DECISIONS.md) §5.)
+
 Before and after any change here, `python -m pytest -q tests/test_architecture.py`
 should stay green — it's the mechanical check that this folder never
 imports `skills.skills_real` or `perception.perception_real` directly.
- 
+
 ## 3. Test entirely on your own
- 
+
 ```bash
 python tests/test_student_b.py
 ```
- 
+
 This runs your parser + executor against `MockSkills` / `MockPerception`
 end to end, with test utterances including a multi-step command, a
 goto_object command, and two that should be rejected. Once `_call_llm()`
 is implemented this should run cleanly without any of Student A's or
 Student C's real code existing yet.
- 
+
 For the Task 3.iv evaluation, write a small driver script (or extend the
 test above) that runs ≥20 utterances — ≥5 paraphrases, ≥5 invalid/OOS —
 through **both** LLM services you chose, and log accuracy / latency / cost
 per call into a table for the report.
- 
+
 ### Watch it run in the simulation
- 
+
 `tools/visual_test_task3.py` boots the real `RealSkills` (`gui=True`) and
 drives it through `dialogue/executor.py` exactly the way `main.py`
 eventually will:
- 
+
 ```bash
 python tools/visual_test_task3.py
 python tools/visual_test_task3.py --text "turn around and walk forward"
 python tools/visual_test_task3.py --real-perception   # once Task 4 is ready
 ```
- 
+
 It calls the real `llm_parser.parse_command()` first. Until `_call_llm()`
 is implemented it automatically falls back to a fixed command batch
 instead (and says so) — so you can already watch the executor drive the
@@ -98,25 +99,34 @@ real robot correctly, and once `_call_llm()` is filled in this script
 picks the real parser up with no changes needed. `goto_object` commands
 use `MockPerception` by default (no YOLO needed) unless you pass
 `--real-perception`.
- 
+
+Pass `--native` instead of the default browser panel to open a native
+MuJoCo window — no server/port needed. Confirmed working end-to-end
+(full run + clean Ctrl+C exit) on WSL2; `--gui`/`--native` are mutually
+exclusive.
+
+```bash
+python tools/visual_test_task3.py --native
+```
+
 `tools/check_status.py` is a separate, faster sanity check (no
 simulation): it scans `dialogue/llm_parser.py`, `dialogue/executor.py`,
 and `dialogue/chat_interface.py` for leftover `NotImplementedError`/TODO
 markers.
- 
+
 ```bash
 python tools/check_status.py
 ```
- 
+
 ## 4. Handing off to the group
- 
+
 Your code needs no changes at integration time — it was written entirely
 against the interfaces. When Student A's and Student C's real modules are
 ready, `main.py`'s flags flip and your parser/executor just start being
 called with the real sim/detector instead of the mocks.
- 
+
 ## 5. Deliverables checklist (Task 3)
- 
+
 - [ ] Structured-output prompting method summarized/justified in the report
 - [ ] Parser handles multi-step instructions, paraphrases, and rejections
 - [ ] `[CMD]` / `[CMD] rejected reason=...` lines printed correctly
@@ -127,4 +137,3 @@ called with the real sim/detector instead of the mocks.
 - [ ] `Video_Task3`: terminal visible throughout, typed command visible,
       autonomous execution to `[DONE]`, one multi-step command with a
       turn, one rejected command
- 
