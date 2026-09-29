@@ -3,6 +3,7 @@ numpy
 onnxruntime
 pyyaml
 pillow
+opencv-python
 ultralytics
 openai
 # google-genai        # if using Gemini
