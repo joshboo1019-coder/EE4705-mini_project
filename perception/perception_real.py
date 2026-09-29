@@ -10,16 +10,22 @@ Test standalone (run from the project root so `core` resolves):
     python -m perception.perception_real --image path/to/test_frame.png
 """
 
+import argparse
+from dataclasses import asdict
+import json
+from pathlib import Path
 from typing import List
 import numpy as np
+from PIL import Image, ImageDraw
 
 from core.interfaces import PerceptionAPI
 from core.schema import Detection
 from core import config
-from ultralytics import YOLO
 
 class RealPerception(PerceptionAPI):
     def __init__(self, model_path: str = config.YOLO_MODEL):
+        from ultralytics import YOLO
+
         self.model = YOLO(model_path)
         self.conf_threshold = config.YOLO_CONF_THRESHOLD
 
@@ -116,8 +122,35 @@ class RealPerception(PerceptionAPI):
 
 
 if __name__ == "__main__":
-    # TODO(Student C): load a test image, run detect(), draw + save boxes.
-    # This is the "verify detection early" screenshot required by Task 2.iii
-    # / Task 4.ii.
-    print("Run this to test YOLO + color grounding on a saved frame.")
+    parser = argparse.ArgumentParser(
+        description="Run YOLO and color grounding on a saved image."
+    )
+    parser.add_argument("--image", required=True, type=Path, help="input image path")
+    args = parser.parse_args()
+    if not args.image.is_file():
+        parser.error(f"image file not found: {args.image}")
+
+    image = Image.open(args.image).convert("RGB")
+    frame = np.asarray(image)
+    detections = RealPerception().detect(frame)
+
+    output_stem = args.image.with_name(f"{args.image.stem}_detections")
+    image_path = output_stem.with_suffix(".jpg")
+    json_path = output_stem.with_suffix(".json")
+
+    annotated = image.copy()
+    draw = ImageDraw.Draw(annotated)
+    for detection in detections:
+        x1, y1, x2, y2 = detection.bbox
+        draw.rectangle((x1, y1, x2, y2), outline="red", width=3)
+        label = f"{detection.color} {detection.class_name} {detection.conf:.2f}"
+        draw.text((x1, max(0, y1 - 14)), label, fill="red")
+    annotated.save(image_path)
+
+    with json_path.open("w", encoding="utf-8") as output_file:
+        json.dump([asdict(detection) for detection in detections], output_file, indent=2)
+        output_file.write("\n")
+
+    print(f"Saved annotated image: {image_path}")
+    print(f"Saved detections JSON: {json_path}")
     
