@@ -143,6 +143,31 @@ frames of your scene from robot height, run YOLO on them, draw boxes,
 and save one screenshot for the report — this doubles as your first
 integration check with Student C's detector.
 
+### Watch it run in the simulation
+
+`tools/visual_test_task2.py` boots the real `RealSkills` (`gui=True`)
+and runs a fixed, unattended choreography — forward, strafe, a
+closed-loop turn, forward, another turn, stop — printing the pose
+before/after each step, instead of you live-typing keys:
+
+```bash
+python tools/visual_test_task2.py
+```
+
+Open the browser panel it starts (same one `--gui` already uses) to
+actually watch the robot. Because the sequence is fixed and repeatable,
+it's also a convenient source clip for `Video_Task2` — re-run it as many
+times as you need for a clean take.
+
+`tools/check_status.py` is a separate, faster sanity check (no
+simulation): it scans `skills/skills_real.py` and
+`assets/scenes/custom_scene.xml` for leftover `NotImplementedError`/TODO
+markers and runs `tests/test_student_a.py` for you.
+
+```bash
+python tools/check_status.py
+```
+
 ## 5. Handing off to the group
 
 Once `python -m skills.skills_real` works standalone:
