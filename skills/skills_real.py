@@ -174,24 +174,21 @@ class RealSkills(SkillsAPI):
         render work and the platform's own viewer_context() only allows
         one at a time). Confirmed on the team's WSL2 machine to run a
         full scripted move/turn/strafe sequence and exit cleanly on
-        Ctrl+C -- but a SEPARATE issue has since turned up specifically
-        when something also calls get_camera_frame() (i.e. Task 4 /
-        goto_object()): the offscreen mujoco.Renderer used for that
-        (self._renderer, wholly separate from this native window) can
-        apparently start failing on every call once the native window
-        exists, likely a GL-context conflict between the two in one
-        process. When that happens get_camera_frame() silently returns
-        the same STALE frame forever -- it looks like the robot's own
-        view has frozen even though its real pose keeps changing (yaw
-        drifting while detected bbox positions barely move is the
-        tell). This used to fail completely silently; _maybe_render_camera
-        now logs a [CAMERA] line (rate-limited) the moment rendering
-        starts failing, so it's diagnosable instead of just timing out
-        looking like a navigation bug. Until this is confirmed fixed,
-        prefer gui=True (the browser panel) for anything that calls
-        get_camera_frame() -- Task 4, or Task 3 with --real-perception;
-        native_viewer is fine for Task 2 and Task 3's default (mock
-        perception never touches the camera feed at all).
+        Ctrl+C. An earlier note here warned that Task 4 (anything calling
+        get_camera_frame()) could time out under native_viewer=True due to
+        a suspected GL-context conflict freezing the offscreen camera
+        feed -- that theory is now DISPROVEN: a real failed run reproduced
+        the exact same timeout with native_viewer=False (gui=True) too,
+        and with no [CAMERA] render failed line at all, so the offscreen
+        renderer was never the problem. The actual cause was a bug in
+        perception/navigation.py's _steer_to_center() (too-short move()
+        duration for the walking policy to act on before it got reset/
+        damped back to zero) -- unrelated to which viewer is open, now
+        fixed there. native_viewer is fine to use for any task, including
+        Task 4. _maybe_render_camera still logs a rate-limited [CAMERA]
+        render failed line if the offscreen renderer genuinely does fail
+        for some other reason -- that diagnostic is still worth watching
+        for, it just isn't implicated in the Task 4 timeout bug above.
         """
         # play.py loads its own yaml.dog.yaml directly at module/main scope
         # rather than through a public loader function, so we read the same
