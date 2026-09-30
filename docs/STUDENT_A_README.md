@@ -116,6 +116,43 @@ If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=eg
    overlapped several of them with track geoms; positions were
    re-derived from an actual programmatic clearance scan, not eyeballed,
    after that).
+
+   **⚠️ Current status: `custom_scene.xml`'s chairs/signs are still
+   primitive geoms, exactly what the handout warns will fail YOLO
+   detection** — see `assets/scenes/README.md`'s "Known risk" section
+   for the full explanation and a prepared (but not yet finished) fix:
+
+```bash
+   # On a machine with real internet access (this sandbox has none to
+   # Objaverse/Sketchfab), not this one:
+   pip install objaverse trimesh
+   python tools/fetch_scene_meshes.py
+   python tools/fit_mesh_scale.py assets/scenes/meshes/chair.obj --target-height 0.85
+   python tools/fit_mesh_scale.py assets/scenes/meshes/stop_sign.obj --target-height 2.0
+```
+
+   That downloads real Objaverse-LVIS-tagged chair/sign meshes and tells
+   you the MJCF `<mesh scale="..."/>` to use. `assets/scenes/custom_scene_meshes.xml`
+   is already scaffolded with the same terrain/positions/colors as
+   `custom_scene.xml`, just with `<geom type="mesh">` object bodies
+   instead of primitives — it has exactly two kinds of placeholder left
+   for you to fill in by hand:
+   - Two `scale="1 1 1"` placeholders in the `<asset>` block (one for
+     `chair_mesh`, one for `stop_sign_mesh`) — replace each with the
+     `sx sy sz` triple `fit_mesh_scale.py` prints for that mesh.
+   - Six `euler="0 0 0"` placeholders, one on every
+     `<geom type="mesh">` (two chair geoms, three sign geoms, both
+     colors of each) — adjust each by eye, after test-loading the
+     scene, until the mesh stands upright and faces a sensible
+     direction; also re-check floor contact (each object body's `pos`
+     assumes the mesh's own bounding-box floor sits at `z=0`, which is
+     rarely true for a downloaded mesh without adjustment).
+
+   Once it visibly looks right, re-run the Task 4 debug-frames check to
+   confirm YOLO detection actually improved before flipping
+   `core.config.SCENE_PATH` over to it. None of this has been run or
+   verified yet — it's scaffolding for you to finish on your own
+   machine.
 4. **Motion skills** — the two methods everyone else calls (see
    [`docs/DECISIONS.md`](DECISIONS.md) §2 for why these are two separate
    methods rather than one general `drive()`):
