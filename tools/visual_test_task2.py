@@ -69,6 +69,7 @@ def main():
             ("Turn right 180 deg", lambda: skills.turn(-180.0)),
             ("Walk forward",       lambda: skills.move(vx=0.6, vy=0.0, wz=0.0, duration=2.0)),
             ("Stand",              lambda: skills.stand()),
+            ("Walk forward",       lambda: skills.move(vx=0.6, vy=0.0, wz=0.0, duration=2.0)),
             ("Turn right 90 deg",  lambda: skills.turn(-90)),
             ("Crouch",             lambda: skills.crouch()),
             ("Turn left 180 deg",  lambda: skills.turn(180)),
