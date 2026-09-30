@@ -121,6 +121,7 @@ respects `--camera`, switching the native window to whichever fixed
 camera you asked for. `--gui`/`--native` are mutually exclusive.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 **A previous version of this guide warned of an open `--native` issue
 specific to this script** — a suspected GL-context conflict between the
 native window and the offscreen renderer feeding `get_camera_frame()`,
@@ -151,6 +152,8 @@ original theory) is still a legitimate diagnostic to watch for if the
 offscreen renderer genuinely does fail for some other reason — it just
 wasn't the cause here.
 
+=======
+>>>>>>> parent of 0eac3dc (Update documentation for `--native` option and issues)
 =======
 >>>>>>> parent of 0eac3dc (Update documentation for `--native` option and issues)
 `tools/check_status.py` is a separate, faster sanity check (no
