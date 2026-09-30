@@ -35,6 +35,17 @@ class MockSkills(SkillsAPI):
     def stop(self) -> None:
         print("[MOCK stop]")
 
+    def crouch(self) -> None:
+        """Mirrors RealSkills.crouch() -- not part of core.interfaces.
+        SkillsAPI, just a matching extra method so code written against
+        the mock (e.g. an early manual test) doesn't break once switched
+        to the real sim."""
+        print("[MOCK] crouch -> [HEIGHT] target=0.20 m (no real physics here)")
+
+    def stand(self) -> None:
+        """Mirrors RealSkills.stand()."""
+        print("[MOCK] stand -> [HEIGHT] target=0.35 m (no real physics here)")
+
     def get_camera_frame(self) -> np.ndarray:
         return np.zeros((240, 320, 3), dtype=np.uint8)
 
