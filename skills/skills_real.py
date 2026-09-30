@@ -172,15 +172,26 @@ class RealSkills(SkillsAPI):
         browser panel, mutually exclusive with gui (native_viewer=True
         forces the browser panel off, since running both doubles the
         render work and the platform's own viewer_context() only allows
-        one at a time). The WSL2 crash noted in this file's module
-        docstring was specifically "on keypress" through the native
-        window's key_callback; our test scripts never press a key (they
-        only ever call move()/turn()/stop() programmatically), so that
-        specific trigger never fires here -- but this sandbox has no
-        display to actually verify that on, so treat this as worth
-        TRYING on your own machine, not as a guaranteed fix. If it
-        crashes, go back to gui=True (the browser panel), which is the
-        one path the team has confirmed works reliably.
+        one at a time). Confirmed on the team's WSL2 machine to run a
+        full scripted move/turn/strafe sequence and exit cleanly on
+        Ctrl+C -- but a SEPARATE issue has since turned up specifically
+        when something also calls get_camera_frame() (i.e. Task 4 /
+        goto_object()): the offscreen mujoco.Renderer used for that
+        (self._renderer, wholly separate from this native window) can
+        apparently start failing on every call once the native window
+        exists, likely a GL-context conflict between the two in one
+        process. When that happens get_camera_frame() silently returns
+        the same STALE frame forever -- it looks like the robot's own
+        view has frozen even though its real pose keeps changing (yaw
+        drifting while detected bbox positions barely move is the
+        tell). This used to fail completely silently; _maybe_render_camera
+        now logs a [CAMERA] line (rate-limited) the moment rendering
+        starts failing, so it's diagnosable instead of just timing out
+        looking like a navigation bug. Until this is confirmed fixed,
+        prefer gui=True (the browser panel) for anything that calls
+        get_camera_frame() -- Task 4, or Task 3 with --real-perception;
+        native_viewer is fine for Task 2 and Task 3's default (mock
+        perception never touches the camera feed at all).
         """
         # play.py loads its own yaml.dog.yaml directly at module/main scope
         # rather than through a public loader function, so we read the same
@@ -384,6 +395,7 @@ class RealSkills(SkillsAPI):
         self._renderer = mujoco.Renderer(self._model, height=240, width=320)
         self._render_period = 1.0 / config.CAMERA_HZ
         self._next_render_time = 0.0
+        self._last_render_error_log = 0.0
 
         self._sim_thread = threading.Thread(target=self._sim_loop, daemon=True)
         self._sim_thread.start()
@@ -524,9 +536,26 @@ class RealSkills(SkillsAPI):
         try:
             self._renderer.update_scene(self._data, camera="dog_front_camera")
             frame = self._renderer.render()
-        except Exception:
+        except Exception as exc:
             # Camera name mismatch or renderer hiccup — keep the last good
-            # frame rather than crashing the sim thread.
+            # frame rather than crashing the sim thread. This used to be a
+            # silent `return`, which is exactly how a real bug (this
+            # offscreen mujoco.Renderer failing on every call once a
+            # native_viewer=True GLFW window is also open in this process
+            # -- observed as perception.detect() reading a frozen frame the
+            # whole run, even while the robot was visibly turning per its
+            # real pose) went completely invisible. Print once, then at
+            # most once every 5s, so a persistent failure is impossible to
+            # miss without spamming every render tick (CAMERA_HZ, e.g. 15/s).
+            now = time.time()
+            if now - self._last_render_error_log >= 5.0:
+                print(f"[CAMERA] render failed ({exc!r}) -- get_camera_frame() "
+                      f"is returning a STALE frame until this clears. If "
+                      f"you're running with native_viewer=True, try gui=True "
+                      f"(the browser panel) instead -- this offscreen "
+                      f"renderer and the native GLFW window may be "
+                      f"conflicting over the GL context in this process.")
+                self._last_render_error_log = now
             return
         with self._frame_lock:
             self._latest_frame = frame
@@ -696,10 +725,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--native", action="store_true",
         help="open the native MuJoCo (GLFW) window instead of the browser "
-             "panel -- no keyboard is wired up, so the documented "
-             "on-keypress WSL2 crash shouldn't trigger, but this is "
-             "unverified on your machine; fall back to --gui if it's "
-             "unstable. Mutually exclusive with --gui.",
+             "panel -- confirmed to run cleanly on WSL2 (a full scripted "
+             "move/turn sequence and a clean exit); the one crash found "
+             "(segfault on exit) was a missing skills.shutdown() call "
+             "before process exit, now fixed everywhere in this file. "
+             "Mutually exclusive with --gui.",
     )
     parser.add_argument(
         "--compare-turn",
