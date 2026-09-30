@@ -92,7 +92,25 @@ def _pick_target(detections, object_class: str, color: str):
 def _steer_to_center(detection, skills: SkillsAPI,
                      frame_width: int = 320) -> bool:
     """Proportional steering on wz from the bbox-center pixel offset.
-    Returns True once roughly centered within config.CENTER_TOLERANCE_PX."""
+    Returns True once roughly centered within config.CENTER_TOLERANCE_PX.
+
+    duration=0.3s below, not the 0.1s this used to be: SkillsAPI.move()
+    resets the command back to (0, 0, 0) the instant its duration
+    elapses (see its own docstring), and the walking policy actively
+    damps out residual angular velocity once commanded back to a
+    neutral cmd -- so a very short wz pulse barely has time to turn the
+    robot at all before it's immediately cancelled. This was found from
+    an actual failed run: over 300+ consecutive _steer_to_center calls
+    at duration=0.1, final yaw only ever matched the SEARCH phase's own
+    30deg-per-turn rotations almost exactly (nothing accumulated once
+    steering started), and the bbox offset from center never closed --
+    just noise-jittered in place call after call, which is what a pulse
+    too short to do anything looks like, not a detection or camera
+    problem. 0.3s is a starting point, not a verified-optimal value --
+    if it's still not converging, try increasing it further (or
+    decreasing it if it now overshoots/oscillates around the tolerance
+    band instead of approaching it) and re-check against a real run's
+    log the same way this was diagnosed."""
     x1, _, x2, _ = detection.bbox
     bbox_center_x = (x1 + x2) / 2.0
     offset_x = bbox_center_x - frame_width / 2.0
@@ -102,7 +120,7 @@ def _steer_to_center(detection, skills: SkillsAPI,
 
     # Positive wz turns left, so a target right of center requires a right turn.
     wz = max(-0.5, min(0.5, -offset_x / (frame_width / 2.0)))
-    skills.move(vx=0.0, vy=0.0, wz=wz, duration=0.1)
+    skills.move(vx=0.0, vy=0.0, wz=wz, duration=0.3)
     return False
 
 
