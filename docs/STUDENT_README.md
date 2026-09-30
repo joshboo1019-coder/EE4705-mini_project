@@ -134,23 +134,15 @@ tore the process down around them; every script now wraps its run in
 happens cleanly, on a crash or an early exit too, not just Ctrl+C).
 `--gui` and `--native` are mutually exclusive; `--gui` stays the
 default since it's the longer-confirmed path, but `--native` is a fine
-choice if you'd rather not deal with the browser/port — including for
-Task 4. An earlier version of this note warned that Task 4
-(`visual_test_task4.py`, or Task 3 with `--real-perception`) had an
-open issue under `--native` where the offscreen camera feed could
-silently freeze once the native window was also open (a suspected
-GL-context conflict). That theory turned out to be wrong: a real
-failed run reproduced the identical `[MISSION] status=FAIL
-reason=timeout` under the plain browser panel too, with no
-`[CAMERA] render failed` console line at all — so the offscreen
-renderer/native-window conflict was never the cause. The actual bug
-was in `perception/navigation.py`'s `_steer_to_center()` (its steering
-command duration was too short for the walking policy to act on before
-being reset back to zero, so steering never converged, regardless of
-viewer) — now fixed there. The `[CAMERA] render failed ...` log line
-is still worth watching for as a general diagnostic if the offscreen
-renderer genuinely does fail for some other reason; see the
-[C guide](STUDENT_C_README.md) for details.
+choice if you'd rather not deal with the browser/port — **except for
+Task 4** (`visual_test_task4.py`, or Task 3 with `--real-perception`):
+anything that calls `get_camera_frame()` has an open, reproducible issue
+under `--native` where the offscreen camera feed can silently freeze
+once the native window is also open (a GL-context conflict, best guess),
+which looks like the robot lost the object rather than a rendering bug
+— watch for a `[CAMERA] render failed ...` console line, which confirms
+it. Use the default browser panel for those until this is resolved; see
+the [C guide](STUDENT_C_README.md) for the full symptom description.
 
 ## Integration order (suggested)
 

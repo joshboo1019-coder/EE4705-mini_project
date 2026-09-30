@@ -115,47 +115,23 @@ python tools/visual_test_task4.py --native                    # native MuJoCo wi
 (shrunk) bbox crop as PNGs under `DIR`, alongside the hue/sat/val stats
 already logged on `[DETECT]` — the fastest way to check a suspicious
 color result against the actual pixels instead of guessing. `--native`
-opens a native MuJoCo window instead of the browser panel (confirmed
-working end-to-end, including a clean Ctrl+C exit, on WSL2); it also
+opens a native MuJoCo window instead of the browser panel; it also
 respects `--camera`, switching the native window to whichever fixed
 camera you asked for. `--gui`/`--native` are mutually exclusive.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-**A previous version of this guide warned of an open `--native` issue
-specific to this script** — a suspected GL-context conflict between the
-native window and the offscreen renderer feeding `get_camera_frame()`,
-theorized to cause `[MISSION] status=FAIL reason=timeout` with
-`[DETECT]` locked onto a stale, unmoving bbox. **That diagnosis was
-wrong**, and has since been corrected: a real failed run reproduced the
-exact same timeout symptom under the plain browser panel (`--gui`, no
-`--native` at all) and with no `[CAMERA] render failed` console line
-anywhere in the log — so the offscreen renderer was never actually
-failing, and `--native` was never the cause. The real bug was in
-`perception/navigation.py`'s `_steer_to_center()`: it called
-`skills.move(..., duration=0.1)` on every steering step, but
-`SkillsAPI.move()` resets the velocity command back to zero the
-instant its duration elapses, and the walking policy damps out residual
-turning once given a neutral command again — so a 0.1 s pulse was too
-short to ever accumulate real heading change. Evidence: across two
-separate failed runs, the final yaw matched the `SEARCH`-phase-only
-rotation almost exactly (nothing accumulated across 300+ subsequent
-steering calls), and the detected bbox position only noise-jittered
-instead of trending toward center. Fixed by increasing that duration to
-0.3 s (see the docstring on `_steer_to_center` in `navigation.py` for
-the full write-up) — this is a starting point, not a verified-optimal
-value, so re-check convergence against a real run's log if it still
-doesn't center reliably. This was unrelated to which viewer is open:
-`--native` is fine to use with this script. The
-`[CAMERA] render failed ...` log line (added while chasing the
-original theory) is still a legitimate diagnostic to watch for if the
-offscreen renderer genuinely does fail for some other reason — it just
-wasn't the cause here.
+**`--native` has an open issue specific to this script.** It's fine for
+Task 2/Task 3-with-mock-perception, but for this script (or Task 3 with
+`--real-perception`) — anything that calls `get_camera_frame()` — the
+offscreen renderer that feeds it can start silently returning the same
+stale frame on every call once the native window is also open, likely a
+GL-context conflict between the two in one process. The symptom: normal
+`[SEARCH]`/`[TURN]` lines, then `[DETECT]` locks onto one bbox that
+barely moves for the rest of the run even though the robot keeps
+rotating, ending in `[MISSION] status=FAIL reason=timeout`. A
+`[CAMERA] render failed ...` console line confirms it's happening (this
+used to fail completely silently — fixed to at least log now). Until
+this is resolved, use the default browser panel for this script.
 
-=======
->>>>>>> parent of 0eac3dc (Update documentation for `--native` option and issues)
-=======
->>>>>>> parent of 0eac3dc (Update documentation for `--native` option and issues)
 `tools/check_status.py` is a separate, faster sanity check (no
 simulation): it scans `perception/perception_real.py` and
 `perception/navigation.py` for leftover `NotImplementedError`/TODO
@@ -191,3 +167,4 @@ USE_REAL_PERCEPTION = True
       `[CMD]` / `[SEARCH]` / `[DETECT]` / `[FOUND]` / `[MISSION]` lines,
       for ≥2 objects including one not-initially-visible and one
       same-class disambiguation
+      
