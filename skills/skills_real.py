@@ -522,14 +522,6 @@ class RealSkills(SkillsAPI):
             print(f"[HEIGHT] step {i}/{n_steps} target={intermediate:.2f} m "
                   f"trunk_z={z_step:.2f} m")
 
-    self._height_cmd = height_cmd
-    target_time = self._get_sim_time() + settle_s
-    while self._get_sim_time() < target_time and not self._stop_event.is_set():
-        time.sleep(0.01)
-
-    z_after = float(self._data.qpos[2])
-    print(f"[HEIGHT] target={height_cmd:.2f} m trunk_z_before={z_before:.2f} m "
-          f"trunk_z_after={z_after:.2f} m")
 
     def crouch(self) -> None:
         """Command the lower end of self._height_range -- see the class
