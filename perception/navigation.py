@@ -26,6 +26,7 @@ def goto_object(object_class: str, color: str,
     Returns True iff the target is visible when stopped within found distance."""
     t0 = time.time()
     consecutive_misses = 0
+    scan_degrees = 0.0
     target_acquired = False
     target_centered = False
     last_steer_direction = 0.0
@@ -87,6 +88,11 @@ def goto_object(object_class: str, color: str,
             if consecutive_misses >= config.MAX_MISSES_BEFORE_LOST:
                 print("[SEARCH] target not visible, rotating")
                 skills.turn(config.SEARCH_TURN_DEG)
+                scan_degrees += abs(config.SEARCH_TURN_DEG)
+                if scan_degrees >= 360.0:
+                    print("[MISSION] status=FAIL reason=target_not_found")
+                    skills.stop()
+                    return False
                 consecutive_misses = 0
             continue
 
