@@ -27,7 +27,7 @@ LLM_TIMEOUT_S = 15
 # --- Task 4 (Student C) -----------------------------------------------------
 YOLO_MODEL = "yolo11n.pt"
 YOLO_CONF_THRESHOLD = 0.9
-FOUND_DISTANCE_M = 0.80
+FOUND_DISTANCE_M = 1.2
 APPROACH_TIMEOUT_S = 60.0
 SEARCH_TURN_DEG = 30.0
 MAX_MISSES_BEFORE_LOST = 5
