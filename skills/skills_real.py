@@ -500,7 +500,32 @@ class RealSkills(SkillsAPI):
     # browser panel, the two are simply swapped from what was guessed
     # here; flip which bound each method targets.
     def set_height(self, height_cmd: float, settle_s: float = 1.0,
-               step_size: float = 0.02, step_hold_s: float = 0.3) -> None:
+                   step_size: float = 0.02, step_hold_s: float = 0.3) -> None:
+        """Change the commanded trunk height and hold still for `settle_s`
+        simulated seconds so the robot actually reaches the new stance
+        before this returns, rather than reporting done mid-transition.
+        Clamped into self._height_range so an out-of-range value never
+        reaches a policy that was never trained on it.
+
+        RAMPED, not a single instantaneous jump: a real run showed stand()
+        (0.25->0.35, legs straightening) tracking its target closely, while
+        crouch() (0.25->0.20, legs bending under load) moved almost nothing
+        even when the target was held for several extra seconds through a
+        following turn() call -- ruling out "just needed more settle time".
+        That asymmetry is consistent with a big one-shot downward setpoint
+        change being harder for the policy/PD loop to track than an
+        upward one, so instead of writing self._height_cmd once, this
+        walks it toward the target in `step_size` increments (default
+        0.02 m), holding `step_hold_s` sim-seconds at each intermediate
+        step before taking the next one, then finishes with the original
+        full `settle_s` hold at the final target. Prints one [HEIGHT] line
+        per intermediate step plus the final one, each with the commanded
+        value and the trunk's actual measured world-frame z
+        (self._data.qpos[2]) at that point -- so if it still plateaus
+        short of the target with small steps, the per-step lines show
+        exactly where it stalls, which points at a hard torque/stability
+        limit rather than a step-size problem (in which case, note that in
+        the report rather than keep shrinking step_size)."""
         height_cmd = max(self._height_range[0], min(self._height_range[1], height_cmd))
         z_before = float(self._data.qpos[2])
 
@@ -522,6 +547,16 @@ class RealSkills(SkillsAPI):
             print(f"[HEIGHT] step {i}/{n_steps} target={intermediate:.2f} m "
                   f"trunk_z={z_step:.2f} m")
 
+        # Final hold at the exact target, in case rounding in the ramp
+        # above left height_cmd slightly off it.
+        self._height_cmd = height_cmd
+        target_time = self._get_sim_time() + settle_s
+        while self._get_sim_time() < target_time and not self._stop_event.is_set():
+            time.sleep(0.01)
+
+        z_after = float(self._data.qpos[2])
+        print(f"[HEIGHT] target={height_cmd:.2f} m trunk_z_before={z_before:.2f} m "
+              f"trunk_z_after={z_after:.2f} m")
 
     def crouch(self) -> None:
         """Command the lower end of self._height_range -- see the class
@@ -534,6 +569,18 @@ class RealSkills(SkillsAPI):
         comment above set_height() for why this is the guessed "stand"
         direction and how to flip it if a real run shows otherwise."""
         self.set_height(self._height_range[1])
+
+    def get_trunk_height(self) -> float:
+        """Diagnostic helper: the trunk's actual measured world-frame z
+        (self._data.qpos[2]), independent of what height_cmd currently
+        is. Not part of core.interfaces.SkillsAPI, same as crouch()/
+        stand() -- added specifically so a test script can read the
+        trunk's real physical height before ever calling set_height(),
+        to check whether it naturally settles to some resting height on
+        its own (e.g. after a reset) regardless of height_cmd, rather
+        than only being able to compare before/after a height command
+        the way set_height()'s own [HEIGHT] print does."""
+        return float(self._data.qpos[2])
 
     def get_camera_frame(self) -> np.ndarray:
         with self._frame_lock:
