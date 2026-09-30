@@ -26,12 +26,22 @@ still lists all of them regardless, and in the native window --camera
 tracking switches to the same third-person follow view.
 
 --native opens the native MuJoCo window instead of the browser panel.
-The WSL2 crash noted for this platform was specifically on-keypress
-through the native window's key_callback; this script never sends it a
-keypress (only navigation.goto_object() driving move()/turn()/stop()
-programmatically), so that trigger shouldn't fire -- but it's unverified
-on your machine, so fall back to the default browser panel if it's
-unstable.
+Its exit-crash issue is fixed (see skills.shutdown() in the finally
+block below) -- but a SEPARATE, currently-open issue has turned up
+specific to this script: with --native, the offscreen renderer that
+feeds get_camera_frame() (what perception.detect() actually runs on)
+can start failing on every call, silently returning the same stale
+frame forever -- likely a GL-context conflict between the native
+window and that separate offscreen renderer in one process. The
+giveaway is [SEARCH]/[TURN] happening normally, then [DETECT] locking
+onto one bbox position that barely changes for the rest of the run
+even as the robot's real pose keeps rotating, ending in
+`[MISSION] status=FAIL reason=timeout` despite "finding" the target on
+paper the whole time. Watch the console for a `[CAMERA] render failed
+...` line -- that confirms this is happening. Until this is resolved,
+use the default browser panel (drop --native) for this script
+specifically; Task 2 and Task 3's default (mock perception) don't
+touch the camera feed at all, so --native remains fine there.
 
 RUN (from the project root):
     python tools/visual_test_task4.py
@@ -88,39 +98,44 @@ def main():
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
     skills = RealSkills(gui=not args.native, default_camera=args.camera,
                          native_viewer=args.native)
-    time.sleep(1.0)
-
-    if args.mock_perception:
-        from perception.perception_mock import MockPerception
-        print("Using MockPerception -- this checks navigation.py's "
-              "search/steer/approach STATE MACHINE only, not real "
-              "detection or color grounding.")
-        perception = MockPerception()
-    else:
-        from perception.perception_real import RealPerception
-        perception = RealPerception(debug_dir=args.debug_frames)
-        if args.debug_frames:
-            print(f"[DEBUG] saving frames + bbox crops to {args.debug_frames}/")
-
-    print(f"\ngoto_object(object_class={args.object_class!r}, "
-          f"color={args.color!r}) -- watch the browser panel.\n")
-
-    success = navigation.goto_object(args.object_class, args.color,
-                                      skills, perception)
-
-    print(f"\ngoto_object returned success={success}")
-    print("Robot final pose:", skills.get_robot_pose())
-    print("Ctrl+C to exit.")
+    # Everything from here on is wrapped in try/finally, not just a
+    # KeyboardInterrupt handler: with --native, RealSkills opens a real
+    # GLFW window and starts a daemon thread that keeps calling into it.
+    # ANY unhandled exception past this point (not just Ctrl+C) would
+    # otherwise let Python start tearing the process down while that
+    # thread is still mid-flight inside native GLFW/MuJoCo calls, which
+    # segfaults on exit. skills.shutdown() joins the thread and closes
+    # the native viewer cleanly -- putting it in `finally` guarantees it
+    # runs no matter how/why this function exits.
     try:
+        time.sleep(1.0)
+
+        if args.mock_perception:
+            from perception.perception_mock import MockPerception
+            print("Using MockPerception -- this checks navigation.py's "
+                  "search/steer/approach STATE MACHINE only, not real "
+                  "detection or color grounding.")
+            perception = MockPerception()
+        else:
+            from perception.perception_real import RealPerception
+            perception = RealPerception(debug_dir=args.debug_frames)
+            if args.debug_frames:
+                print(f"[DEBUG] saving frames + bbox crops to {args.debug_frames}/")
+
+        print(f"\ngoto_object(object_class={args.object_class!r}, "
+              f"color={args.color!r}) -- watch the browser panel.\n")
+
+        success = navigation.goto_object(args.object_class, args.color,
+                                          skills, perception)
+
+        print(f"\ngoto_object returned success={success}")
+        print("Robot final pose:", skills.get_robot_pose())
+        print("Ctrl+C to exit.")
         while True:
             time.sleep(1.0)
     except KeyboardInterrupt:
-        # See visual_test_task2.py's comment on this same spot: stop()
-        # alone leaves the daemon sim thread (and, with --native, the
-        # GLFW window) running, and tearing the process down around
-        # them is what segfaults on exit. shutdown() joins the thread
-        # and closes the native viewer first.
         print("\nShutting down...")
+    finally:
         skills.shutdown()
 
 
