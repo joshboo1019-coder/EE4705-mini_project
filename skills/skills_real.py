@@ -527,32 +527,32 @@ class RealSkills(SkillsAPI):
             )
 
     def _maybe_render_camera(self, sim_time: float) -> None:
-    if sim_time < self._next_render_time:
-        return
-    self._next_render_time = sim_time + self._render_period
-    try:
-        self._renderer.update_scene(self._data, camera="dog_front_camera")
-        frame = self._renderer.render()
-    except Exception as exc:
-        # ... (see full file — explains the EGL contention + self-heal)
-        now = time.time()
-        if now - self._last_render_error_log >= 5.0:
-            print(f"[CAMERA] render failed ({exc!r}) -- get_camera_frame() "
-                  f"may be returning a STALE frame; attempting to "
-                  f"recreate the offscreen renderer to recover.")
-            self._last_render_error_log = now
+        if sim_time < self._next_render_time:
+            return
+        self._next_render_time = sim_time + self._render_period
         try:
-            try:
-                self._renderer.close()
-            except Exception:
-                pass
-            self._renderer = mujoco.Renderer(self._model, height=240, width=320)
             self._renderer.update_scene(self._data, camera="dog_front_camera")
             frame = self._renderer.render()
-        except Exception:
-            return
-    with self._frame_lock:
-        self._latest_frame = frame
+        except Exception as exc:
+            # ... (see full file — explains the EGL contention + self-heal)
+            now = time.time()
+            if now - self._last_render_error_log >= 5.0:
+                print(f"[CAMERA] render failed ({exc!r}) -- get_camera_frame() "
+                      f"may be returning a STALE frame; attempting to "
+                      f"recreate the offscreen renderer to recover.")
+                self._last_render_error_log = now
+            try:
+                try:
+                    self._renderer.close()
+                except Exception:
+                    pass
+                self._renderer = mujoco.Renderer(self._model, height=240, width=320)
+                self._renderer.update_scene(self._data, camera="dog_front_camera")
+                frame = self._renderer.render()
+            except Exception:
+                return
+        with self._frame_lock:
+            self._latest_frame = frame
 
     def _sim_loop(self) -> None:
         real_start = time.time()
