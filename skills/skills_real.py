@@ -499,30 +499,37 @@ class RealSkills(SkillsAPI):
     # standing taller instead of crouching down when you watch the
     # browser panel, the two are simply swapped from what was guessed
     # here; flip which bound each method targets.
-    def set_height(self, height_cmd: float, settle_s: float = 1.0) -> None:
-        """Change the commanded trunk height and hold still for `settle_s`
-        simulated seconds so the robot actually reaches the new stance
-        before this returns, rather than reporting done mid-transition.
-        Clamped into self._height_range so an out-of-range value never
-        reaches a policy that was never trained on it. Prints a [HEIGHT]
-        line with both the commanded value and the trunk's actual
-        measured world-frame z (self._data.qpos[2]) before/after, so a
-        report/log has concrete evidence the height genuinely changed
-        physically -- not just that a number was set."""
+    def set_height(self, height_cmd: float, settle_s: float = 1.0,
+               step_size: float = 0.02, step_hold_s: float = 0.3) -> None:
         height_cmd = max(self._height_range[0], min(self._height_range[1], height_cmd))
         z_before = float(self._data.qpos[2])
 
         with self._cmd_lock:
             self._cmd[:] = (0.0, 0.0, 0.0)
-        self._height_cmd = height_cmd
 
-        target = self._get_sim_time() + settle_s
-        while self._get_sim_time() < target and not self._stop_event.is_set():
-            time.sleep(0.01)
+        start = self._height_cmd
+        distance = height_cmd - start
+        n_steps = max(1, int(abs(distance) / step_size))
+        for i in range(1, n_steps + 1):
+            intermediate = start + distance * (i / n_steps)
+            self._height_cmd = intermediate
 
-        z_after = float(self._data.qpos[2])
-        print(f"[HEIGHT] target={height_cmd:.2f} m trunk_z_before={z_before:.2f} m "
-              f"trunk_z_after={z_after:.2f} m")
+            hold_until = self._get_sim_time() + step_hold_s
+            while self._get_sim_time() < hold_until and not self._stop_event.is_set():
+                time.sleep(0.01)
+
+            z_step = float(self._data.qpos[2])
+            print(f"[HEIGHT] step {i}/{n_steps} target={intermediate:.2f} m "
+                  f"trunk_z={z_step:.2f} m")
+
+    self._height_cmd = height_cmd
+    target_time = self._get_sim_time() + settle_s
+    while self._get_sim_time() < target_time and not self._stop_event.is_set():
+        time.sleep(0.01)
+
+    z_after = float(self._data.qpos[2])
+    print(f"[HEIGHT] target={height_cmd:.2f} m trunk_z_before={z_before:.2f} m "
+          f"trunk_z_after={z_after:.2f} m")
 
     def crouch(self) -> None:
         """Command the lower end of self._height_range -- see the class
