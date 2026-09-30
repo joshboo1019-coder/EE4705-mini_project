@@ -115,10 +115,22 @@ python tools/visual_test_task4.py --native                    # native MuJoCo wi
 (shrunk) bbox crop as PNGs under `DIR`, alongside the hue/sat/val stats
 already logged on `[DETECT]` — the fastest way to check a suspicious
 color result against the actual pixels instead of guessing. `--native`
-opens a native MuJoCo window instead of the browser panel (confirmed
-working end-to-end, including a clean Ctrl+C exit, on WSL2); it also
+opens a native MuJoCo window instead of the browser panel; it also
 respects `--camera`, switching the native window to whichever fixed
 camera you asked for. `--gui`/`--native` are mutually exclusive.
+
+**`--native` has an open issue specific to this script.** It's fine for
+Task 2/Task 3-with-mock-perception, but for this script (or Task 3 with
+`--real-perception`) — anything that calls `get_camera_frame()` — the
+offscreen renderer that feeds it can start silently returning the same
+stale frame on every call once the native window is also open, likely a
+GL-context conflict between the two in one process. The symptom: normal
+`[SEARCH]`/`[TURN]` lines, then `[DETECT]` locks onto one bbox that
+barely moves for the rest of the run even though the robot keeps
+rotating, ending in `[MISSION] status=FAIL reason=timeout`. A
+`[CAMERA] render failed ...` console line confirms it's happening (this
+used to fail completely silently — fixed to at least log now). Until
+this is resolved, use the default browser panel for this script.
 
 `tools/check_status.py` is a separate, faster sanity check (no
 simulation): it scans `perception/perception_real.py` and
