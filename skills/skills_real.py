@@ -247,6 +247,13 @@ class RealSkills(SkillsAPI):
         # GLFW window are mutually exclusive display paths; native_viewer
         # forces the browser panel off here so scene.viewer(browser_only=
         # False) below is the only thing rendering.
+        # Trunk-height command range the ONNX policy was trained/tuned over
+        # (passed to the browser panel's own height slider too, via
+        # height_range= below) -- stored so crouch()/stand()/set_height()
+        # can clamp into it instead of sending the policy a height_cmd it
+        # was never trained on.
+        self._height_range = (0.20, 0.35)
+
         runtime_config = make_runtime_config(
             gui=gui and not native_viewer,
             title="MiniLab 1.3 — RealSkills",
@@ -261,7 +268,7 @@ class RealSkills(SkillsAPI):
             initial_position=(0.0, 0.0, 0.42),
             initial_quaternion=(1.0, 0.0, 0.0, 0.0),
             command=(1.0, 1.0, 1.0, 0.25),
-            height_range=(0.20, 0.35),
+            height_range=self._height_range,
             cameras=platform.CAMERA_OPTIONS,
             port=8765,
         )
@@ -467,6 +474,68 @@ class RealSkills(SkillsAPI):
         with self._cmd_lock:
             self._cmd[:] = (0.0, 0.0, 0.0)
 
+    # ------------------------------------------------------------------
+    # Body-height control (crouch/stand). Not part of core.interfaces.
+    # SkillsAPI -- Task 3/4 never need it, and that interface is frozen by
+    # group agreement (core/schema.py's own header) -- so this is a
+    # RealSkills-only extra, called directly if you want it (e.g. from
+    # your own keyboard harness commands or a standalone demo script),
+    # not through the executor/LLM command pipeline.
+    #
+    # height_cmd is a feature the ONNX policy already reads every control
+    # tick (see build_single_obs's height_cmd= argument in _sim_loop and
+    # _warmup_obs) -- self._height_cmd was previously set once at __init__
+    # and never touched again, so the policy was always being asked for
+    # the same 0.25 m stance. These methods are the first thing to
+    # actually change it at runtime.
+    #
+    # Which direction is "crouch" vs "stand" (larger height_cmd = taller
+    # stance, smaller = crouched) is inferred from height_range=(0.20,
+    # 0.35) being handed to the platform as a trunk-height range in
+    # meters, and 0.25 (the old fixed default) sitting near its lower-
+    # middle -- consistent with 0.25 being an ordinary walking stance
+    # rather than either extreme. NOT independently verified by actually
+    # running the sim (can't from here) -- if crouch() looks like it's
+    # standing taller instead of crouching down when you watch the
+    # browser panel, the two are simply swapped from what was guessed
+    # here; flip which bound each method targets.
+    def set_height(self, height_cmd: float, settle_s: float = 1.0) -> None:
+        """Change the commanded trunk height and hold still for `settle_s`
+        simulated seconds so the robot actually reaches the new stance
+        before this returns, rather than reporting done mid-transition.
+        Clamped into self._height_range so an out-of-range value never
+        reaches a policy that was never trained on it. Prints a [HEIGHT]
+        line with both the commanded value and the trunk's actual
+        measured world-frame z (self._data.qpos[2]) before/after, so a
+        report/log has concrete evidence the height genuinely changed
+        physically -- not just that a number was set."""
+        height_cmd = max(self._height_range[0], min(self._height_range[1], height_cmd))
+        z_before = float(self._data.qpos[2])
+
+        with self._cmd_lock:
+            self._cmd[:] = (0.0, 0.0, 0.0)
+        self._height_cmd = height_cmd
+
+        target = self._get_sim_time() + settle_s
+        while self._get_sim_time() < target and not self._stop_event.is_set():
+            time.sleep(0.01)
+
+        z_after = float(self._data.qpos[2])
+        print(f"[HEIGHT] target={height_cmd:.2f} m trunk_z_before={z_before:.2f} m "
+              f"trunk_z_after={z_after:.2f} m")
+
+    def crouch(self) -> None:
+        """Command the lower end of self._height_range -- see the class
+        comment above set_height() for why this is the guessed "crouch"
+        direction and how to flip it if a real run shows otherwise."""
+        self.set_height(self._height_range[0])
+
+    def stand(self) -> None:
+        """Command the upper end of self._height_range -- see the class
+        comment above set_height() for why this is the guessed "stand"
+        direction and how to flip it if a real run shows otherwise."""
+        self.set_height(self._height_range[1])
+
     def get_camera_frame(self) -> np.ndarray:
         with self._frame_lock:
             if self._latest_frame is None:
@@ -534,7 +603,31 @@ class RealSkills(SkillsAPI):
             self._renderer.update_scene(self._data, camera="dog_front_camera")
             frame = self._renderer.render()
         except Exception as exc:
-            # ... (see full file — explains the EGL contention + self-heal)
+            # Camera name mismatch or renderer hiccup — keep the last good
+            # frame rather than crashing the sim thread. This used to be a
+            # silent `return`, which is exactly how a real bug (an EGL/GLX
+            # context problem in this offscreen mujoco.Renderer) went
+            # completely invisible: perception.detect() would keep reading a
+            # frozen frame for the whole run even while the robot's real
+            # pose kept changing, which looks exactly like a navigation
+            # failure ([MISSION] status=FAIL reason=not_found after a full
+            # sweep) rather than a rendering one. This is NOT specific to
+            # native_viewer=True -- an earlier version of this message
+            # suggested switching to gui=True (the browser panel) as a fix,
+            # but that was wrong: it's been reproduced under gui=True too
+            # (EGL_BAD_ACCESS on eglMakeCurrent, MUJOCO_GL=egl), most likely
+            # this offscreen renderer's own GL/EGL context contending with
+            # whatever the runtime's own browser-preview rendering uses,
+            # independent of which display mode is active.
+            #
+            # Rather than staying stuck on a stale frame for the rest of the
+            # run, try to self-heal: close and recreate the renderer (its
+            # GL/EGL context may be in a genuinely broken state, not just
+            # momentarily busy) and retry once immediately. If that also
+            # fails, fall back to the old behavior (keep the last good
+            # frame) -- but the NEXT call gets a freshly recreated renderer
+            # to try again, rather than being permanently stuck on whatever
+            # object failed once.
             now = time.time()
             if now - self._last_render_error_log >= 5.0:
                 print(f"[CAMERA] render failed ({exc!r}) -- get_camera_frame() "
@@ -545,12 +638,12 @@ class RealSkills(SkillsAPI):
                 try:
                     self._renderer.close()
                 except Exception:
-                    pass
+                    pass  # best-effort; a context already in a bad state may not close cleanly
                 self._renderer = mujoco.Renderer(self._model, height=240, width=320)
                 self._renderer.update_scene(self._data, camera="dog_front_camera")
                 frame = self._renderer.render()
             except Exception:
-                return
+                return  # still broken -- keep the last good frame, try again next tick
         with self._frame_lock:
             self._latest_frame = frame
 
@@ -698,15 +791,29 @@ def _wrap_deg(angle_deg: float) -> float:
 #
 # Deliberately defaults to no viewer at all (headless): on this team's
 # WSL2 laptop, evdev can't see /dev/input (no physical-keyboard path
-# exists there), and the native GLFW viewer has intermittently segfaulted
-# on keypress -- specifically on keypress, through its key_callback. Per
-# the team's own decision (docs/DECISIONS.md), keyboard control goes
-# through the platform's browser panel (--gui) when a visual is wanted,
-# since nothing here has ever pressed a key INTO the native window itself.
-# --native opts into that native window anyway, on the theory that since
-# this harness (and tools/visual_test_task*.py) never sends it a
-# keypress, the one documented crash trigger never fires -- try it, but
-# fall back to --gui if it's unstable on your machine.
+# exists there). Per the team's own decision (docs/DECISIONS.md),
+# keyboard control goes through the platform's browser panel (--gui)
+# when a visual is wanted.
+#
+# --native opts into the native GLFW window anyway. An earlier version of
+# this comment theorized that since this harness never wires a key
+# INTO the native window itself (key_callback=None -- typed commands
+# here go through Python's own input(), not the window), the one
+# documented native-viewer crash trigger (segfault-on-keypress through
+# key_callback) would never fire. That theory is now known incomplete:
+# this exact harness (`python -m skills.skills_real --native`) has since
+# segfaulted on the very first typed command anyway -- no key_callback
+# involved at all, no Python traceback either (a hard native crash).
+# Root cause not yet found; a plausible mechanism is that the native
+# window is opened on whichever thread constructs RealSkills, but
+# viewer.sync() is then called every tick from the separate _sim_loop
+# background thread -- cross-thread GLFW/GL context handling is exactly
+# the kind of thing that can run fine for a while under one scheduling
+# pattern and crash under another, and this harness's long idle gap in
+# input() before the first command differs from tools/visual_test_task2.
+# py --native's scripted, no-idle-gap sequence, which HAS run clean
+# end-to-end. Until this is actually root-caused: use --gui for this
+# harness if you hit a crash, don't treat --native as reliable here.
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -719,11 +826,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--native", action="store_true",
         help="open the native MuJoCo (GLFW) window instead of the browser "
-             "panel -- confirmed to run cleanly on WSL2 (a full scripted "
-             "move/turn sequence and a clean exit); the one crash found "
-             "(segfault on exit) was a missing skills.shutdown() call "
-             "before process exit, now fixed everywhere in this file. "
-             "Mutually exclusive with --gui.",
+             "panel -- EXPERIMENTAL for this interactive harness specifically: "
+             "it has segfaulted on the first typed command on at least one "
+             "WSL2 machine, root cause not yet found (see the comment above "
+             "this block). The exit-crash bug (missing skills.shutdown() "
+             "before process exit) is fixed and unrelated to that. If you "
+             "hit a crash, use --gui instead. Mutually exclusive with --gui.",
     )
     parser.add_argument(
         "--compare-turn",
@@ -764,6 +872,7 @@ if __name__ == "__main__":
         "  w / s        forward / backward 0.5s\n"
         "  a / d        strafe left / right 0.5s\n"
         "  q / e        turn left / right (closed-loop, 15 deg)\n"
+        "  c / t        crouch / stand (body-height change, see [HEIGHT] line)\n"
         "  p            print current pose\n"
         "  x            stop\n"
         "  quit         exit\n"
@@ -783,6 +892,10 @@ if __name__ == "__main__":
                 skills.turn(15.0)
             elif cmd == "e":
                 skills.turn(-15.0)
+            elif cmd == "c":
+                skills.crouch()
+            elif cmd == "t":
+                skills.stand()
             elif cmd == "p":
                 print(skills.get_robot_pose())
             elif cmd == "x":
