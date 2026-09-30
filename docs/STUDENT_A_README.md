@@ -81,10 +81,18 @@ If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=eg
    → 46-dim observation + 6-frame history → ONNX policy at 50 Hz over
    200 Hz physics (decimation 4) → PD torque loop, and why the rear-leg
    joint remap between IsaacGym and MuJoCo ordering is needed.
-2. **Camera pipeline**: offscreen-render `dog_front_camera` at 10–20 Hz
-   (`core.config.CAMERA_HZ`) in a background thread — see the `_camera_loop`
-   TODO in `skills_real.py`. State and justify your chosen rate in the
-   report.
+2. **Camera pipeline** (already implemented — `skills_real.py`'s
+   `_maybe_render_camera`, called once per iteration from the same
+   `_sim_loop` background thread that steps physics/policy, not a
+   separate thread): offscreen-renders `dog_front_camera` via its own
+   `mujoco.Renderer` (wholly separate from whichever interactive viewer,
+   browser panel or `--native`, is also open) at `core.config.CAMERA_HZ`
+   = 15 Hz, inside the handout's recommended 10–20 Hz range — see the
+   justification comment right on `CAMERA_HZ` in `core/config.py` and
+   repeat/expand it in the report. The latest frame is exposed to the
+   rest of the codebase (Task 4 in particular) via `get_camera_frame()`,
+   which just returns the last frame that background thread published —
+   it never renders synchronously inside the call.
 3. **Scene**: your own MJCF with ≥3 objects from ≥2 COCO classes,
    including two same-class objects in different colors (e.g.
    `green_chair` / `red_chair`). Untextured primitives will NOT be
@@ -154,6 +162,36 @@ demo in `eg/play.py`. You should be able to fully verify Task 2 —
 walking, both cameras' views, both skills — without ever running
 `llm_parser.py`, `navigation.py`, or `main.py`.
 
+**Crouch / stand (body height)**: `RealSkills.crouch()` / `.stand()` (and
+the lower-level `set_height(height_cmd)` they call) change the trunk-
+height command the ONNX policy reads every control tick
+(`self._height_cmd`, previously set once at `__init__` and never
+touched again) — clamped into `self._height_range = (0.20, 0.35)`
+meters, the same range handed to the browser panel's own height
+slider. Bound to `c`/`t` in the keyboard harness above. Each call
+prints a `[HEIGHT] target=... trunk_z_before=... trunk_z_after=...`
+line using the trunk's actual measured world-frame z
+(`self._data.qpos[2]`) — that's your evidence it physically changed,
+not just that a number was set. **Not part of `core.interfaces.
+SkillsAPI`** (that contract is frozen by group agreement and Task 3/4
+never need this), so it's a `RealSkills`-only extra, called directly —
+`skills_mock.py` has matching print-only stubs so code written against
+it doesn't break if you switch back to the mock.
+
+Which direction is "crouch" vs "stand" (`height_range[0]` vs `[1]`) is
+a guess from the naming convention, not something verified by actually
+running the sim — watch the browser panel when you test it, and if
+`crouch()` visibly stands taller instead of crouching down, the two
+are simply swapped from what was guessed; flip which bound each method
+targets in `skills_real.py`.
+
+**To test it**: either the keyboard harness (`c` / `t`, watch the pose
+change in the browser panel and the printed `trunk_z` values), or run
+`python tools/visual_test_task2.py`, whose fixed choreography now
+includes a crouch step followed by a stand step near the end — a
+repeatable, unattended way to check it (and a source clip for
+`Video_Task2` showing it).
+
 Also write the small verification script Task 2.iii asks for: render
 frames of your scene from robot height, run YOLO on them, draw boxes,
 and save one screenshot for the report — this doubles as your first
@@ -177,8 +215,15 @@ times as you need for a clean take.
 
 Pass `--native` instead to open a native MuJoCo window rather than the
 browser panel — no server/port needed. Confirmed working end-to-end
-(full sequence + clean Ctrl+C exit) on WSL2; `--gui`/`--native` are
-mutually exclusive.
+(full sequence + clean Ctrl+C exit) on WSL2 **for this specific
+scripted, non-interactive sequence** — `--native` has since segfaulted
+(unresolved, no Python traceback) on the interactive
+`python -m skills.skills_real --native` keyboard harness on the same
+machine, so don't assume `--native` is safe everywhere just because
+this script's fixed sequence ran clean; see the
+[student guide](STUDENT_README.md#browser-panel-or-native-viewer) for
+the current, more cautious guidance. `--gui`/`--native` are mutually
+exclusive.
 
 ```bash
 python tools/visual_test_task2.py --native
