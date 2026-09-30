@@ -13,8 +13,8 @@ from dialogue import chat_interface
 
 # Flip these to False -> True one at a time as each student's real module
 # becomes ready. Everything else in the codebase is unaffected by the flip.
-USE_REAL_SKILLS = True
-USE_REAL_PERCEPTION = True
+USE_REAL_SKILLS = False
+USE_REAL_PERCEPTION = False
 
 
 def build_skills():
