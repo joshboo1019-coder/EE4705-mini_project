@@ -115,10 +115,12 @@ python tools/visual_test_task4.py --native                    # native MuJoCo wi
 (shrunk) bbox crop as PNGs under `DIR`, alongside the hue/sat/val stats
 already logged on `[DETECT]` — the fastest way to check a suspicious
 color result against the actual pixels instead of guessing. `--native`
-opens a native MuJoCo window instead of the browser panel; it also
+opens a native MuJoCo window instead of the browser panel (confirmed
+working end-to-end, including a clean Ctrl+C exit, on WSL2); it also
 respects `--camera`, switching the native window to whichever fixed
 camera you asked for. `--gui`/`--native` are mutually exclusive.
 
+<<<<<<< HEAD
 **A previous version of this guide warned of an open `--native` issue
 specific to this script** — a suspected GL-context conflict between the
 native window and the offscreen renderer feeding `get_camera_frame()`,
@@ -149,6 +151,8 @@ original theory) is still a legitimate diagnostic to watch for if the
 offscreen renderer genuinely does fail for some other reason — it just
 wasn't the cause here.
 
+=======
+>>>>>>> parent of 0eac3dc (Update documentation for `--native` option and issues)
 `tools/check_status.py` is a separate, faster sanity check (no
 simulation): it scans `perception/perception_real.py` and
 `perception/navigation.py` for leftover `NotImplementedError`/TODO
