@@ -1,0 +1,16 @@
+{
+  "chair": {
+    "lvis_category": "chair",
+    "objaverse_uid": "304253851afd493d958fc8e256c189df",
+    "source": "https://objaverse.allenai.org/explore/304253851afd493d958fc8e256c189df",
+    "obj_file": "assets/scenes/meshes/chair.obj",
+    "note": "License varies per-model on Objaverse -- check the source URL above and record the specific license in the report before submitting."
+  },
+  "stop_sign": {
+    "lvis_category": "stop_sign",
+    "objaverse_uid": "599a74c1c8fd4f19bf6754b8128da6b8",
+    "source": "https://objaverse.allenai.org/explore/599a74c1c8fd4f19bf6754b8128da6b8",
+    "obj_file": "assets/scenes/meshes/stop_sign.obj",
+    "note": "License varies per-model on Objaverse -- check the source URL above and record the specific license in the report before submitting."
+  }
+}
