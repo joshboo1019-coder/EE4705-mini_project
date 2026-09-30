@@ -61,6 +61,18 @@ def main():
     try:
         time.sleep(1.0)  # let the first frame/pose settle before touching height
 
+        # Read trunk_z BEFORE ever touching height_cmd, straight after the
+        # post-reset settle. This is the key new data point: if this is
+        # already close to what set_height()'s first [HEIGHT] step later
+        # reports (rather than close to the 0.25 m height_cmd default),
+        # it means the robot settles to that height on its own -- e.g. as
+        # part of ordinary standing-still balance behavior -- and
+        # height_cmd was never really driving it there to begin with.
+        z_at_boot = skills.get_trunk_height()
+        print(f"\n[DIAGNOSTIC] trunk_z immediately after boot settle, "
+              f"before any height command = {z_at_boot:.3f} m "
+              f"(height_cmd default is 0.25 m -- compare these)")
+
         pose_before = skills.get_robot_pose()
         print(f"\n>>> Crouch (first height command since boot, no move()/turn() "
               f"before it)  (pose before: x={pose_before.x:.2f} "
@@ -71,14 +83,21 @@ def main():
               f"yaw={pose_after.yaw_deg:.1f}")
 
         print(
-            "\nRead the [HEIGHT] step lines above: if trunk_z genuinely "
-            "trends down toward 0.20 m here (even if it doesn't fully "
-            "reach it), crouch() itself works, and the earlier stuck-at-"
-            "0.33 result was caused by something in the "
-            "Stand->Turn->Crouch sequence, not by crouch()'s own logic. "
-            "If trunk_z stays flat here too, that's evidence crouch() / "
-            "downward height_cmd doesn't track even as the very first "
-            "height command from the 0.25 m default."
+            f"\nCompare [DIAGNOSTIC] trunk_z={z_at_boot:.3f} m (before ANY "
+            "height command) against the [HEIGHT] step lines above:\n"
+            "  - If trunk_z at boot was already close to what the later "
+            "[HEIGHT] lines show (e.g. ~0.33 m), height_cmd likely isn't "
+            "driving the trunk at all while standing still -- the robot "
+            "just settles there on its own after reset, and crouch()'s "
+            "code is not the problem; this would need to be reported as "
+            "a policy limitation (height_cmd probably only meaningfully "
+            "shapes stance while walking, not standing still), not a bug "
+            "to keep chasing in skills_real.py.\n"
+            "  - If trunk_z at boot was close to 0.25 m and the [HEIGHT] "
+            "lines above genuinely trend down from there toward 0.20 m, "
+            "crouch() does work as the first command, and the earlier "
+            "stuck-at-0.33 result in the full sequence was caused by "
+            "something specific to the Stand->Turn->Crouch ordering."
         )
 
         print("\nDone. Robot final pose:", skills.get_robot_pose())
