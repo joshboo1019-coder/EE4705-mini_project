@@ -2,9 +2,7 @@
 
 **FINAL — 6 trials collected, 2026-09-30.**
 
-Collected from `python skills_real.py --compare-turn` (run from the
-`skills/` directory, headless — no `--gui`/`--native` needed) on the
-team's WSL2 laptop (`LAPTOP-6LL3JIIS`). Each run does one closed-loop
+Collected from `python skills_real.py --compare-turn`. Each run does one closed-loop
 `turn(90.0)` followed by one open-loop `move(vx=0.0, vy=0.0, wz=0.6,
 duration=1.5)` (a guessed duration/rate combination meant to approximate
 90 deg, with no feedback).
