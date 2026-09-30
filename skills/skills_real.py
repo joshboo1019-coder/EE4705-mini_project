@@ -527,35 +527,32 @@ class RealSkills(SkillsAPI):
             )
 
     def _maybe_render_camera(self, sim_time: float) -> None:
-        if sim_time < self._next_render_time:
-            return
-        self._next_render_time = sim_time + self._render_period
+    if sim_time < self._next_render_time:
+        return
+    self._next_render_time = sim_time + self._render_period
+    try:
+        self._renderer.update_scene(self._data, camera="dog_front_camera")
+        frame = self._renderer.render()
+    except Exception as exc:
+        # ... (see full file — explains the EGL contention + self-heal)
+        now = time.time()
+        if now - self._last_render_error_log >= 5.0:
+            print(f"[CAMERA] render failed ({exc!r}) -- get_camera_frame() "
+                  f"may be returning a STALE frame; attempting to "
+                  f"recreate the offscreen renderer to recover.")
+            self._last_render_error_log = now
         try:
+            try:
+                self._renderer.close()
+            except Exception:
+                pass
+            self._renderer = mujoco.Renderer(self._model, height=240, width=320)
             self._renderer.update_scene(self._data, camera="dog_front_camera")
             frame = self._renderer.render()
-        except Exception as exc:
-            # Camera name mismatch or renderer hiccup — keep the last good
-            # frame rather than crashing the sim thread. This used to be a
-            # silent `return`, which is exactly how a real bug (this
-            # offscreen mujoco.Renderer failing on every call once a
-            # native_viewer=True GLFW window is also open in this process
-            # -- observed as perception.detect() reading a frozen frame the
-            # whole run, even while the robot was visibly turning per its
-            # real pose) went completely invisible. Print once, then at
-            # most once every 5s, so a persistent failure is impossible to
-            # miss without spamming every render tick (CAMERA_HZ, e.g. 15/s).
-            now = time.time()
-            if now - self._last_render_error_log >= 5.0:
-                print(f"[CAMERA] render failed ({exc!r}) -- get_camera_frame() "
-                      f"is returning a STALE frame until this clears. If "
-                      f"you're running with native_viewer=True, try gui=True "
-                      f"(the browser panel) instead -- this offscreen "
-                      f"renderer and the native GLFW window may be "
-                      f"conflicting over the GL context in this process.")
-                self._last_render_error_log = now
+        except Exception:
             return
-        with self._frame_lock:
-            self._latest_frame = frame
+    with self._frame_lock:
+        self._latest_frame = frame
 
     def _sim_loop(self) -> None:
         real_start = time.time()
