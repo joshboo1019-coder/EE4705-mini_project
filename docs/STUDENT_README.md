@@ -134,7 +134,15 @@ tore the process down around them; every script now wraps its run in
 happens cleanly, on a crash or an early exit too, not just Ctrl+C).
 `--gui` and `--native` are mutually exclusive; `--gui` stays the
 default since it's the longer-confirmed path, but `--native` is a fine
-choice if you'd rather not deal with the browser/port.
+choice if you'd rather not deal with the browser/port — **except for
+Task 4** (`visual_test_task4.py`, or Task 3 with `--real-perception`):
+anything that calls `get_camera_frame()` has an open, reproducible issue
+under `--native` where the offscreen camera feed can silently freeze
+once the native window is also open (a GL-context conflict, best guess),
+which looks like the robot lost the object rather than a rendering bug
+— watch for a `[CAMERA] render failed ...` console line, which confirms
+it. Use the default browser panel for those until this is resolved; see
+the [C guide](STUDENT_C_README.md) for the full symptom description.
 
 ## Integration order (suggested)
 
