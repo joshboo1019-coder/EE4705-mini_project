@@ -65,6 +65,23 @@ chaining multiple features in one process with no reset between them
 (see skills_real.py's own comments and the multi-feature warning in main()
 below).
 
+A third real run (after making the engine walk each feature to actual
+arrival instead of a fixed segment budget, and making main() stop rather
+than chain onward from an unfinished feature) confirmed BOTH of those
+fixes working: stairs_gentle genuinely completed this time (29 segments,
+not the originally-budgeted ~20 -- dist_short_of_target=0.13 m), and when
+stairs_steep's approach then got stuck for a real, different reason (see
+next paragraph), the script correctly stopped there instead of continuing
+to rubble from a fallen robot. That run surfaced a THIRD real issue,
+since fixed via stairs_steep's own "approach_via" detour waypoints (see
+FEATURES above): the straight line from stairs_gentle's own end point to
+stairs_steep's approach point cut diagonally back through stairs_gentle's
+own strip, and the robot caught a step edge while turned around mid-turn,
+tipping over (trunk_z collapsed to ~0.21 m, then genuinely stuck). Only
+reproducible when stairs_steep runs right after stairs_gentle
+(--feature all); running it alone starts from spawn and never approaches
+stairs_gentle's strip in the first place.
+
 RUN (from the project root):
     python tools/visual_test_rough_terrain.py                     # all three features, in order
     python tools/visual_test_rough_terrain.py --feature stairs_gentle
@@ -124,6 +141,27 @@ FEATURES = {
         "width_axis": "y",
         "width_center": 6.0,
         "width_limit": 0.55,
+        # When run right after stairs_gentle (--feature all), a straight
+        # line from stairs_gentle's own end point (~6.3, 2.0) to this
+        # feature's approach point (0.9, 6.0) cuts diagonally back
+        # through stairs_gentle's own strip (x [1.0,5.9], y [1.0,3.0]) --
+        # a real run confirmed this actually happens (the line crosses
+        # y=3.0 around x=4.9, still inside that x range) and caught a
+        # step edge while the robot was turned around mid-turn, tipping
+        # it over (trunk_z collapsed to ~0.21 m, then stuck). These two
+        # waypoints detour AROUND stairs_gentle instead of back through
+        # it: first out to x=6.4 (east of stairs_gentle's x=5.9 AND
+        # stairs_steep's x=4.5 -- clear of both staircases in x) while
+        # climbing in y past stairs_gentle's y=3.0 edge, then west along
+        # y=6.0 -- which is stairs_steep's own strip, approached from
+        # its east side, same as "clear" below -- before finally cutting
+        # in to the actual approach point at x=0.9 (just short of
+        # stairs_steep's own steps, which start at x=1.4). Only matters
+        # for --feature all/when run after stairs_gentle; run alone
+        # (--feature stairs_steep) the robot starts at spawn (0,0) and
+        # never gets near stairs_gentle's strip in the first place, so
+        # this detour is harmless extra distance either way.
+        "approach_via": [(6.4, 3.5), (6.4, 6.0)],
     },
     # custom_scene.xml ~lines 184-320: ~70 boxes with small random
     # roll/pitch, forming a continuously uneven patch rather than discrete
@@ -147,15 +185,34 @@ def run_feature(skills: RealSkills, name: str) -> dict:
     clear_x, clear_y = spec["clear"]
 
     print(f"\n=== {name}: {spec['description']} ===")
-    print(f"  Approaching start point ({approach_x}, {approach_y})...")
-    # The approach walk never needs the width guard (it's just getting to
-    # the feature's own start line over presumably-flat ground), so it
-    # always goes through cross_rough_terrain() regardless of which
-    # feature this is -- same engine as climb_stairs(), just without
-    # width_axis/width_center/width_limit.
-    approach_outcome = skills.cross_rough_terrain(
-        approach_x, approach_y, segment_len=0.5
-    )
+
+    # Some features need a detour on the way to their own approach point
+    # (see "approach_via" in FEATURES -- stairs_steep's own comment above
+    # explains why) rather than one straight line from wherever the
+    # previous feature left the robot, which can cut back through
+    # terrain already crossed. Walk each via-waypoint first, same engine
+    # as the final approach leg; the first one that doesn't actually
+    # finish aborts the whole approach (same handling as the final leg
+    # below), since continuing past an unfinished detour leg is exactly
+    # the "chain forward from a bad state" problem this script no longer
+    # does.
+    approach_outcome = "completed"
+    for via_x, via_y in spec.get("approach_via", []):
+        print(f"  Detouring via ({via_x}, {via_y})...")
+        approach_outcome = skills.cross_rough_terrain(via_x, via_y, segment_len=0.5)
+        if approach_outcome != "completed":
+            break
+
+    if approach_outcome == "completed":
+        print(f"  Approaching start point ({approach_x}, {approach_y})...")
+        # The approach walk never needs the width guard (it's just getting
+        # to the feature's own start line over presumably-flat ground), so
+        # it always goes through cross_rough_terrain() regardless of which
+        # feature this is -- same engine as climb_stairs(), just without
+        # width_axis/width_center/width_limit.
+        approach_outcome = skills.cross_rough_terrain(
+            approach_x, approach_y, segment_len=0.5
+        )
 
     start_pose = skills.get_robot_pose()
     start_height = skills.get_trunk_height()
