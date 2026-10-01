@@ -19,6 +19,11 @@ from core.interfaces import SkillsAPI, PerceptionAPI
 from core.schema import RobotPose
 from core import config
 
+_CLEARANCE_MIN_M = 0.7
+_CLEARANCE_MAX_M = 0.8
+_APPROACH_TARGET_M = 0.75
+_APPROACH_STEP_FRACTION = 0.25
+
 
 def goto_object(object_class: str, color: str,
                  skills: SkillsAPI, perception: PerceptionAPI) -> bool:
@@ -64,7 +69,7 @@ def goto_object(object_class: str, color: str,
                                 skills, perception, object_class, color,
                             distance, t0):
                             return True
-                        if distance <= config.FOUND_DISTANCE_M:
+                        if distance <= _CLEARANCE_MAX_M:
                             print("[MISSION] status=FAIL reason=stop_verification")
                             return False
                         target_centered = True
@@ -78,7 +83,7 @@ def goto_object(object_class: str, color: str,
                             skills, perception, object_class, color,
                             distance, t0):
                         return True
-                    if distance <= config.FOUND_DISTANCE_M:
+                    if distance <= _CLEARANCE_MAX_M:
                         print("[MISSION] status=FAIL reason=stop_verification")
                         return False
                     consecutive_misses = 0
@@ -120,7 +125,7 @@ def goto_object(object_class: str, color: str,
                 skills, perception, object_class, color,
             distance, t0):
             return True
-        if distance <= config.FOUND_DISTANCE_M:
+        if distance <= _CLEARANCE_MAX_M:
             print("[MISSION] status=FAIL reason=stop_verification")
             return False
 
@@ -156,19 +161,31 @@ def _approach_steps(skills: SkillsAPI, object_class: str, color: str,
                     steps: int):
     pose = skills.get_robot_pose()
     distance = _ground_truth_distance(pose, object_class, color)
+    max_step_distance = abs(config.APPROACH_VX) * config.APPROACH_STEP_S
+
     for _ in range(steps):
+        if distance <= _CLEARANCE_MAX_M:
+            skills.stop()
+            break
+
+        remaining_distance = distance - _APPROACH_TARGET_M
+        step_distance = min(
+            max_step_distance,
+            remaining_distance * _APPROACH_STEP_FRACTION,
+        )
+        step_duration = step_distance / abs(config.APPROACH_VX)
         skills.move(vx=config.APPROACH_VX, vy=0.0, wz=0.0,
-                    duration=config.APPROACH_STEP_S)
+                    duration=step_duration)
         pose = skills.get_robot_pose()
         distance = _ground_truth_distance(pose, object_class, color)
-        if distance <= config.FOUND_DISTANCE_M:
+        if distance <= _CLEARANCE_MAX_M:
             skills.stop()
             break
     return pose, distance
 
 
 def _finish_if_found(skills, perception, object_class, color, distance, t0) -> bool:
-    if distance > config.FOUND_DISTANCE_M:
+    if not _CLEARANCE_MIN_M <= distance <= _CLEARANCE_MAX_M:
         return False
 
     skills.stop()
@@ -176,7 +193,7 @@ def _finish_if_found(skills, perception, object_class, color, distance, t0) -> b
 
     pose = skills.get_robot_pose()
     d = _ground_truth_distance(pose, object_class, color)   # distance AT stop
-    if d > config.FOUND_DISTANCE_M:                          # C2
+    if not _CLEARANCE_MIN_M <= d <= _CLEARANCE_MAX_M:        # C2
         return False
 
     frame = skills.get_camera_frame()
