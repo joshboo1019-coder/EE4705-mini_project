@@ -608,18 +608,26 @@ class RealSkills(SkillsAPI):
     #      (not just once before the whole walk -- a real run showed a
     #      single step-edge yaw nudge otherwise goes uncorrected and
     #      compounds into the robot drifting off the structure's own
-    #      side edge before reaching the far end). When width_axis/
-    #      width_center are given, this re-facing now ALSO adds an
-    #      explicit cross-track correction (recenter_gain, default 1.5)
-    #      biasing the aim point toward the centerline -- plain bearing-
-    #      to-the-far-off-target turned out to be too weak a signal on
-    #      its own: a real run on stairs_steep's crossing drifted from
-    #      y=6.02 to y=5.43 (centerline 6.0, real edge 5.25) over 10
-    #      segments while most of that drift's back half never tripped
-    #      the per-segment turn deadband, because bearing-to-target and
-    #      the robot's own (disturbance-driven) yaw were drifting in
-    #      step with each other. See _face_waypoint's own comment for
-    #      the full mechanism and the exact numbers;
+    #      side edge before reaching the far end). _face_waypoint() also
+    #      OPTIONALLY supports an explicit cross-track recentering bias
+    #      (width_axis/width_center + recenter_gain) for exactly this
+    #      drift -- but it is OFF by default (recenter_gain=0.0) after
+    #      three real runs on stairs_steep's own crossing told a
+    #      consistent story: the plain version (no recentering) drifted
+    #      from y=6.02 toward the edge but still climbed real height
+    #      (trunk_z up to ~0.65 m) before a safe, caught edge_drift abort
+    #      at y=5.43 (real edge 5.25); turning recentering ON, at TWO
+    #      different gains/caps, both made things WORSE, not better --
+    #      one triggered a stumble (trunk_z jumped +0.176 m in one
+    #      segment) that ended in "stuck", and the other stalled the
+    #      robot almost immediately (barely any x progress at all across
+    #      4 straight segments, trunk_z never climbing past 0.29 m --
+    #      never even making it over the first riser). Interrupting a
+    #      steep-riser climbing gait with extra turn commands, even small
+    #      capped ones, looks to hurt more than the drift itself did, so
+    #      recentering is now opt-in (pass recenter_gain > 0 explicitly)
+    #      rather than default-on. See _face_waypoint's own comment for
+    #      the full mechanism and all three runs' exact numbers;
     #   2. walks one short segment with move();
     #   3. logs pose + trunk height, flagging a single-segment trunk_z
     #      DELTA above max_height_jump as a likely stumble/launch (NOT an
@@ -679,7 +687,7 @@ class RealSkills(SkillsAPI):
                                     stuck_segments_before_abort: int = 3,
                                     arrival_tolerance: Optional[float] = None,
                                     max_segments: Optional[int] = None,
-                                    recenter_gain: float = 1.0,
+                                    recenter_gain: float = 0.0,
                                     max_recenter_turn_deg: float = 6.0) -> str:
         pose = self.get_robot_pose()
         total_dist = math.hypot(target_x - pose.x, target_y - pose.y)
@@ -768,7 +776,7 @@ class RealSkills(SkillsAPI):
     def _face_waypoint(self, target_x: float, target_y: float,
                         width_axis: Optional[str] = None,
                         width_center: Optional[float] = None,
-                        recenter_gain: float = 1.0,
+                        recenter_gain: float = 0.0,
                         max_recenter_turn_deg: float = 6.0) -> None:
         """Closed-loop turn (reusing turn()'s own [TURN] diagnostic) to
         face a world-frame waypoint, using the same yaw convention as
@@ -824,10 +832,35 @@ class RealSkills(SkillsAPI):
         error currently is -- multiple smaller nudges across segments
         instead of one potentially destabilizing big one. recenter_gain
         mainly matters below the cap (how quickly small errors ramp up
-        toward it); still unverified against a real run -- if drift is
-        still a problem but no more stumbles appear, raise
-        max_recenter_turn_deg a little before touching recenter_gain; if
-        a stumble happens again, lower max_recenter_turn_deg further."""
+        toward it).
+
+        REVISED AGAIN after a real run with THIS capped version
+        (recenter_gain=1.0, max_recenter_turn_deg=6.0): no stumble this
+        time (trunk_z stayed flat, 0.275-0.286), but it was WORSE in a
+        different way -- x barely moved at all for 4 straight segments
+        (1.07, 1.06, 1.07, 1.07) and trunk_z never climbed past 0.286 m,
+        i.e. it never even got over the first riser before the stuck-
+        detector fired. Two different recentering configurations have
+        now each made this specific crossing worse than doing nothing:
+        the plain, uncorrected engine (the version BEFORE any of this
+        recentering logic existed) got furthest of all three attempts --
+        it climbed real height (trunk_z up to ~0.65 m) over several
+        risers before eventually drifting into a safe, caught
+        edge_drift abort. That's a consistent pattern, not one noisy
+        run: interrupting a tall-riser climbing gait with EXTRA turn
+        commands, however small/capped, seems to break its rhythm more
+        than an uncorrected lateral drift hurts -- plausibly because the
+        policy needs a stable heading command to execute the climbing
+        motion, and any added mid-climb re-aiming disrupts that.
+
+        CONCLUSION: recenter_gain now defaults to 0.0 (off) -- width_axis/
+        width_center still enable the plain edge_drift SAFETY GUARD (via
+        _walk_terrain_segment_loop, unaffected by this), just not the
+        active recentering bias. A caller can still opt in by passing
+        recenter_gain > 0 explicitly, but on the evidence so far that is
+        not recommended for climb_stairs() on a tall-riser staircase like
+        this project's own stairs_steep -- the uncorrected drift-then-
+        safe-abort is the better real-world outcome of the three tried."""
         pose = self.get_robot_pose()
         bearing_plain_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
 
@@ -856,8 +889,9 @@ class RealSkills(SkillsAPI):
                       width_center: Optional[float] = None,
                       width_limit: Optional[float] = None,
                       segment_len: float = 0.3, speed: float = 0.3,
-                      recenter_gain: float = 1.0,
-                      max_recenter_turn_deg: float = 6.0) -> str:
+                      recenter_gain: float = 0.0,
+                      max_recenter_turn_deg: float = 6.0,
+                      climb_height_cmd: Optional[float] = None) -> str:
         """Walk to (target_x, target_y) across a staircase, re-facing the
         target every short segment and logging a trunk-height profile
         that should track the stairs' own step heights (see the class
@@ -901,13 +935,62 @@ class RealSkills(SkillsAPI):
         can come from the recentering bias specifically (as opposed to
         the plain "face the target" turn, which is never capped) -- see
         _face_waypoint's own comment for the real-run stumble this is
-        now tuned against."""
-        return self._walk_terrain_segment_loop(
-            target_x, target_y, segment_len=segment_len, speed=speed,
-            width_axis=width_axis, width_center=width_center,
-            width_limit=width_limit, recenter_gain=recenter_gain,
-            max_recenter_turn_deg=max_recenter_turn_deg,
-        )
+        now tuned against.
+
+        climb_height_cmd: requested attempt at "make the robot lift its
+        legs higher" for a tall-riser climb. IMPORTANT CAVEAT, read
+        before relying on this: there is NO exposed control anywhere in
+        this codebase over how high a foot swings mid-stride -- that is
+        entirely internal to the trained ONNX walking policy's learned
+        behavior. The complete set of inputs the policy ever receives is
+        (vx, vy, wz) and height_cmd (see build_single_obs's own argument
+        list, called from _sim_loop/_warmup_obs above) -- nothing in
+        there is a per-step foot-clearance parameter. height_cmd is a
+        desired STANDING stance height, not a swing-height command.
+        Commanding it toward the top of self._height_range (the trained
+        range's upper bound, 0.35 m by default) before a climb is the
+        closest available proxy -- a taller commanded stance plausibly
+        gives the legs more extension margin to clear a riser before
+        going straight -- but whether that changes actual step height
+        during the climb is UNVERIFIED; it may do nothing, since nothing
+        here actually reaches into the policy's swing trajectory.
+
+        When given (or left as None, which defaults to self._height_
+        range[1]), the stance height is raised via set_height() BEFORE
+        the climb starts and restored to whatever it was before,
+        afterward -- regardless of whether the climb outcome was
+        "completed", "stuck", "edge_drift", or "incomplete". Pass
+        climb_height_cmd=False (or any falsy non-None/non-float caller
+        convention isn't supported here -- pass the CURRENT height_cmd
+        value explicitly, or skip calling climb_stairs with this kwarg
+        and call set_height() yourself beforehand) if you want to opt
+        out of the raise-then-restore behavior entirely; there's no
+        separate boolean flag for that, since raising toward the trained
+        range's own upper bound is meant to be a safe default (it's a
+        value the policy was already trained to hold, just like
+        stand() already commands -- see stand()'s own comment above)."""
+        original_height_cmd = self._height_cmd
+        target_height = (climb_height_cmd if climb_height_cmd is not None
+                          else self._height_range[1])
+        if abs(target_height - original_height_cmd) > 1e-6:
+            print(f"  [CLIMB] raising stance height to {target_height:.2f} m "
+                  f"(from {original_height_cmd:.2f} m) before the climb -- "
+                  f"see climb_stairs()'s own docstring for why this is only "
+                  f"a PROXY for 'lift legs higher', not a literal one")
+            self.set_height(target_height)
+        try:
+            outcome = self._walk_terrain_segment_loop(
+                target_x, target_y, segment_len=segment_len, speed=speed,
+                width_axis=width_axis, width_center=width_center,
+                width_limit=width_limit, recenter_gain=recenter_gain,
+                max_recenter_turn_deg=max_recenter_turn_deg,
+            )
+        finally:
+            if abs(self._height_cmd - original_height_cmd) > 1e-6:
+                print(f"  [CLIMB] restoring stance height to "
+                      f"{original_height_cmd:.2f} m after the climb")
+                self.set_height(original_height_cmd)
+        return outcome
 
     def cross_rough_terrain(self, target_x: float, target_y: float,
                              segment_len: float = 0.3, speed: float = 0.3) -> str:
@@ -934,6 +1017,171 @@ class RealSkills(SkillsAPI):
         return self._walk_terrain_segment_loop(
             target_x, target_y, segment_len=segment_len, speed=speed,
         )
+
+    # ------------------------------------------------------------------
+    # High-speed running on open/flat ground. Not part of core.interfaces.
+    # SkillsAPI, same reasoning as crouch()/stand()/climb_stairs() above --
+    # that interface is frozen by group agreement. Distinct from climb_
+    # stairs()/cross_rough_terrain() above: those are deliberately SLOW
+    # (0.3 m/s default) and re-face every short segment, which is the
+    # right choice for a staircase/rubble patch with a real risk of
+    # stepping wrong, but is not what you want on open ground where the
+    # goal is covering distance quickly without the robot visibly
+    # lurching at the start or pitching/stumbling on a sudden stop.
+    #
+    # NOT YET VERIFIED AGAINST A REAL RUN -- every tuned parameter in
+    # climb_stairs()/cross_rough_terrain() (segment_len, speed,
+    # recenter_gain, max_recenter_turn_deg, ...) got there through
+    # several rounds of real hardware testing; run_fast() below has none
+    # of that yet. Its design is reasoned from what those real runs
+    # already taught this file about this specific policy/platform,
+    # though, not a blind guess:
+    #   - move() ends every call by hard-zeroing the command (see move()
+    #     above) -- a single call from a high vx straight to 0 is exactly
+    #     the kind of abrupt transition that showed up as instability
+    #     elsewhere in this file (e.g. _face_waypoint's own comment on
+    #     large sudden turn commands destabilizing a stair climb). Ramping
+    #     vx up over several short move() calls, and back down the same
+    #     way, avoids ever handing the policy one single large step
+    #     change in commanded velocity.
+    #   - frequent re-turning mid-motion was shown (same _face_waypoint
+    #     comment) to be able to destabilize this policy even at modest
+    #     magnitudes -- so heading is corrected only periodically during
+    #     the cruise phase (every heading_correction_interval sim-
+    #     seconds), not every short segment the way the cautious terrain
+    #     engine does, trading a little path accuracy for fewer
+    #     destabilizing interruptions at speed.
+    # Treat max_speed/accel_segments/decel_segments/ramp_segment_duration
+    # as first-pass starting points, not tuned values -- the first real
+    # run's printed [RUN] trace (position/speed every segment, same
+    # convention as climb_stairs()'s own per-segment logging) is what
+    # actually tunes these, the same way every terrain-engine parameter
+    # above was tuned from real evidence rather than guessed once and
+    # left alone.
+    def run_fast(self, target_x: float, target_y: float,
+                 max_speed: float = 1.0,
+                 accel_segments: int = 5,
+                 decel_segments: int = 5,
+                 ramp_segment_duration: float = 0.15,
+                 cruise_segment_duration: float = 0.2,
+                 heading_correction_interval: float = 1.0,
+                 arrival_tolerance: float = 0.3,
+                 max_duration_s: float = 30.0) -> str:
+        """Run to (target_x, target_y) on open/flat ground at up to
+        max_speed m/s, without the abrupt start/stop this file's other
+        move()-based helpers can produce when used at higher speed:
+
+          1. Faces the target once up front (an ordinary turn() call,
+             same as _face_waypoint's own uncapped "face the target"
+             behavior -- a real reorientation before moving is fine,
+             it's reorienting WHILE already moving fast that's riskier).
+          2. ACCELERATES: vx ramps linearly from 0 to max_speed over
+             accel_segments short move() calls (ramp_segment_duration
+             each) rather than one call straight to max_speed.
+          3. CRUISES at max_speed in longer move() calls
+             (cruise_segment_duration each), re-facing the target only
+             every heading_correction_interval sim-seconds rather than
+             every segment (see the class comment above for why -- this
+             policy showed real instability from frequent re-turning
+             while already in motion).
+          4. BRAKES GENTLY: once close enough that decel_segments more
+             cruise-speed segments would overshoot, vx ramps linearly
+             back down to 0 over decel_segments short move() calls,
+             instead of one abrupt stop() from full speed.
+
+        Every phase checks dist-to-target and arrival_tolerance first,
+        so a short trip can skip straight to (or through) any phase that
+        isn't needed -- this never walks past the target just to
+        "finish" a ramp.
+
+        max_duration_s is a hard safety cap (same spirit as
+        _walk_terrain_segment_loop's max_segments): if the robot hasn't
+        arrived by then, this returns "timeout" rather than running
+        forever on a bad heading/obstruction.
+
+        Returns "completed" (arrived within arrival_tolerance) or
+        "timeout" (ran out of time) or "incomplete" (braking finished
+        but still outside twice arrival_tolerance -- e.g. the cruise-to-
+        brake handoff undershot). No stuck/edge_drift detection here --
+        this is meant for open ground, not terrain with a real risk of
+        catching/falling (use climb_stairs()/cross_rough_terrain() for
+        that, which do have those guards)."""
+        pose = self.get_robot_pose()
+        dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+        if dist_remaining <= arrival_tolerance:
+            return "completed"
+
+        bearing_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
+        turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
+        if abs(turn_needed) > 1.0:
+            self.turn(turn_needed)
+
+        deadline = self._get_sim_time() + max_duration_s
+        last_correction_time = self._get_sim_time()
+
+        # --- Accelerate ---
+        for i in range(1, accel_segments + 1):
+            if self._get_sim_time() >= deadline:
+                self.stop()
+                return "timeout"
+            pose = self.get_robot_pose()
+            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            if dist_remaining <= arrival_tolerance:
+                self.stop()
+                return "completed"
+            vx = max_speed * (i / accel_segments)
+            self.move(vx=vx, vy=0.0, wz=0.0, duration=ramp_segment_duration)
+            print(f"  [RUN] accel {i}/{accel_segments} vx={vx:.2f} m/s "
+                  f"x={pose.x:.2f} y={pose.y:.2f} yaw={pose.yaw_deg:.1f} "
+                  f"(dist remaining={dist_remaining:.2f} m)")
+
+        # --- Cruise ---
+        # Rough distance the braking ramp below will cover (average of
+        # max_speed and 0, over decel_segments short calls) -- stop
+        # cruising with roughly that much distance left so braking isn't
+        # rushed into fewer segments than decel_segments asked for.
+        decel_distance_estimate = (max_speed * 0.5 * decel_segments
+                                    * ramp_segment_duration)
+        while True:
+            if self._get_sim_time() >= deadline:
+                self.stop()
+                return "timeout"
+            pose = self.get_robot_pose()
+            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            if dist_remaining <= max(arrival_tolerance, decel_distance_estimate):
+                break
+            if self._get_sim_time() - last_correction_time >= heading_correction_interval:
+                bearing_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
+                turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
+                if abs(turn_needed) > 2.0:
+                    self.turn(turn_needed)
+                last_correction_time = self._get_sim_time()
+            self.move(vx=max_speed, vy=0.0, wz=0.0, duration=cruise_segment_duration)
+            print(f"  [RUN] cruise vx={max_speed:.2f} m/s x={pose.x:.2f} "
+                  f"y={pose.y:.2f} yaw={pose.yaw_deg:.1f} "
+                  f"(dist remaining={dist_remaining:.2f} m)")
+
+        # --- Brake gently ---
+        for i in range(decel_segments, 0, -1):
+            if self._get_sim_time() >= deadline:
+                self.stop()
+                return "timeout"
+            pose = self.get_robot_pose()
+            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            if dist_remaining <= arrival_tolerance:
+                break
+            vx = max_speed * (i / decel_segments)
+            self.move(vx=vx, vy=0.0, wz=0.0, duration=ramp_segment_duration)
+            print(f"  [RUN] decel {decel_segments - i + 1}/{decel_segments} "
+                  f"vx={vx:.2f} m/s x={pose.x:.2f} y={pose.y:.2f} "
+                  f"yaw={pose.yaw_deg:.1f} (dist remaining={dist_remaining:.2f} m)")
+
+        self.stop()
+        pose = self.get_robot_pose()
+        dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+        print(f"  [RUN] stopped at x={pose.x:.2f} y={pose.y:.2f} "
+              f"(dist remaining={dist_remaining:.2f} m)")
+        return "completed" if dist_remaining <= arrival_tolerance * 2 else "incomplete"
 
     def get_camera_frame(self) -> np.ndarray:
         with self._frame_lock:
