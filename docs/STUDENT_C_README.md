@@ -167,4 +167,7 @@ USE_REAL_PERCEPTION = True
       `[CMD]` / `[SEARCH]` / `[DETECT]` / `[FOUND]` / `[MISSION]` lines,
       for ≥2 objects including one not-initially-visible and one
       same-class disambiguation
-      
+
+```bash
+python -m perception.task4_cli --debug-frames /tmp/debug_frame    #use this to run Task 4 using typed command
+```
