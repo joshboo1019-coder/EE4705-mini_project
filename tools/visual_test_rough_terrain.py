@@ -162,23 +162,23 @@ def run_feature(skills: RealSkills, name: str) -> dict:
     print(f"  At approach point: x={start_pose.x:.2f} y={start_pose.y:.2f} "
           f"yaw={start_pose.yaw_deg:.1f} trunk_z={start_height:.3f} m")
 
-    if approach_outcome == "stuck":
-        # Don't even attempt the crossing from a robot that's already
-        # stuck/fallen -- a real run showed exactly why: the "crossing"
-        # of a feature whose approach never properly arrived produces a
-        # width-guard trip for the wrong reason (it reads as "drifted off
-        # mid-crossing" when it actually never got there), and chaining
-        # --feature all with no reset-between-features means a stuck
-        # robot here was itself inherited from the PREVIOUS feature's
-        # failure. Reporting that plainly beats pretending to test the
-        # crossing anyway.
-        print(f"  Skipping the crossing -- robot was already stuck/fallen "
-              f"during the approach walk (see the '!!' line above). If "
-              f"you're running --feature all, this is very likely "
-              f"inherited from the previous feature's outcome, not "
-              f"something {name} itself caused; re-run with "
-              f"--feature {name} on its own, starting fresh from spawn, "
-              f"to get an independent result.")
+    if approach_outcome != "completed":
+        # Don't even attempt the crossing if the approach itself didn't
+        # actually finish ("stuck" or "incomplete") -- a real run showed
+        # why: the "crossing" of a feature whose approach never properly
+        # arrived produces a width-guard trip for the wrong reason (it
+        # reads as "drifted off mid-crossing" when it actually never got
+        # there). skills.cross_rough_terrain() now keeps walking until it
+        # truly arrives rather than giving up after a fixed segment
+        # count, so a "stuck"/"incomplete" here means a real failure
+        # (tipped/wedged, or a genuine endless drift), not just "ran out
+        # of its turn" -- which is exactly why this feature's run stops
+        # here instead of pretending to test the crossing anyway.
+        print(f"  Skipping the crossing -- the approach walk did not "
+              f"actually finish (outcome={approach_outcome!r}, see the "
+              f"'!!' line above). re-run with --feature {name} on its "
+              f"own, starting fresh from spawn, to get an independent "
+              f"result.")
         return {
             "name": name,
             "start_height": start_height,
@@ -186,7 +186,7 @@ def run_feature(skills: RealSkills, name: str) -> dict:
             "dist_short_of_target": math.hypot(clear_x - start_pose.x,
                                                  clear_y - start_pose.y),
             "heading_drift_deg": 0.0,
-            "outcome": "stuck_before_crossing",
+            "outcome": f"{approach_outcome}_before_crossing",
             "likely_ok": False,
         }
 
@@ -228,11 +228,20 @@ def run_feature(skills: RealSkills, name: str) -> dict:
             "mid-crossing (see the '!!' line above); likely tipped/" \
             "wedged, not merely struggling with the terrain"
         likely_ok = False
+    elif outcome == "incomplete":
+        verdict = "aborted -- still short of the target after a generous " \
+            "segment budget (see the '!!' line above); it WAS still " \
+            "making progress, just too slowly/unpredictably to finish " \
+            "(expected for stairs_steep)"
+        likely_ok = False
     else:
+        # outcome == "completed": the engine only returns this once the
+        # robot is actually within arrival_tolerance of the target, so
+        # this check is a sanity check on that, not the primary verdict.
         likely_ok = dist_short_of_target < 0.5 and heading_drift_deg < 30.0
         verdict = "reached target, no obvious tip-over/stall" if likely_ok else \
-            "did NOT cleanly reach target -- check the segment trace above " \
-            "for where it stalled/veered (expected for stairs_steep)"
+            "reached the target but with a larger heading drift than " \
+            "expected -- check the segment trace above"
 
     print(f"  Result: dist_short_of_target={dist_short_of_target:.2f} m, "
           f"heading_drift={heading_drift_deg:.1f} deg -> {verdict}")
@@ -269,19 +278,32 @@ def main():
         # pose from a script (only platform.reset_robot(), wired to the
         # browser panel's Reset button / 'T' key, consumed via
         # self._runtime.consume_reset() -- not callable from here). A
-        # real --feature all run showed what that costs: stairs_steep's
-        # approach started from wherever stairs_gentle left the robot
-        # (nowhere near stairs_steep's own approach point), its crossing
-        # then tripped the width-guard almost immediately for the wrong
-        # reason, and rubble inherited a robot that was essentially stuck
-        # (~3% of its commanded distance actually covered over 22
-        # segments). None of that reflects how rubble itself behaves.
+        # real --feature all run showed what that costs: stairs_gentle's
+        # own crossing used up its (back then, fixed) segment budget
+        # while still genuinely climbing, 2.71 m short of the target,
+        # and the script moved on to stairs_steep anyway, starting its
+        # approach from that unfinished, still-on-the-stairs position --
+        # which then went straight into an unrelated-looking failure.
+        # Two things now guard against exactly that:
+        #   1. skills.climb_stairs()/cross_rough_terrain() keep walking
+        #      each feature until the robot actually ARRIVES (or a real
+        #      stuck/edge_drift failure is caught) rather than giving up
+        #      after a fixed segment count -- so "ran out of its turn"
+        #      can no longer happen on its own.
+        #   2. main() below now STOPS running further features the
+        #      moment one doesn't come back "completed" (see the loop
+        #      below), instead of chaining onward from an unfinished or
+        #      fallen position regardless.
         print("NOTE: running multiple features in one process with no "
-              "reset between them -- a bad outcome on one feature (stuck/"
-              "fallen) carries over and can invalidate the next one's "
-              "result (see this script's own module docstring). For "
-              "independent, trustworthy results, run each --feature "
-              "separately instead of --feature all.\n")
+              "reset between them -- each feature now runs to actual "
+              "completion before the next one starts (see skills_real.py's "
+              "own terrain-traversal engine), and this script stops "
+              "entirely, rather than continuing to the next feature, the "
+              "moment one doesn't finish cleanly -- a bad outcome on one "
+              "feature still can't silently carry into the next one's "
+              "result. For a fully independent run of every feature "
+              "regardless of outcome, run each --feature separately "
+              "instead of --feature all.\n")
 
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
     skills = RealSkills(gui=not args.native, native_viewer=args.native)
@@ -292,7 +314,28 @@ def main():
     try:
         time.sleep(1.0)  # let the first frame/pose settle before moving
 
-        results = [run_feature(skills, name) for name in features_to_run]
+        results = []
+        for name in features_to_run:
+            result = run_feature(skills, name)
+            results.append(result)
+            # Only move on to the next feature once this one has
+            # actually completed -- anything else (stuck/edge_drift/
+            # incomplete, or a skipped crossing because the approach
+            # itself didn't finish) means the robot is in a state that
+            # would corrupt the next feature's result, so stop here
+            # rather than chaining onward from it. The walk itself
+            # already blocks/loops until the robot truly arrives (or a
+            # real failure is caught) before run_feature() even returns
+            # -- this check is what decides whether to START the next
+            # one, not what makes the current one wait.
+            if result["outcome"] != "completed" and name != features_to_run[-1]:
+                print(f"\nStopping here -- {name} did not complete "
+                      f"(outcome={result['outcome']!r}), so the remaining "
+                      f"feature(s) ({', '.join(features_to_run[features_to_run.index(name) + 1:])}) "
+                      f"are being skipped rather than run from this "
+                      f"unfinished position. Re-run with --feature "
+                      f"<name> to test any of them independently.")
+                break
 
         print("\n=== Summary ===")
         for r in results:
