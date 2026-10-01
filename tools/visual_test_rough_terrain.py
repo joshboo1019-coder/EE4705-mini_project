@@ -148,20 +148,39 @@ FEATURES = {
         # a real run confirmed this actually happens (the line crosses
         # y=3.0 around x=4.9, still inside that x range) and caught a
         # step edge while the robot was turned around mid-turn, tipping
-        # it over (trunk_z collapsed to ~0.21 m, then stuck). These two
-        # waypoints detour AROUND stairs_gentle instead of back through
-        # it: first out to x=6.4 (east of stairs_gentle's x=5.9 AND
-        # stairs_steep's x=4.5 -- clear of both staircases in x) while
-        # climbing in y past stairs_gentle's y=3.0 edge, then west along
-        # y=6.0 -- which is stairs_steep's own strip, approached from
-        # its east side, same as "clear" below -- before finally cutting
-        # in to the actual approach point at x=0.9 (just short of
-        # stairs_steep's own steps, which start at x=1.4). Only matters
-        # for --feature all/when run after stairs_gentle; run alone
-        # (--feature stairs_steep) the robot starts at spawn (0,0) and
-        # never gets near stairs_gentle's strip in the first place, so
-        # this detour is harmless extra distance either way.
-        "approach_via": [(6.4, 3.5), (6.4, 6.0)],
+        # it over (trunk_z collapsed to ~0.21 m, then stuck).
+        #
+        # First fix attempt routed around stairs_gentle via (6.4, 3.5)
+        # then (6.4, 6.0) -- clear of stairs_gentle, but a real run then
+        # showed the NEXT leg (that waypoint, east of stairs_steep's own
+        # x=4.5, straight to the approach point at x=0.9, WEST of
+        # stairs_steep's x=1.4) walks the full LENGTH of stairs_steep's
+        # own staircase -- i.e. the "approach" was accidentally doing
+        # stairs_steep's climb itself, and got stuck partway (x=4.54,
+        # right at the staircase's own far edge) well before the actual
+        # crossing phase even started.
+        #
+        # Fixed properly below: detour WEST of both staircases (and east
+        # of rubble's own x<=-0.43) at x=0.3 before turning north to
+        # y=6.0, so the final approach leg is a short, stairs_steep-free
+        # hop from (0.3, 6.0) east to (0.9, 6.0) -- still short of
+        # stairs_steep's own x=1.4 start, same as running this feature
+        # alone from spawn. Each leg's own clearance, checked against
+        # every feature's real extent in custom_scene.xml:
+        #   (6.4, 3.5):  east of stairs_gentle (x<=5.9) and stairs_steep
+        #                (x<=4.5); y=3.5 is north of stairs_gentle's own
+        #                y<=3.0 edge with a 0.5 m margin.
+        #   (0.3, 3.5):  straight line at y=3.5 from x=6.4 to x=0.3 stays
+        #                north of stairs_gentle (y<=3.0) and well east
+        #                of rubble's own y=[5.17,6.90] row entirely.
+        #   (0.3, 6.0):  straight line at x=0.3 from y=3.5 to y=6.0 stays
+        #                west of stairs_steep (x>=1.4) and east of
+        #                rubble (x<=-0.43) the whole way.
+        # Only matters for --feature all/when run after stairs_gentle;
+        # run alone (--feature stairs_steep) the robot starts at spawn
+        # (0,0) and never gets near any of this, so the detour is just
+        # harmless extra distance either way.
+        "approach_via": [(6.4, 3.5), (0.3, 3.5), (0.3, 6.0)],
     },
     # custom_scene.xml ~lines 184-320: ~70 boxes with small random
     # roll/pitch, forming a continuously uneven patch rather than discrete
