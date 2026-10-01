@@ -31,7 +31,19 @@ coordinates read directly out of custom_scene.xml:
      of flat ground or discrete steps -- the "rough terrain" half of this
      script's name, distinct from the two staircases.
 
-All three are real geoms already baked into the current map (nothing new
+None of these three is a target by itself, but there is a FOURTH terrain
+geom in the scene, between stairs_gentle and stairs_steep/rubble, that
+this script does NOT target or test directly -- a single tilted plate at
+custom_scene.xml's <geom pos="2.0 4.0 0.1" type="box" size="1.5 0.75
+0.005" quat="0.995 0 -0.0998 0">, i.e. x in [0.5, 3.5], y in [3.25, 4.75],
+tilted roughly 11.5 deg (from the quaternion). It was missed entirely in
+this script's first two "safe corridor between features" assumptions
+(see stairs_steep's own "approach_via" comment below for the real-run
+failures that found it the hard way) -- it is NOT one of this script's
+three named features, but any waypoint chosen between stairs_gentle and
+stairs_steep/rubble has to route around it.
+
+All four are real geoms already baked into the current map (nothing new
 added to the scene for this script) -- see custom_scene.xml line references
 in the coordinate constants below if you want to cross-check them yourself.
 
@@ -161,43 +173,51 @@ FEATURES = {
         # crossing phase even started.
         #
         # Second fix attempt detoured WEST of both staircases at x=0.3,
-        # but routed that westward leg at y=3.5 -- only ~0.5 m clear of
-        # stairs_gentle's own nominal y<=3.0 edge. A real run got stuck
-        # there too, right around x=3.4-3.6 (stairs_gentle's own peak is
-        # at x=3.45), trunk_z dipping to ~0.22 m -- a real stumble, not
-        # just slow. The trunk's OWN (x, y) was a legitimate 0.4-0.5 m
-        # clear of the nominal edge, so the most likely explanation is
-        # the robot's physical footprint (legs swinging out from the
-        # trunk during a turned-around, yaw~177 deg walk) reaching back
-        # into the stairs' real collision geometry even though the
-        # TRUNK's own position reads clear -- i.e. 0.5 m isn't enough
-        # margin for the robot's actual physical extent, not just its
-        # trunk point.
+        # routed at y=3.5, then y=4.2 after the first of those also got
+        # stuck. BOTH got stuck at almost the identical x (~3.45-3.6)
+        # despite the y change -- which, in hindsight, was the real tell:
+        # a y-margin problem against stairs_gentle's edge would have
+        # moved (or fixed) the failure point when y changed; getting
+        # stuck at the same x regardless of y instead means a SEPARATE,
+        # stationary obstacle at that x column. Checking custom_scene.xml
+        # directly (rather than continuing to guess margins) found it: a
+        # tilted plate at <geom pos="2.0 4.0 0.1" size="1.5 0.75 0.005"
+        # quat="0.995 0 -0.0998 0"> -- x in [0.5, 3.5], y in [3.25, 4.75],
+        # ~11.5 deg tilted -- that neither of those "safe corridor"
+        # y values (3.5 and 4.2) was actually clear of. It isn't one of
+        # this script's three named features (see the module docstring),
+        # which is exactly how it got missed in the first two attempts.
         #
-        # Fixed below by widening that margin substantially (y=3.5 ->
-        # y=4.2, roughly doubling the clearance past stairs_gentle's own
-        # y<=3.0 edge to ~1.2 m) rather than assuming the first
-        # "looks clear on paper" margin was enough. Each leg's own
-        # clearance, checked against every feature's real extent in
-        # custom_scene.xml:
-        #   (6.4, 4.2):  east of stairs_gentle (x<=5.9) and stairs_steep
-        #                (x<=4.5); y=4.2 is ~1.2 m north of stairs_gentle's
-        #                own y<=3.0 edge.
-        #   (0.3, 4.2):  straight line at y=4.2 from x=6.4 to x=0.3 stays
-        #                well north of stairs_gentle (y<=3.0) and well
-        #                south of rubble's own y=[5.17,6.90] row.
-        #   (0.3, 6.0):  straight line at x=0.3 from y=4.2 to y=6.0 stays
-        #                west of stairs_steep (x>=1.4) and east of
-        #                rubble (x<=-0.43) the whole way.
+        # Fixed below with a 4-waypoint route that stays clear of all
+        # four known geoms (stairs_gentle, the tilted plate, stairs_steep,
+        # and rubble) at every leg, not just the two staircases:
+        #   (6.4, 4.2):  east of stairs_gentle (x<=5.9), the plate
+        #                (x<=3.5) and stairs_steep (x<=4.5) -- x alone
+        #                clears all three regardless of y, same as the
+        #                first detour leg both earlier attempts already
+        #                verified working.
+        #   (6.4, 5.0):  still x=6.4 (same reasoning), y raised to 5.0 to
+        #                line up for the crossing leg below.
+        #   (0.0, 5.0):  the x-decreasing leg, at y=5.0 -- the one gap in
+        #                y that clears BOTH the plate (ends at y=4.75,
+        #                0.25 m clear) and stairs_steep (starts at
+        #                y=5.25, 0.25 m clear) at once; x=0.0 matches
+        #                rubble's own "clear" approach point below, since
+        #                rubble's own x only reaches -0.43 (0.43 m clear)
+        #                and the plate's x starts at 0.5 (0.5 m clear).
+        #   (0.0, 6.0):  x=0.0 stays clear of the plate (x<=3.5) and
+        #                stairs_steep (x>=1.4) the whole way north to
+        #                y=6.0, and clear of rubble (x<=-0.43) throughout.
         # Only matters for --feature all/when run after stairs_gentle;
         # run alone (--feature stairs_steep) the robot starts at spawn
         # (0,0) and never gets near any of this, so the detour is just
-        # harmless extra distance either way. If a future run still
-        # catches an edge here, widen the margin further rather than
-        # assume the geometry reasoning above is exactly right --
-        # it hasn't been confirmed against the scene file's actual
-        # collision geoms, only inferred from two real-run failures.
-        "approach_via": [(6.4, 4.2), (0.3, 4.2), (0.3, 6.0)],
+        # harmless extra distance either way. The y=5.0 crossing leg has
+        # the tightest margins here (0.25 m each side, a real structural
+        # gap between the plate and stairs_steep, not a guess) -- if a
+        # future run still catches an edge there, the fix is routing
+        # around at larger x (east of stairs_steep too) rather than
+        # trying to thread an even narrower gap.
+        "approach_via": [(6.4, 4.2), (6.4, 5.0), (0.0, 5.0), (0.0, 6.0)],
     },
     # custom_scene.xml ~lines 184-320: ~70 boxes with small random
     # roll/pitch, forming a continuously uneven patch rather than discrete
