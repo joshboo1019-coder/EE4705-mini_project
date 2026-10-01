@@ -31,22 +31,11 @@ def goto_object(object_class: str, color: str,
     target_centered = False
     last_steer_direction = 0.0
     centering_retries = 0
-    clear_target_history = getattr(perception, "clear_target_history", None)
-    if callable(clear_target_history):
-        clear_target_history()
 
     while time.time() - t0 < config.APPROACH_TIMEOUT_S:
         frame = skills.get_camera_frame()
         detections = perception.detect(frame)
         target = _pick_target(detections, object_class, color)
-        remember_target = getattr(perception, "remember_target", None)
-        if target is not None:
-            if callable(remember_target):
-                remember_target(frame, target)
-        elif target_acquired:
-            recover_target = getattr(perception, "recover_target", None)
-            if callable(recover_target):
-                target = recover_target(frame, object_class, color)
 
         if target is None:
             if target_acquired:
@@ -58,7 +47,7 @@ def goto_object(object_class: str, color: str,
                         centering_retries += 1
                     else:
                         pose, distance = _approach_steps(
-                            skills, object_class, color, steps=2
+                            skills, object_class, color, steps=1
                         )
                         if _finish_if_found(
                                 skills, perception, object_class, color,
@@ -72,7 +61,7 @@ def goto_object(object_class: str, color: str,
                     consecutive_misses = 0
                 elif target_centered and consecutive_misses >= config.MAX_MISSES_BEFORE_LOST:
                     pose, distance = _approach_steps(
-                        skills, object_class, color, steps=2
+                        skills, object_class, color, steps=1
                     )
                     if _finish_if_found(
                             skills, perception, object_class, color,
@@ -114,7 +103,7 @@ def goto_object(object_class: str, color: str,
 
         # Advance in short steps, rechecking the stopping distance after each.
         pose, distance = _approach_steps(
-            skills, object_class, color, steps=2
+            skills, object_class, color, steps=1
         )
         if _finish_if_found(
                 skills, perception, object_class, color,
