@@ -20,7 +20,6 @@ from core.interfaces import SkillsAPI, PerceptionAPI
 from core.schema import RobotPose
 from core import config
 
-_CLEARANCE_MIN_M = 0.7
 _CAMERA_VERTICAL_FOV_DEG = 80.0
 _CAMERA_DOWN_PITCH_DEG = 14.0
 _CAMERA_HEIGHT_ABOVE_TRUNK_M = 0.16
@@ -283,7 +282,7 @@ def _finish_if_found(skills, perception, object_class, color, t0,
     d = _ground_truth_distance(pose, object_class, color)  # log only
     print(f"[RANGE] estimated_planar={estimated_distance:.2f} m "
           f"ground_truth={d:.2f} m phase=stop_check")
-    if not _CLEARANCE_MIN_M <= estimated_distance <= config.FOUND_DISTANCE_M:  # C2
+    if estimated_distance > config.FOUND_DISTANCE_M:  # C2
         return False
 
     print(f"[FOUND] class={object_class} color={color} "
