@@ -1066,7 +1066,8 @@ class RealSkills(SkillsAPI):
                  cruise_segment_duration: float = 0.2,
                  heading_correction_interval: float = 1.0,
                  arrival_tolerance: float = 0.3,
-                 max_duration_s: float = 30.0) -> str:
+                 max_duration_s: float = 30.0,
+                 max_height_jump: float = 0.15) -> str:
         """Run to (target_x, target_y) on open/flat ground at up to
         max_speed m/s, without the abrupt start/stop this file's other
         move()-based helpers can produce when used at higher speed:
@@ -1105,7 +1106,17 @@ class RealSkills(SkillsAPI):
         brake handoff undershot). No stuck/edge_drift detection here --
         this is meant for open ground, not terrain with a real risk of
         catching/falling (use climb_stairs()/cross_rough_terrain() for
-        that, which do have those guards)."""
+        that, which do have those guards).
+
+        Each segment's print line also includes trunk_z and, if it jumps
+        more than max_height_jump (default 0.15 m, same default as
+        _walk_terrain_segment_loop's own stumble flag) from the previous
+        segment, a "<-- trunk_z jumped ... likely impact/stumble" note --
+        same delta-based diagnostic climb_stairs() uses, included here
+        specifically so a collision test (running toward a solid object
+        with no obstacle-avoidance of its own -- this method doesn't
+        have any) has a real physical signal to look for beyond just
+        "did it stop short of the target"."""
         pose = self.get_robot_pose()
         dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
         if dist_remaining <= arrival_tolerance:
@@ -1118,6 +1129,16 @@ class RealSkills(SkillsAPI):
 
         deadline = self._get_sim_time() + max_duration_s
         last_correction_time = self._get_sim_time()
+        prev_trunk_z = self.get_trunk_height()
+
+        def _height_flag(trunk_z: float) -> tuple:
+            nonlocal prev_trunk_z
+            delta = trunk_z - prev_trunk_z
+            prev_trunk_z = trunk_z
+            if abs(delta) > max_height_jump:
+                return delta, (f"  <-- trunk_z jumped {delta:+.3f} m in one "
+                                f"segment, likely impact/stumble")
+            return delta, ""
 
         # --- Accelerate ---
         for i in range(1, accel_segments + 1):
@@ -1131,9 +1152,12 @@ class RealSkills(SkillsAPI):
                 return "completed"
             vx = max_speed * (i / accel_segments)
             self.move(vx=vx, vy=0.0, wz=0.0, duration=ramp_segment_duration)
+            trunk_z = self.get_trunk_height()
+            _, flag = _height_flag(trunk_z)
             print(f"  [RUN] accel {i}/{accel_segments} vx={vx:.2f} m/s "
                   f"x={pose.x:.2f} y={pose.y:.2f} yaw={pose.yaw_deg:.1f} "
-                  f"(dist remaining={dist_remaining:.2f} m)")
+                  f"trunk_z={trunk_z:.3f} m (dist remaining="
+                  f"{dist_remaining:.2f} m){flag}")
 
         # --- Cruise ---
         # Rough distance the braking ramp below will cover (average of
@@ -1157,9 +1181,11 @@ class RealSkills(SkillsAPI):
                     self.turn(turn_needed)
                 last_correction_time = self._get_sim_time()
             self.move(vx=max_speed, vy=0.0, wz=0.0, duration=cruise_segment_duration)
+            trunk_z = self.get_trunk_height()
+            _, flag = _height_flag(trunk_z)
             print(f"  [RUN] cruise vx={max_speed:.2f} m/s x={pose.x:.2f} "
-                  f"y={pose.y:.2f} yaw={pose.yaw_deg:.1f} "
-                  f"(dist remaining={dist_remaining:.2f} m)")
+                  f"y={pose.y:.2f} yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
+                  f"(dist remaining={dist_remaining:.2f} m){flag}")
 
         # --- Brake gently ---
         for i in range(decel_segments, 0, -1):
@@ -1172,9 +1198,12 @@ class RealSkills(SkillsAPI):
                 break
             vx = max_speed * (i / decel_segments)
             self.move(vx=vx, vy=0.0, wz=0.0, duration=ramp_segment_duration)
+            trunk_z = self.get_trunk_height()
+            _, flag = _height_flag(trunk_z)
             print(f"  [RUN] decel {decel_segments - i + 1}/{decel_segments} "
                   f"vx={vx:.2f} m/s x={pose.x:.2f} y={pose.y:.2f} "
-                  f"yaw={pose.yaw_deg:.1f} (dist remaining={dist_remaining:.2f} m)")
+                  f"yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
+                  f"(dist remaining={dist_remaining:.2f} m){flag}")
 
         self.stop()
         pose = self.get_robot_pose()
