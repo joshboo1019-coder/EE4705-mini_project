@@ -94,12 +94,53 @@ reproducible when stairs_steep runs right after stairs_gentle
 (--feature all); running it alone starts from spawn and never approaches
 stairs_gentle's strip in the first place.
 
+A fourth, fifth and sixth real run iterated on that detour (two margin-
+widening attempts both got stuck at the exact same x regardless of y,
+which is what led to discovering the uncharted tilted plate described
+above) before landing on the current 4-waypoint route. A SEVENTH real run
+confirmed that route works: stairs_gentle completed again cleanly (29
+segments, dist_short_of_target=0.07 m), and stairs_steep's detour +
+approach now also completes cleanly (dist_short_of_target=0.05 m,
+heading_drift=1.0 deg) -- the approach-routing problem is solved. That
+same run then surfaced a DIFFERENT, FOURTH real issue, this time in the
+actual stairs_steep crossing itself (not the approach): climbing from
+(0.9,6.0) toward (5.0,6.0), the robot's y drifted steadily from 6.02 down
+to 5.43 (centerline 6.0, real physical edge 5.25) over 10 segments and
+tripped the edge_drift guard -- while x barely advanced (1.06->1.36 over
+those same 10 segments) and most of the drift's back half never
+triggered a [TURN] correction at all. Root cause (see skills_real.py's
+_face_waypoint docstring for the full mechanism): plain bearing-to-the-
+far-off-target is a weak corrective signal once something -- here, the
+steep stairs' taller risers (0.10 m vs stairs_gentle's 0.05 m) -- is
+actively pushing the robot sideways every segment, because bearing-to-
+target and the robot's own disturbed yaw can drift in lockstep, keeping
+the per-segment turn-needed error under its 1 deg deadband the whole
+time even as the robot's actual position keeps sliding toward the edge.
+Fixed by adding an explicit cross-track correction term to
+_face_waypoint (recenter_gain, default 1.5) that biases the aim point by
+how far the robot currently is from width_center, not just by bearing to
+the distant target -- this reacts to the CURRENT drift directly instead
+of only to the angle toward a far-off point. Not yet verified against a
+real run; if the next run still drifts toward the edge, raise
+recenter_gain (pass it through climb_stairs()); if it visibly zig-zags
+or loses forward progress instead, lower it.
+
 RUN (from the project root):
     python tools/visual_test_rough_terrain.py                     # all three features, in order
     python tools/visual_test_rough_terrain.py --feature stairs_gentle
     python tools/visual_test_rough_terrain.py --feature stairs_steep
     python tools/visual_test_rough_terrain.py --feature rubble
+    python tools/visual_test_rough_terrain.py --feature stairs_gentle rubble  # skip stairs_steep
     python tools/visual_test_rough_terrain.py --native             # native MuJoCo window instead of the browser panel
+
+--feature now takes one or more names (or "all"); any selection other than
+"all" still runs in FEATURES' own canonical order (stairs_gentle, then
+stairs_steep, then rubble) regardless of the order typed, not the order
+given on the command line -- "--feature stairs_gentle rubble" is the
+intended way to exercise the gentle staircase and the rubble patch back to
+back while stairs_steep's own climb is still being tuned (see skills_real.
+py's climb_stairs() for its current state), without stopping there the way
+"--feature all" would once stairs_steep fails to complete.
 
 `--gui`/`--native` are mutually exclusive, same convention as every other
 tools/visual_test_task*.py script; `--gui` (the browser panel) is the
@@ -231,6 +272,26 @@ FEATURES = {
         "clear": (-2.6, 7.1),
         "description": "~1.9x1.8 m randomly-tilted rubble patch "
                         "(x [-2.32,-0.43], y [5.17,6.90])",
+        # Only matters when rubble is run right after stairs_gentle with
+        # stairs_steep SKIPPED (e.g. --feature stairs_gentle rubble) --
+        # a straight line from stairs_gentle's own end point (~6.3, 2.0)
+        # to rubble's approach point (0.0, 5.0) cuts back through BOTH
+        # stairs_gentle's own strip (grazes y=3.0 at x~4.3) and the
+        # tilted plate (grazes its x=0.5 edge at y~4.75) -- the same
+        # "diagonal cut-back through terrain already crossed" problem
+        # stairs_steep's own approach_via was written to avoid (see its
+        # comment above). Reuses the first two legs of that ALREADY
+        # real-run-verified route (east at x=6.4, clear of stairs_gentle/
+        # the plate/stairs_steep regardless of y, then across to y=5.0
+        # through the one real gap between the plate and stairs_steep) --
+        # the second waypoint (6.4, 5.0) is a short, already-proven-safe
+        # final hop from rubble's own approach point (0.0, 5.0), so no
+        # new unverified geometry is introduced here. If rubble instead
+        # runs after a (future, successful) stairs_steep crossing, this
+        # detour is just some extra but still-safe distance, not a
+        # problem -- x=6.4 and y=5.0 stay clear of every known geom
+        # regardless of where stairs_steep itself left the robot.
+        "approach_via": [(6.4, 4.2), (6.4, 5.0)],
     },
 }
 
@@ -376,15 +437,34 @@ def _wrap_deg(angle_deg: float) -> float:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--feature", choices=list(FEATURES) + ["all"], default="all",
-                     help="which terrain feature to test (default: all three, "
-                          "in order: stairs_gentle, stairs_steep, rubble)")
+    ap.add_argument("--feature", nargs="+", choices=list(FEATURES) + ["all"],
+                     default=["all"],
+                     help="which terrain feature(s) to test -- one or more "
+                          "names, or 'all' (default: all three, in order: "
+                          "stairs_gentle, stairs_steep, rubble). e.g. "
+                          "--feature stairs_gentle rubble runs just those "
+                          "two, in that order, skipping stairs_steep "
+                          "(useful while stairs_steep's own climb is still "
+                          "being tuned -- see skills_real.py's climb_stairs "
+                          "for the latest state of that).")
     ap.add_argument("--native", action="store_true",
                      help="open the native MuJoCo window instead of the "
                           "browser panel (see module docstring)")
     args = ap.parse_args()
 
-    features_to_run = list(FEATURES) if args.feature == "all" else [args.feature]
+    # "all" always means the full, canonical three; any other selection
+    # keeps FEATURES' own dict order regardless of the order typed on the
+    # command line (e.g. --feature rubble stairs_gentle still runs
+    # stairs_gentle first), since a feature's own approach_via/approach
+    # logic assumes it may be chained after an earlier one in that order
+    # (see e.g. rubble's own approach_via comment above, written
+    # specifically for the stairs_gentle-then-rubble, skip-stairs_steep
+    # case this --feature change exists to support).
+    if "all" in args.feature:
+        features_to_run = list(FEATURES)
+    else:
+        selected = set(args.feature)
+        features_to_run = [name for name in FEATURES if name in selected]
 
     if len(features_to_run) > 1:
         # RealSkills/the platform has no exposed way to reset the robot's
