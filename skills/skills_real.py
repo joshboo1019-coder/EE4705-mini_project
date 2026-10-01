@@ -1147,12 +1147,20 @@ class RealSkills(SkillsAPI):
         163.5 deg initial turn chained in from wherever the previous
         scenario left the robot facing. Not a collision -- the gait
         hadn't recovered from that large in-place rotation before being
-        asked to accelerate immediately. Fixed by adding a brief
-        stationary hold (0.3 s) after any initial turn bigger than
-        45 deg, before the accel ramp starts -- see the comment inline
-        at that turn call, a few lines below, for the exact numbers.
-        Not yet re-verified against a real run with this settle hold in
-        place."""
+        asked to accelerate immediately.
+
+        REVISED AGAIN after the real run that exercised this for the
+        first time: a single fixed 0.3 s hold was not enough -- on a
+        smaller ~109 deg turn, the robot still froze with yaw drifting
+        for several MORE segments after the hold. turn() converging
+        doesn't mean the robot's physical angular momentum from the spin
+        has actually dissipated, and no single fixed guess can know how
+        long that takes for a given turn size. Replaced with a loop that
+        holds in short bursts and checks yaw between them, stopping once
+        yaw drift goes below a small tolerance (or a generous cap is
+        hit) -- see the comment inline at that turn call, a few lines
+        below, for the exact numbers. Not yet re-verified against a real
+        run with this version of the fix in place."""
         pose = self.get_robot_pose()
         dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
         if dist_remaining <= arrival_tolerance:
@@ -1175,12 +1183,40 @@ class RealSkills(SkillsAPI):
                 # being asked to translate at speed, the same kind of
                 # instability large re-orientations caused elsewhere in
                 # this file (see _face_waypoint's own comment on stairs_
-                # steep). A short stationary hold here, after any initial
-                # turn bigger than 45 deg, gives the policy a moment to
-                # settle its stance before the accel ramp starts -- cheap
-                # insurance against a false "stuck" read. Not yet re-
-                # verified against a real run with this fix in place.
-                self.move(vx=0.0, vy=0.0, wz=0.0, duration=0.3)
+                # steep).
+                #
+                # REVISED AGAIN after the real run that exercised this
+                # exact fix for the first time: a single fixed 0.3 s hold
+                # was NOT enough. On a ~109 deg initial turn (smaller than
+                # the 163.5 deg case above), the robot froze at the very
+                # start of the accel ramp with yaw STILL drifting for
+                # several MORE segments afterward (162.2 -> 164.9 -> 166.7
+                # -> 169.8 -> 172.7 deg, each one only 0.15-0.2 s apart) --
+                # turn()'s own convergence (it stops once yaw is within
+                # its own tolerance of the target) doesn't mean the
+                # robot's physical angular momentum from a big in-place
+                # spin has actually dissipated by then, and a single
+                # guessed hold duration can't know how long that takes
+                # for a given turn size.
+                #
+                # Fixed by holding in repeated short bursts and actually
+                # checking yaw between them, instead of one fixed-length
+                # guess: keep holding until yaw stops changing much
+                # (< 1 deg over a burst) or a generous cap is hit, so the
+                # hold is only as long as this particular turn needs.
+                settle_burst_s = 0.3
+                max_settle_total_s = 1.8
+                settle_drift_tolerance_deg = 1.0
+                total_settled = 0.0
+                prev_yaw = self.get_robot_pose().yaw_deg
+                while total_settled < max_settle_total_s:
+                    self.move(vx=0.0, vy=0.0, wz=0.0, duration=settle_burst_s)
+                    total_settled += settle_burst_s
+                    cur_yaw = self.get_robot_pose().yaw_deg
+                    yaw_drift = abs(_wrap_deg(cur_yaw - prev_yaw))
+                    prev_yaw = cur_yaw
+                    if yaw_drift < settle_drift_tolerance_deg:
+                        break
 
         deadline = self._get_sim_time() + max_duration_s
         last_correction_time = self._get_sim_time()
