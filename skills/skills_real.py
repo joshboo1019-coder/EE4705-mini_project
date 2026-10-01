@@ -1136,7 +1136,23 @@ class RealSkills(SkillsAPI):
         distance that segment's own vx*duration implied, for
         stuck_segments_before_abort segments running, stop and return
         "stuck" immediately -- a handful of segments (well under a
-        second of sim time at the defaults), not the full timeout."""
+        second of sim time at the defaults), not the full timeout.
+
+        REVISED AGAIN after the NEXT real run with that stuck-detector in
+        place: it worked correctly on a genuine collision (stuck 0.31 m
+        from a real object, after covering several real meters first),
+        but ALSO fired as a false positive on a different scenario --
+        frozen 4.34 m from the nearest object, yaw drifting steadily
+        (145.9 -> 157.3 deg) with near-zero translation, right after a
+        163.5 deg initial turn chained in from wherever the previous
+        scenario left the robot facing. Not a collision -- the gait
+        hadn't recovered from that large in-place rotation before being
+        asked to accelerate immediately. Fixed by adding a brief
+        stationary hold (0.3 s) after any initial turn bigger than
+        45 deg, before the accel ramp starts -- see the comment inline
+        at that turn call, a few lines below, for the exact numbers.
+        Not yet re-verified against a real run with this settle hold in
+        place."""
         pose = self.get_robot_pose()
         dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
         if dist_remaining <= arrival_tolerance:
@@ -1146,6 +1162,25 @@ class RealSkills(SkillsAPI):
         turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
         if abs(turn_needed) > 1.0:
             self.turn(turn_needed)
+            if abs(turn_needed) > 45.0:
+                # REVISED after a real run (tools/visual_test_run_fast.py's
+                # collision test, chained right after a scenario that left
+                # the robot facing a very different direction): a 163.5 deg
+                # initial turn, immediately followed by demanding
+                # acceleration, produced a "stuck" result 4.34 m from the
+                # nearest object -- position frozen while yaw kept drifting
+                # (145.9 -> 152.0 -> 157.3 deg) for several segments, not
+                # the signature of hitting something. That's the gait not
+                # having recovered from a large in-place rotation before
+                # being asked to translate at speed, the same kind of
+                # instability large re-orientations caused elsewhere in
+                # this file (see _face_waypoint's own comment on stairs_
+                # steep). A short stationary hold here, after any initial
+                # turn bigger than 45 deg, gives the policy a moment to
+                # settle its stance before the accel ramp starts -- cheap
+                # insurance against a false "stuck" read. Not yet re-
+                # verified against a real run with this fix in place.
+                self.move(vx=0.0, vy=0.0, wz=0.0, duration=0.3)
 
         deadline = self._get_sim_time() + max_duration_s
         last_correction_time = self._get_sim_time()
