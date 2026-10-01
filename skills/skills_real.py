@@ -252,7 +252,7 @@ class RealSkills(SkillsAPI):
         # height_range= below) -- stored so crouch()/stand()/set_height()
         # can clamp into it instead of sending the policy a height_cmd it
         # was never trained on.
-        self._height_range = (0.20, 0.35)
+        self._height_range = (0.28, 0.35)
 
         runtime_config = make_runtime_config(
             gui=gui and not native_viewer,
