@@ -201,7 +201,13 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
     height_delta = end_height - start_height
 
     reasons = []
-    if outcome != "completed":
+    if outcome == "stuck":
+        reasons.append(
+            f"run_fast() returned 'stuck' -- its own stuck-detector caught "
+            f"forward progress stalling out (well short of what the "
+            f"commanded vx implied) for several segments running, the "
+            f"most direct signal this script can get of a real collision")
+    elif outcome != "completed":
         reasons.append(
             f"run_fast() returned {outcome!r} instead of 'completed' -- it "
             f"did not finish its own accelerate/cruise/brake profile, "
