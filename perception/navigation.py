@@ -167,27 +167,25 @@ def _approach_steps(skills: SkillsAPI, object_class: str, color: str,
     return pose, distance
 
 
-def _finish_if_found(skills: SkillsAPI, perception: PerceptionAPI,
-                     object_class: str, color: str, distance: float,
-                     t0: float) -> bool:
+def _finish_if_found(skills, perception, object_class, color, distance, t0) -> bool:
     if distance > config.FOUND_DISTANCE_M:
         return False
 
     skills.stop()
+    time.sleep(0.4)  # let the gait settle and a fresh frame render
+
     pose = skills.get_robot_pose()
-    frame = skills.get_camera_frame()
-    detections = perception.detect(frame)
-    target = _pick_target(detections, object_class, color)
-    if target is None:
-        recover_target = getattr(perception, "recover_target", None)
-        if callable(recover_target):
-            target = recover_target(frame, object_class, color)
-    if target is None:
+    d = _ground_truth_distance(pose, object_class, color)   # distance AT stop
+    if d > config.FOUND_DISTANCE_M:                          # C2
         return False
 
-    elapsed = time.time() - t0
+    frame = skills.get_camera_frame()
+    target = _pick_target(perception.detect(frame), object_class, color)
+    if target is None:                                       # C1: live detection only
+        return False
+
     print(f"[FOUND] class={object_class} color={color} "
-          f"t={elapsed:.1f} s d={distance:.2f} m")
+          f"t={time.time() - t0:.1f} s d={d:.2f} m")          # C3
     print("[MISSION] status=SUCCESS")
     return True
 
