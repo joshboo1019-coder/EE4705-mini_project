@@ -9,6 +9,7 @@ Maintains dialogue history and rejects/flags non-English input.
 import threading
 from typing import List, Dict
 
+from core import config
 from core.schema import CommandQueue
 from dialogue import llm_parser
 
@@ -29,18 +30,26 @@ def _chat_loop(queue: CommandQueue) -> None:
             break
         if not user_text:
             continue
+        handle_utterance(user_text, history, queue)
 
-        history.append({"role": "user", "content": user_text})
-        result = llm_parser.parse_command(user_text, history)
 
-        if not result.accepted:
-            history.append({"role": "assistant",
-                             "content": f"rejected: {result.reject_reason}"})
-            continue
+def handle_utterance(user_text: str, history: List[Dict[str, str]],
+                     queue: CommandQueue):
+    """Parse one utterance against the PREVIOUS turns, queue the accepted
+    commands, then record the exchange in `history` (trimmed to the last
+    config.LLM_HISTORY_TURNS exchanges). Returns the ParseResult."""
+    result = llm_parser.parse_command(user_text, history)
 
-        history.append({"role": "assistant",
-                         "content": f"accepted {len(result.commands)} action(s)"})
+    # The assistant turn is the accepted actions as JSON (or the reject
+    # reason), so "do that again, but slower" can see what "that" was.
+    history.append({"role": "user", "content": user_text})
+    history.append({"role": "assistant",
+                    "content": llm_parser.history_entry(result)})
+    del history[:-2 * config.LLM_HISTORY_TURNS]
+
+    if result.accepted:
         queue.push_many(result.commands)
         # NOTE: do not wait for [DONE] here — the executor thread handles
         # execution independently, which is what keeps this loop responsive
         # for the next typed command.
+    return result

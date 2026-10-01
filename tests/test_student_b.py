@@ -1,18 +1,28 @@
 """
-Student B: run this to exercise parse -> queue -> executor end-to-end
-without needing Student A's MuJoCo sim or Student C's YOLO to exist yet.
+Student B: exercise parse -> queue -> executor end-to-end without needing
+Student A's MuJoCo sim or Student C's YOLO to exist yet.
 
-    python tests/test_parser_with_mock.py
+    python -m pytest -q tests/test_student_b.py   # offline: fake LLM, no keys
+    python tests/test_student_b.py                # live: calls config.LLM_SERVICE
+
+(If ROS's PYTHONPATH is set in your shell, prefix with `env -u PYTHONPATH`.)
 """
 
+import json
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.schema import CommandQueue
+import pytest
+
+from core import config
+from core.schema import (
+    CommandQueue, MoveCommand, TurnCommand, GotoObjectCommand, StopCommand,
+    ChatCommand,
+)
 from skills.skills_mock import MockSkills
 from perception.perception_mock import MockPerception
 from dialogue.executor import CommandExecutor
-from dialogue import llm_parser
+from dialogue import chat_interface, llm_parser
 
 TEST_UTTERANCES = [
     "walk forward for three seconds, then turn back",
@@ -21,6 +31,167 @@ TEST_UTTERANCES = [
     "avancez tout droit",       # non-English, should be rejected
 ]
 
+
+# ---------------------------------------------------------------------------
+# Offline tests: _call_llm is replaced by a fake, so these need no API key.
+# ---------------------------------------------------------------------------
+
+def _actions(*acts):
+    return json.dumps({"actions": list(acts)})
+
+
+MOVE_3S = {"action": "move", "vx": 0.8, "vy": 0.0, "wz": 0.0, "duration": 3.0}
+TURN_BACK = {"action": "turn", "angle_deg": 180}
+
+
+@pytest.fixture
+def fake_llm(monkeypatch):
+    """Replaces _call_llm with a canned reply; records what it was sent."""
+    calls = []
+    replies = []
+
+    def fake(user_text, history):
+        calls.append((user_text, [dict(m) for m in history]))
+        return replies.pop(0)
+
+    monkeypatch.setattr(llm_parser, "_call_llm", fake)
+    fake.calls, fake.replies = calls, replies
+    return fake
+
+
+def test_multi_step_command_is_ordered(fake_llm, capsys):
+    fake_llm.replies.append(_actions(MOVE_3S, TURN_BACK))
+    r = llm_parser.parse_command(TEST_UTTERANCES[0], [])
+    assert r.accepted
+    assert r.commands == [MoveCommand(0.8, 0.0, 0.0, 3.0), TurnCommand(180.0)]
+    assert "[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2" in capsys.readouterr().out
+
+
+def test_goto_object_normalised(fake_llm):
+    fake_llm.replies.append(_actions(
+        {"action": "goto_object", "class": " Chair ", "color": "GREEN"}))
+    r = llm_parser.parse_command("go to the green chair", [])
+    assert r.commands == [GotoObjectCommand("chair", "green")]
+
+
+def test_model_rejection_is_passed_through(fake_llm, capsys):
+    fake_llm.replies.append('{"rejected": true, "reason": "impossible:fly"}')
+    r = llm_parser.parse_command("fly to the roof", [])
+    assert not r.accepted and r.reject_reason == "impossible:fly"
+    assert "[CMD] rejected reason=impossible:fly" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("text,reason", [
+    ("", "empty"),
+    ("   ", "empty"),
+    ("向前走三秒", "non-English"),
+    ("иди вперёд", "non-English"),
+])
+def test_precheck_rejects_without_calling_llm(fake_llm, text, reason):
+    r = llm_parser.parse_command(text, [])
+    assert not r.accepted and r.reject_reason == reason
+    assert fake_llm.calls == []
+
+
+@pytest.mark.parametrize("raw,reason", [
+    ("not json", "malformed_json"),
+    ('{"foo": 1}', "invalid_field:actions"),
+    ('{"actions": []}', "empty_actions"),
+    (_actions({"action": "dance"}), "unknown_action:dance"),
+    (_actions({**MOVE_3S, "vx": 2.0}), "out_of_range:vx"),
+    (_actions({**MOVE_3S, "duration": 0}), "out_of_range:duration"),
+    (_actions({**MOVE_3S, "duration": 999}), "out_of_range:duration"),
+    (_actions({**MOVE_3S, "vx": "fast"}), "invalid_field:vx"),
+    (_actions({**MOVE_3S, "vx": True}), "invalid_field:vx"),
+    (_actions({"action": "move", "vx": 0.5}), "invalid_field:vy"),
+    (_actions({"action": "goto_object", "class": "unicorn", "color": ""}),
+     "unknown_class:unicorn"),
+    (_actions({"action": "chat", "reply": ""}), "invalid_field:reply"),
+])
+def test_invalid_llm_output_is_rejected(fake_llm, raw, reason):
+    fake_llm.replies.append(raw)
+    r = llm_parser.parse_command("walk", [])
+    assert not r.accepted and r.reject_reason == reason
+
+
+def test_one_bad_action_rejects_the_whole_batch(fake_llm):
+    fake_llm.replies.append(_actions(MOVE_3S, {"action": "turn"}))
+    r = llm_parser.parse_command("walk then turn", [])
+    assert not r.accepted and r.commands == []
+
+
+def test_markdown_fences_are_tolerated(fake_llm):
+    fake_llm.replies.append("```json\n" + _actions({"action": "stop"}) + "\n```")
+    assert llm_parser.parse_command("stop", []).commands == [StopCommand()]
+
+
+def test_llm_failure_becomes_rejection(monkeypatch):
+    def boom(user_text, history):
+        raise TimeoutError("slow")
+    monkeypatch.setattr(llm_parser, "_call_llm", boom)
+    r = llm_parser.parse_command("walk forward", [])
+    assert not r.accepted and r.reject_reason == "llm_error:TimeoutError"
+
+
+def test_unknown_service_is_reported(monkeypatch):
+    monkeypatch.setattr(config, "LLM_SERVICE", "no-such-llm")
+    r = llm_parser.parse_command("walk forward", [])
+    assert not r.accepted and r.reject_reason == "llm_error:ValueError"
+
+
+def test_history_entry_round_trips():
+    r = llm_parser._to_parse_result(_actions(MOVE_3S, TURN_BACK))
+    assert llm_parser._to_parse_result(llm_parser.history_entry(r)).commands == r.commands
+
+
+def test_chat_history_supports_follow_ups(fake_llm, monkeypatch):
+    monkeypatch.setattr(config, "LLM_HISTORY_TURNS", 2)
+    history, queue = [], CommandQueue()
+    fake_llm.replies += [
+        _actions(MOVE_3S),
+        '{"rejected": true, "reason": "impossible:fly"}',
+        _actions({**MOVE_3S, "vx": 0.4}),
+    ]
+    chat_interface.handle_utterance("walk forward for three seconds", history, queue)
+    chat_interface.handle_utterance("fly", history, queue)
+    chat_interface.handle_utterance("do that again, but slower", history, queue)
+
+    # The LLM sees only PREVIOUS turns, never the current utterance twice.
+    text, seen = fake_llm.calls[2]
+    assert text == "do that again, but slower"
+    assert [m["content"] for m in seen if m["role"] == "user"] == [
+        "walk forward for three seconds", "fly"]
+    # The assistant turn holds the accepted actions themselves.
+    assert json.loads(seen[1]["content"]) == {"actions": [MOVE_3S]}
+    assert json.loads(seen[3]["content"]) == {"rejected": True,
+                                              "reason": "impossible:fly"}
+    # Trimmed to LLM_HISTORY_TURNS exchanges.
+    assert len(history) == 4 and history[0]["content"] == "fly"
+    # Only the two accepted moves were queued.
+    assert [queue.pop(timeout=0).vx for _ in range(2)] == [0.8, 0.4]
+    assert queue.empty()
+
+
+def test_end_to_end_on_mocks(fake_llm, capsys):
+    fake_llm.replies += [
+        _actions(MOVE_3S, TURN_BACK),
+        _actions({"action": "chat", "reply": "I can walk and turn."}),
+    ]
+    queue = CommandQueue()
+    executor = CommandExecutor(MockSkills(), MockPerception(), queue)
+    for text in ["walk forward for three seconds, then turn back",
+                 "what can you do?"]:
+        chat_interface.handle_utterance(text, [], queue)
+        executor._run_batch_starting_with(queue.pop())
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/2 move" in out and "[EXEC] action=2/2 turn" in out
+    assert "[DONE] actions=2" in out
+    assert "Robot: I can walk and turn." in out
+
+
+# ---------------------------------------------------------------------------
+# Live smoke test against the real config.LLM_SERVICE.
+# ---------------------------------------------------------------------------
 
 def main():
     skills = MockSkills()

@@ -21,9 +21,13 @@ OBJECT_POSITIONS = {
     "blue_chair": (3.45, 2.0),
 }
 
-# --- Task 3 (Student B) -----------------------------------------------------
-LLM_SERVICE = "qwen-flash"   # swap to compare >=2 services, e.g. "gpt-5-nano"
+# --- Task 3 (Student B owns this section) ----------------------------------
+# One of dialogue.llm_parser.SERVICES: "qwen-flash", "qwen-plus",
+# "gemini-3.8-flash", "gpt-5-nano", "gpt-5-mini".
+LLM_SERVICE = "qwen-flash"
 LLM_TIMEOUT_S = 15
+LLM_MAX_DURATION_S = 30.0     # parser rejects move commands longer than this
+LLM_HISTORY_TURNS = 6         # user+assistant exchanges kept as LLM context
 
 # --- Task 4 (Student C) -----------------------------------------------------
 YOLO_MODEL = "yolo11n.pt"
