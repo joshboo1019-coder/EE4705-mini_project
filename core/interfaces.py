@@ -49,6 +49,79 @@ class SkillsAPI(ABC):
     def get_robot_pose(self) -> RobotPose:
         """Current (x, y, yaw_deg) of the robot base (trunk) in world frame."""
 
+    # ----------------------------------------------------------------
+    # Optional extended skills (not part of the frozen core contract).
+    # Default bodies raise NotImplementedError so a subclass that
+    # doesn't override one fails loudly and specifically if ever called,
+    # instead of an undeclared AttributeError.
+    # ----------------------------------------------------------------
+ 
+    def crouch(self) -> None:
+        """Command the lower end of the implementation's stance-height
+        range. Optional — see RealSkills.crouch() for the real body."""
+        raise NotImplementedError("crouch() is an optional SkillsAPI "
+                                   "extension; this implementation doesn't "
+                                   "provide it")
+ 
+    def stand(self) -> None:
+        """Command the upper end of the implementation's stance-height
+        range. Optional — see RealSkills.stand() for the real body."""
+        raise NotImplementedError("stand() is an optional SkillsAPI "
+                                   "extension; this implementation doesn't "
+                                   "provide it")
+ 
+    def get_trunk_height(self) -> float:
+        """Diagnostic: the trunk's actual measured world-frame z. Optional
+        — see RealSkills.get_trunk_height() for the real body."""
+        raise NotImplementedError("get_trunk_height() is an optional "
+                                   "SkillsAPI extension; this implementation "
+                                   "doesn't provide it")
+ 
+    def climb_stairs(self, target_x: float, target_y: float,
+                      width_axis: Optional[str] = None,
+                      width_center: Optional[float] = None,
+                      width_limit: Optional[float] = None,
+                      segment_len: float = 0.3, speed: float = 0.3,
+                      recenter_gain: float = 0.0,
+                      max_recenter_turn_deg: float = 6.0,
+                      climb_height_cmd: Optional[float] = None) -> str:
+        """Walk to (target_x, target_y) across a staircase, re-facing the
+        target every short segment. Optional — see RealSkills.climb_stairs()
+        for the real body and the real-run tuning behind its defaults."""
+        raise NotImplementedError("climb_stairs() is an optional SkillsAPI "
+                                   "extension; this implementation doesn't "
+                                   "provide it")
+ 
+    def cross_rough_terrain(self, target_x: float, target_y: float,
+                             segment_len: float = 0.3,
+                             speed: float = 0.3) -> str:
+        """Walk to (target_x, target_y) across uneven/rubble terrain using
+        the same segment-walk engine as climb_stairs(), without the
+        width/edge guard. Optional — see RealSkills.cross_rough_terrain()."""
+        raise NotImplementedError("cross_rough_terrain() is an optional "
+                                   "SkillsAPI extension; this implementation "
+                                   "doesn't provide it")
+ 
+    def run_fast(self, target_x: float, target_y: float,
+                 max_speed: float = 1.0,
+                 accel_segments: int = 5,
+                 decel_segments: int = 5,
+                 ramp_segment_duration: float = 0.15,
+                 cruise_segment_duration: float = 0.2,
+                 heading_correction_interval: float = 1.0,
+                 arrival_tolerance: float = 0.3,
+                 max_duration_s: float = 30.0,
+                 max_height_jump: float = 0.15,
+                 stuck_dist_fraction: float = 0.25,
+                 stuck_segments_before_abort: int = 3) -> str:
+        """Run to (target_x, target_y) at up to max_speed with an
+        accelerate/cruise/brake profile, instead of move()'s single
+        constant-velocity command. Optional — see RealSkills.run_fast()
+        for the real body and why it has no obstacle avoidance."""
+        raise NotImplementedError("run_fast() is an optional SkillsAPI "
+                                   "extension; this implementation doesn't "
+                                   "provide it")
+
 
 class PerceptionAPI(ABC):
     """Task 4 detection + color grounding. Implemented by Student C."""
