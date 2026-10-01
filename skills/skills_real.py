@@ -1067,7 +1067,9 @@ class RealSkills(SkillsAPI):
                  heading_correction_interval: float = 1.0,
                  arrival_tolerance: float = 0.3,
                  max_duration_s: float = 30.0,
-                 max_height_jump: float = 0.15) -> str:
+                 max_height_jump: float = 0.15,
+                 stuck_dist_fraction: float = 0.25,
+                 stuck_segments_before_abort: int = 3) -> str:
         """Run to (target_x, target_y) on open/flat ground at up to
         max_speed m/s, without the abrupt start/stop this file's other
         move()-based helpers can produce when used at higher speed:
@@ -1100,23 +1102,41 @@ class RealSkills(SkillsAPI):
         arrived by then, this returns "timeout" rather than running
         forever on a bad heading/obstruction.
 
-        Returns "completed" (arrived within arrival_tolerance) or
-        "timeout" (ran out of time) or "incomplete" (braking finished
-        but still outside twice arrival_tolerance -- e.g. the cruise-to-
-        brake handoff undershot). No stuck/edge_drift detection here --
-        this is meant for open ground, not terrain with a real risk of
-        catching/falling (use climb_stairs()/cross_rough_terrain() for
-        that, which do have those guards).
+        Returns "completed" (arrived within arrival_tolerance), "timeout"
+        (ran out of time), "stuck" (see below), or "incomplete" (braking
+        finished but still outside twice arrival_tolerance -- e.g. the
+        cruise-to-brake handoff undershot). No edge_drift-style guard
+        here -- this is meant for open ground, not a staircase strip
+        with a real fall-off-the-side edge (use climb_stairs() for
+        that).
 
-        Each segment's print line also includes trunk_z and, if it jumps
-        more than max_height_jump (default 0.15 m, same default as
-        _walk_terrain_segment_loop's own stumble flag) from the previous
+        Each segment's print line includes trunk_z and, if it jumps more
+        than max_height_jump (default 0.15 m, same default as _walk_
+        terrain_segment_loop's own stumble flag) from the previous
         segment, a "<-- trunk_z jumped ... likely impact/stumble" note --
-        same delta-based diagnostic climb_stairs() uses, included here
-        specifically so a collision test (running toward a solid object
-        with no obstacle-avoidance of its own -- this method doesn't
-        have any) has a real physical signal to look for beyond just
-        "did it stop short of the target"."""
+        same delta-based diagnostic climb_stairs() uses.
+
+        REVISED after a real run aimed deliberately at a known object
+        (tools/visual_test_run_fast.py's own collision test): the robot
+        drove straight into it and got physically stuck pushing against
+        it -- position frozen for dozens of consecutive cruise segments,
+        well within the object's own radius, while still commanding full
+        vx every segment. TWO problems that run surfaced, both fixed
+        now: (1) the printed x/y/yaw in each [RUN] line were the PRE-
+        move pose (captured before that segment's move() call), not the
+        POST-move pose -- stale by one segment, inconsistent with trunk_z
+        in the same line (which WAS post-move) and with climb_stairs()'s
+        own convention; both are now consistently post-move. (2) with no
+        stuck-detector, that collision would have run for the full
+        max_duration_s (30 s default) before returning "timeout" -- the
+        real run had to be interrupted by hand before reaching it. Added
+        a stuck-detector with the SAME parameters/logic as _walk_terrain_
+        segment_loop's own (stuck_dist_fraction, stuck_segments_before_
+        abort): if a segment covers less than stuck_dist_fraction of the
+        distance that segment's own vx*duration implied, for
+        stuck_segments_before_abort segments running, stop and return
+        "stuck" immediately -- a handful of segments (well under a
+        second of sim time at the defaults), not the full timeout."""
         pose = self.get_robot_pose()
         dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
         if dist_remaining <= arrival_tolerance:
@@ -1130,34 +1150,56 @@ class RealSkills(SkillsAPI):
         deadline = self._get_sim_time() + max_duration_s
         last_correction_time = self._get_sim_time()
         prev_trunk_z = self.get_trunk_height()
+        stuck_streak = 0
 
-        def _height_flag(trunk_z: float) -> tuple:
+        def _height_flag(trunk_z: float) -> str:
             nonlocal prev_trunk_z
             delta = trunk_z - prev_trunk_z
             prev_trunk_z = trunk_z
             if abs(delta) > max_height_jump:
-                return delta, (f"  <-- trunk_z jumped {delta:+.3f} m in one "
-                                f"segment, likely impact/stumble")
-            return delta, ""
+                return (f"  <-- trunk_z jumped {delta:+.3f} m in one "
+                         f"segment, likely impact/stumble")
+            return ""
+
+        def _check_stuck(pose_before, pose_after, vx: float, duration: float) -> str:
+            nonlocal stuck_streak
+            expected = abs(vx) * duration
+            if expected <= 1e-9:
+                return ""
+            moved = math.hypot(pose_after.x - pose_before.x, pose_after.y - pose_before.y)
+            if moved < stuck_dist_fraction * expected:
+                stuck_streak += 1
+            else:
+                stuck_streak = 0
+            if stuck_streak >= stuck_segments_before_abort:
+                return (f"  <-- moved only {moved:.3f} m of an expected "
+                         f"~{expected:.3f} m for {stuck_streak} segments "
+                         f"running, likely blocked/collided")
+            return ""
 
         # --- Accelerate ---
         for i in range(1, accel_segments + 1):
             if self._get_sim_time() >= deadline:
                 self.stop()
                 return "timeout"
-            pose = self.get_robot_pose()
-            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            pose_before = self.get_robot_pose()
+            dist_remaining = math.hypot(target_x - pose_before.x, target_y - pose_before.y)
             if dist_remaining <= arrival_tolerance:
                 self.stop()
                 return "completed"
             vx = max_speed * (i / accel_segments)
             self.move(vx=vx, vy=0.0, wz=0.0, duration=ramp_segment_duration)
+            pose = self.get_robot_pose()
             trunk_z = self.get_trunk_height()
-            _, flag = _height_flag(trunk_z)
+            height_flag = _height_flag(trunk_z)
+            stuck_flag = _check_stuck(pose_before, pose, vx, ramp_segment_duration)
             print(f"  [RUN] accel {i}/{accel_segments} vx={vx:.2f} m/s "
                   f"x={pose.x:.2f} y={pose.y:.2f} yaw={pose.yaw_deg:.1f} "
                   f"trunk_z={trunk_z:.3f} m (dist remaining="
-                  f"{dist_remaining:.2f} m){flag}")
+                  f"{dist_remaining:.2f} m){height_flag}{stuck_flag}")
+            if stuck_flag:
+                self.stop()
+                return "stuck"
 
         # --- Cruise ---
         # Rough distance the braking ramp below will cover (average of
@@ -1170,40 +1212,50 @@ class RealSkills(SkillsAPI):
             if self._get_sim_time() >= deadline:
                 self.stop()
                 return "timeout"
-            pose = self.get_robot_pose()
-            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            pose_before = self.get_robot_pose()
+            dist_remaining = math.hypot(target_x - pose_before.x, target_y - pose_before.y)
             if dist_remaining <= max(arrival_tolerance, decel_distance_estimate):
                 break
             if self._get_sim_time() - last_correction_time >= heading_correction_interval:
-                bearing_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
-                turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
+                bearing_deg = math.degrees(math.atan2(target_y - pose_before.y, target_x - pose_before.x))
+                turn_needed = _wrap_deg(bearing_deg - pose_before.yaw_deg)
                 if abs(turn_needed) > 2.0:
                     self.turn(turn_needed)
                 last_correction_time = self._get_sim_time()
             self.move(vx=max_speed, vy=0.0, wz=0.0, duration=cruise_segment_duration)
+            pose = self.get_robot_pose()
             trunk_z = self.get_trunk_height()
-            _, flag = _height_flag(trunk_z)
+            height_flag = _height_flag(trunk_z)
+            stuck_flag = _check_stuck(pose_before, pose, max_speed, cruise_segment_duration)
             print(f"  [RUN] cruise vx={max_speed:.2f} m/s x={pose.x:.2f} "
                   f"y={pose.y:.2f} yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
-                  f"(dist remaining={dist_remaining:.2f} m){flag}")
+                  f"(dist remaining={dist_remaining:.2f} m){height_flag}{stuck_flag}")
+            if stuck_flag:
+                self.stop()
+                return "stuck"
 
         # --- Brake gently ---
         for i in range(decel_segments, 0, -1):
             if self._get_sim_time() >= deadline:
                 self.stop()
                 return "timeout"
-            pose = self.get_robot_pose()
-            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            pose_before = self.get_robot_pose()
+            dist_remaining = math.hypot(target_x - pose_before.x, target_y - pose_before.y)
             if dist_remaining <= arrival_tolerance:
                 break
             vx = max_speed * (i / decel_segments)
             self.move(vx=vx, vy=0.0, wz=0.0, duration=ramp_segment_duration)
+            pose = self.get_robot_pose()
             trunk_z = self.get_trunk_height()
-            _, flag = _height_flag(trunk_z)
+            height_flag = _height_flag(trunk_z)
+            stuck_flag = _check_stuck(pose_before, pose, vx, ramp_segment_duration)
             print(f"  [RUN] decel {decel_segments - i + 1}/{decel_segments} "
                   f"vx={vx:.2f} m/s x={pose.x:.2f} y={pose.y:.2f} "
                   f"yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
-                  f"(dist remaining={dist_remaining:.2f} m){flag}")
+                  f"(dist remaining={dist_remaining:.2f} m){height_flag}{stuck_flag}")
+            if stuck_flag:
+                self.stop()
+                return "stuck"
 
         self.stop()
         pose = self.get_robot_pose()
