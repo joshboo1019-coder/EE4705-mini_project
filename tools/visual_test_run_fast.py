@@ -403,7 +403,7 @@ def run_open_ground_scenario(skills: RealSkills) -> dict:
     docstring) and every graded object (all clustered in x [-4.5, -1.3],
     y [-2.0, 2.0] -- see core/config.py's OBJECT_POSITIONS), so a straight
     run from wherever an earlier scenario left the robot stays open."""
-    target_x, target_y = -3.0, -3.5
+    target_x, target_y = 0.0, -3.5
     print(f"\n=== open_ground: baseline run_fast() with nothing in the "
           f"path (target=({target_x}, {target_y})) ===")
 
