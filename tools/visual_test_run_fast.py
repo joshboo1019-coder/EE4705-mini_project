@@ -1,23 +1,29 @@
 """
 tools/visual_test_run_fast.py — exercise RealSkills.run_fast() (skills/
 skills_real.py's new accelerate/cruise/brake-gently high-speed helper, see
-that method's own docstring/class comment) and, specifically, check whether
-it collides with a known object instead of avoiding it.
+that method's own docstring/class comment) by touring it through this
+project's graded objects, treating getting close to each one as "reached"
+and moving on to the next -- see the "REVISED AGAIN: from collision test to
+waypoint tour" paragraph below for how this script's purpose changed and
+why the ORIGINAL design (summarized next) aimed deliberately THROUGH each
+object instead.
 
-WHY THIS EXISTS: run_fast() has NO obstacle avoidance of its own -- it only
-ramps a straight-line (vx, wz) command toward a target point, the same way
-move()/turn() always have. That's fine on open ground, but it means if the
-straight line from wherever the robot is to run_fast()'s target happens to
-pass through a solid object, nothing inside run_fast() will steer around it
-or even notice -- it'll just keep commanding forward velocity into whatever
-is there. This script deliberately aims run_fast() AT one of this project's
-own graded objects (core.config.OBJECT_POSITIONS -- the same chairs/signs/
-ball Task 4's perception pipeline is graded on finding), continuing PAST
-each object's own coordinate by a fixed overshoot distance, so the
-commanded path runs straight through it. Reading the result tells us
-whether run_fast() needs obstacle-avoidance added before it's used anywhere
-near these objects, or whether (unlikely, given it has none) it happens to
-clear them anyway.
+WHY THIS EXISTS (ORIGINAL DESIGN): run_fast() has NO obstacle avoidance of
+its own -- it only ramps a straight-line (vx, wz) command toward a target
+point, the same way move()/turn() always have. That's fine on open ground,
+but it means if the straight line from wherever the robot is to run_fast()'s
+target happens to pass through a solid object, nothing inside run_fast()
+will steer around it or even notice -- it'll just keep commanding forward
+velocity into whatever is there. This script ORIGINALLY aimed run_fast() AT
+one of this project's own graded objects (core.config.OBJECT_POSITIONS --
+the same chairs/signs/ball Task 4's perception pipeline is graded on
+finding), continuing PAST each object's own coordinate by a fixed overshoot
+distance, so the commanded path ran straight through it, specifically to
+find out whether run_fast() needs obstacle-avoidance added before it's used
+anywhere near these objects. Real runs confirmed that it does (see the
+real-run history below) -- that question is now answered, so the script's
+job changed (see "REVISED AGAIN" below): rather than keep proving the same
+thing, it now tours the objects as waypoints to reach and move past.
 
 HOW A COLLISION IS DETECTED: there is no contact-force sensor exposed by
 SkillsAPI/RealSkills to directly ask "did I hit something" -- get_robot_
@@ -111,20 +117,45 @@ checking. run_object_scenario() and the staging-return leg both now run
 whatever waypoint list _safe_route() returns via a small helper,
 _run_waypoints(), instead of a single skills.run_fast() call.
 
+REVISED AGAIN: from collision test to waypoint tour. The original design
+(above) deliberately overshot THROUGH each object to answer "does run_fast()
+collide with things in its path" -- and real runs answered that: it does
+(one run ended stuck 0.29 m from red_stop_sign, a genuine collision; see
+the project's own run history for that result). With that question settled,
+continuing to aim through objects by default just risks more of the same
+collision every run, for no new information. The script's purpose changed:
+each object scenario now aims at a point ARRIVAL_DISTANCE_M short of the
+object (see that constant's own comment -- it matches core.config.
+FOUND_DISTANCE_M, the same "close enough" threshold Task 4's own approach
+logic uses), and once run_fast() completes that approach, treats the object
+as REACHED and moves on to the next objective in the scenario list (or ends,
+if it was the last one) -- see run_object_scenario()'s own docstring and
+main()'s scenario loop. A result still gets flagged (not "REACHED") if
+run_fast() doesn't complete the approach at all (stuck/timeout before
+reaching the stand-off point) or if it ends up suspiciously CLOSER than
+arrival_distance -- that would mean it pushed past its own intended
+stopping point and into the object, still a real collision despite the
+softer target. The old overshoot-through-it behavior isn't kept as a CLI
+option here -- if a from-scratch collision re-test is ever needed again,
+_target_before()'s sibling _target_beyond() logic (negate stop_short) is a
+two-line revert away, but isn't wired up since it isn't what this script is
+for anymore.
+
 RUN (from the project root):
-    python tools/visual_test_run_fast.py                                  # open_ground + two objects (default set)
+    python tools/visual_test_run_fast.py                                  # open_ground + red_stop sign (default set)
     python tools/visual_test_run_fast.py --scenario open_ground
     python tools/visual_test_run_fast.py --scenario "red_stop sign"
     python tools/visual_test_run_fast.py --scenario "green_chair" "red_chair"
-    python tools/visual_test_run_fast.py --scenario all                   # open_ground + every graded object
+    python tools/visual_test_run_fast.py --scenario all                   # open_ground + every graded object, in order
+    python tools/visual_test_run_fast.py --arrival-distance 0.5           # stop closer before calling an object reached
     python tools/visual_test_run_fast.py --native                        # native MuJoCo window instead of the browser panel
 
 `--gui`/`--native` are mutually exclusive, same convention as every other
 tools/visual_test_task*.py script; `--gui` (the browser panel) is the
 default and the recommended one to actually watch this on, same reasoning
-as those scripts' own docstrings -- seeing the robot actually run into (or
-clear) an object is the real evidence here, this script's printed verdict
-is only a best-effort proxy for that.
+as those scripts' own docstrings -- seeing the robot actually approach (or
+fail to reach) an object is the real evidence here, this script's printed
+verdict is only a best-effort proxy for that.
 """
 
 import argparse
@@ -138,16 +169,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from skills.skills_real import RealSkills
 from core import config
 
-# How far past the object's own (x, y) run_fast() is told to aim, measured
-# along the straight line from wherever the robot currently is to the
-# object -- a clear path would carry the robot this far beyond the
-# object's coordinate; stopping well short of that (see "LIKELY COLLIDED"
-# reason #2 below) is itself a sign something blocked it.
-DEFAULT_OVERSHOOT_M = 1.5
+# REVISED: this script no longer aims run_fast() THROUGH each object and
+# past it -- that deliberate-collision-course design (the ORIGINAL ~1.5 m
+# overshoot behavior, see the module docstring's early history) answered
+# "does run_fast() collide with things in its path" and it does (confirmed
+# against real runs -- see the docstring's own real-run history). The
+# question now is different: treat GETTING CLOSE to an object as reaching
+# it -- stop the approach once within ARRIVAL_DISTANCE_M, call that
+# scenario finished, and move on to the next objective (or end, if it was
+# the last one), the same way an "approach and stop near the target"
+# objective would work in practice, rather than continuing to crash
+# through it just to prove a point that's already been proven.
+#
+# Matches core/config.py's own FOUND_DISTANCE_M (0.80 m) -- the same
+# "close enough, call it found/reached" threshold Task 4's own approach
+# logic uses -- so this test calls an object "reached" by the same
+# standard the rest of the project already uses, not a separately-tuned
+# number.
+ARRIVAL_DISTANCE_M = config.FOUND_DISTANCE_M
 
 # How close to an object's own registered coordinate counts as "basically
-# stopped at/inside it" rather than "still approaching, got cut off by
-# max_duration_s for an unrelated reason". Not based on the objects' real
+# stopped at/inside it" -- used now only to flag a SUSPICIOUSLY close
+# stop (closer than the approach was even aiming for) as a possible real
+# collision rather than a clean arrival. Not based on the objects' real
 # physical footprints (not available to this script -- OBJECT_POSITIONS is
 # just a point, see core/config.py's own comment on it), so this is a
 # generous first-pass guess, not a measured object radius.
@@ -159,12 +203,13 @@ COLLISION_DISTANCE_M = 0.6
 # triggered it; the actual detection happens inside run_fast().
 MAX_HEIGHT_JUMP_M = 0.15
 
-# Two objects picked for the default scenario set: one close to spawn
-# (red_stop sign, (-1.3, 0.0) -- a short, quick first real test) and one a
-# little further out in a different direction (green_chair, (-2.0, 2.0)).
-# The rest of core.config.OBJECT_POSITIONS are reachable individually via
-# --scenario "<name>", or all at once via --scenario all.
-DEFAULT_SCENARIOS = ["open_ground", "red_stop sign", "green_chair"]
+# Default scenario set: just open_ground (the no-object baseline) and
+# red_stop sign (-1.3, 0.0) -- the closest object to spawn, so this stays a
+# short, quick default run. green_chair was dropped from the default (it's
+# still reachable via --scenario "green_chair", same as every other
+# graded object). The rest of core.config.OBJECT_POSITIONS are reachable
+# individually via --scenario "<name>", or all at once via --scenario all.
+DEFAULT_SCENARIOS = ["open_ground", "red_stop sign"]
 
 # Fixed staging point every object scenario returns to before aiming at its
 # object -- see the "REVISED after a real run" paragraph in this module's
@@ -202,26 +247,26 @@ TRANSIT_X, TRANSIT_Y = STAGING_POINT  # aliases used by _safe_route() below
 SAFE_MARGIN_M = 0.5
 
 
-def _target_beyond(start_x: float, start_y: float, obj_x: float, obj_y: float,
-                    overshoot: float) -> tuple:
-    """A point `overshoot` meters past (obj_x, obj_y), as seen from
-    (start_x, start_y) -- i.e. continuing straight on the same line.
-    run_object_scenario() now always calls this with (start_x, start_y) =
-    STAGING_POINT (after first returning there -- see that function and
-    the module docstring's "REVISED after a real run" paragraph), so in
-    practice this is "overshoot past the object, as seen from the fixed
-    staging point" -- kept as a generic start-point function rather than
-    hardcoding STAGING_POINT in here, since open_ground has no use for it
-    at all."""
+def _target_before(start_x: float, start_y: float, obj_x: float, obj_y: float,
+                    stop_short: float) -> tuple:
+    """A point `stop_short` meters BEFORE (obj_x, obj_y), as seen from
+    (start_x, start_y) -- i.e. approaching along the same straight line
+    but stopping short of the object instead of continuing through it
+    (see ARRIVAL_DISTANCE_M's comment for why). run_object_scenario()
+    always calls this with (start_x, start_y) = STAGING_POINT (after
+    first returning there), so in practice this is "stop stop_short
+    meters before the object, as seen from the fixed staging point" --
+    kept as a generic start-point function rather than hardcoding
+    STAGING_POINT in here, since open_ground has no use for it at all."""
     dx = obj_x - start_x
     dy = obj_y - start_y
     dist = math.hypot(dx, dy)
-    if dist < 1e-6:
-        # Already standing on the object's own coordinate -- nothing
-        # meaningful to aim past; just return that point itself.
-        return obj_x, obj_y
+    if dist <= stop_short:
+        # Already within stop_short of the object (or standing on its own
+        # coordinate) -- nothing left to approach, stay where we are.
+        return start_x, start_y
     ux, uy = dx / dist, dy / dist
-    return obj_x + ux * overshoot, obj_y + uy * overshoot
+    return obj_x - ux * stop_short, obj_y - uy * stop_short
 
 
 def _point_to_segment_dist(px: float, py: float, ax: float, ay: float,
@@ -307,12 +352,31 @@ def _safe_route(ax: float, ay: float, bx: float, by: float, exclude: str = None)
         if clear:
             return route
 
-    print(f"  [WARN] _safe_route found no detour that clears every other "
-          f"object by {SAFE_MARGIN_M:.1f} m -- falling back to the direct "
-          f"line (only checked clear of {exclude!r}). If this leg reports "
-          f"'stuck', it may be a different object than the one this "
-          f"scenario names, or the target itself may just be close to "
-          f"another object -- nothing a route detour alone can fix.")
+    # REVISED after a real run: this fired right after a genuine collision
+    # (the return-to-staging leg starting from where the robot was stuck
+    # against red_stop_sign, ~0.3 m away) -- every candidate route's FIRST
+    # leg starts at (ax,ay), which was already inside SAFE_MARGIN_M of
+    # that object before any route was even tried, so no detour could
+    # possibly satisfy the margin check. That's expected, not a bug: a
+    # route planner can't route AROUND a margin violation that's true at
+    # the starting point itself. The direct-line fallback in that case
+    # worked fine in practice (the robot simply moved away from the thing
+    # it had just hit).
+    start_dist_issue = _segment_clears_objects(ax, ay, ax, ay, exclude=exclude)[1]
+    if start_dist_issue is not None:
+        print(f"  [WARN] _safe_route: the START point is already within "
+              f"{SAFE_MARGIN_M:.1f} m of {start_dist_issue!r} (likely just "
+              f"collided with or passed close to it) -- no route can plan "
+              f"around that, so using the direct line and hoping it moves "
+              f"away cleanly.")
+    else:
+        print(f"  [WARN] _safe_route found no detour that clears every "
+              f"other object by {SAFE_MARGIN_M:.1f} m -- falling back to "
+              f"the direct line (only checked clear of {exclude!r}). If "
+              f"this leg reports 'stuck', it may be a different object "
+              f"than the one this scenario names, or the target itself "
+              f"may just be close to another object -- nothing a route "
+              f"detour alone can fix.")
     return direct
 
 
@@ -339,7 +403,7 @@ def run_open_ground_scenario(skills: RealSkills) -> dict:
     docstring) and every graded object (all clustered in x [-4.5, -1.3],
     y [-2.0, 2.0] -- see core/config.py's OBJECT_POSITIONS), so a straight
     run from wherever an earlier scenario left the robot stays open."""
-    target_x, target_y = 0.0, -3.5
+    target_x, target_y = 3.0, -3.5
     print(f"\n=== open_ground: baseline run_fast() with nothing in the "
           f"path (target=({target_x}, {target_y})) ===")
 
@@ -378,18 +442,24 @@ def run_open_ground_scenario(skills: RealSkills) -> dict:
 
 
 def run_object_scenario(skills: RealSkills, obj_name: str,
-                         overshoot: float = DEFAULT_OVERSHOOT_M) -> dict:
+                         arrival_distance: float = ARRIVAL_DISTANCE_M) -> dict:
     """Return to STAGING_POINT first (so the approach below always starts
     from a known, scene-clear position regardless of where the previous
     scenario left the robot -- see the "REVISED after a real run"
-    docstring paragraph), then aim run_fast() directly at obj_name's own
-    registered position (core.config.OBJECT_POSITIONS), continuing
-    `overshoot` meters past it -- i.e. deliberately on a collision course,
-    since run_fast() has no obstacle avoidance to route around it with.
+    docstring paragraph), then aim run_fast() at a point `arrival_distance`
+    meters BEFORE obj_name's own registered position (core.config.
+    OBJECT_POSITIONS) -- i.e. approach it and stop once close enough to
+    call it reached, rather than continuing through it (see ARRIVAL_
+    DISTANCE_M's own comment for why this changed from the original
+    overshoot-through-it design).
 
     If the return-to-staging leg itself doesn't complete cleanly, the
     object approach is skipped rather than run from an unknown position --
-    see module docstring."""
+    see module docstring. Once this scenario finishes (reached, blocked,
+    or skipped), the caller (main()) moves on to the next scenario in the
+    list, or ends if this was the last one -- this function itself always
+    returns rather than looping or retrying, so "process to the next
+    objective" is just main()'s normal scenario loop continuing."""
     obj_x, obj_y = config.OBJECT_POSITIONS[obj_name]
 
     stage_x, stage_y = STAGING_POINT
@@ -423,27 +493,28 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
             "dist_to_object": None,
             "start_height": None,
             "end_height": None,
-            "likely_collision": False,
+            "reached": False,
         }
 
     start_pose = staged_pose
     start_height = skills.get_trunk_height()
-    target_x, target_y = _target_beyond(start_pose.x, start_pose.y, obj_x, obj_y, overshoot)
+    target_x, target_y = _target_before(start_pose.x, start_pose.y, obj_x, obj_y,
+                                         arrival_distance)
 
-    # exclude=obj_name: this leg is DELIBERATELY aimed through obj_name's
-    # own position (that's the whole point of this scenario), so it's the
-    # one object _safe_route() should NOT detour around -- only check
-    # clearance from everything else.
+    # exclude=obj_name: the object itself sits just past this leg's target
+    # now (arrival_distance short of it), so treat it the same as before --
+    # not something to detour around -- and only check clearance from
+    # everything else.
     approach_route = _safe_route(start_pose.x, start_pose.y,
                                   target_x, target_y, exclude=obj_name)
     if len(approach_route) > 1:
-        print(f"  Direct line to {obj_name}'s overshoot target would pass "
-              f"within {SAFE_MARGIN_M:.1f} m of a DIFFERENT object -- "
-              f"detouring via {approach_route[:-1]} first.")
+        print(f"  Direct line toward {obj_name} would pass within "
+              f"{SAFE_MARGIN_M:.1f} m of a DIFFERENT object -- detouring "
+              f"via {approach_route[:-1]} first.")
 
-    print(f"  Staged cleanly. Now aiming run_fast() through {obj_name}'s "
-          f"own position ({obj_x}, {obj_y}), continuing {overshoot:.1f} m "
-          f"past it (target=({target_x:.2f}, {target_y:.2f})) ===")
+    print(f"  Staged cleanly. Now approaching {obj_name}'s own position "
+          f"({obj_x}, {obj_y}), stopping {arrival_distance:.2f} m short of "
+          f"it (target=({target_x:.2f}, {target_y:.2f})) ===")
     print(f"  Starting at x={start_pose.x:.2f} y={start_pose.y:.2f} "
           f"yaw={start_pose.yaw_deg:.1f} trunk_z={start_height:.3f} m")
 
@@ -455,24 +526,35 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
     dist_to_object = math.hypot(obj_x - end_pose.x, obj_y - end_pose.y)
     height_delta = end_height - start_height
 
+    # REVISED: ending up near the object is now the GOAL (arrival), not a
+    # collision sign -- the target itself was already placed
+    # arrival_distance short of it. So "reached" is simply: run_fast()
+    # completed its own approach (or got close enough that the remaining
+    # gap is explained by arrival_tolerance) AND didn't end up suspiciously
+    # closer than the approach was even aiming for (that would mean it
+    # pushed past its own stopping point into the object, i.e. a real
+    # collision despite the softer target).
+    reached = (outcome == "completed" and dist_to_object >= COLLISION_DISTANCE_M)
+
     reasons = []
     if outcome == "stuck":
         reasons.append(
             f"run_fast() returned 'stuck' -- its own stuck-detector caught "
-            f"forward progress stalling out (well short of what the "
-            f"commanded vx implied) for several segments running, the "
-            f"most direct signal this script can get of a real collision")
+            f"forward progress stalling out before reaching the approach "
+            f"point, {dist_to_object:.2f} m from {obj_name} (aiming to "
+            f"stop at {arrival_distance:.2f} m) -- something blocked it "
+            f"earlier than planned")
     elif outcome != "completed":
         reasons.append(
             f"run_fast() returned {outcome!r} instead of 'completed' -- it "
-            f"did not finish its own accelerate/cruise/brake profile, "
-            f"consistent with forward progress getting physically blocked")
+            f"did not finish its own approach, {dist_to_object:.2f} m from "
+            f"{obj_name} (aiming to stop at {arrival_distance:.2f} m)")
     if dist_to_object < COLLISION_DISTANCE_M:
         reasons.append(
             f"ended only {dist_to_object:.2f} m from {obj_name}'s own "
-            f"position (< {COLLISION_DISTANCE_M:.1f} m) -- a clear path "
-            f"would have carried it {overshoot:.1f} m past that point, "
-            f"not stopped at/inside it")
+            f"position -- closer than the {arrival_distance:.2f} m stand-"
+            f"off this approach was aiming for, consistent with pushing "
+            f"past the intended stopping point and into the object")
     if abs(height_delta) > MAX_HEIGHT_JUMP_M:
         reasons.append(
             f"trunk height moved {height_delta:+.3f} m start-to-end "
@@ -480,9 +562,8 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
             f"check the per-segment [RUN] trace above for which specific "
             f"segment's trunk_z jump run_fast() itself flagged")
 
-    likely_collision = len(reasons) > 0
-    verdict = "LIKELY COLLIDED" if likely_collision else \
-        "no clear sign of collision (cleared the object or missed it)"
+    verdict = "REACHED -- treating as finished, moving to next objective" \
+        if reached else "NOT REACHED"
 
     print(f"  Result: outcome={outcome!r} dist_short_of_target="
           f"{dist_short_of_target:.2f} m dist_to_{obj_name.replace(' ', '_')}="
@@ -499,7 +580,7 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
         "dist_to_object": dist_to_object,
         "start_height": start_height,
         "end_height": end_height,
-        "likely_collision": likely_collision,
+        "reached": reached,
     }
 
 
@@ -514,10 +595,13 @@ def main():
                           "space, e.g. \"red_stop sign\"), or 'all' (open_"
                           "ground plus every graded object). Default: "
                           f"{DEFAULT_SCENARIOS!r}.")
-    ap.add_argument("--overshoot", type=float, default=DEFAULT_OVERSHOOT_M,
-                     help=f"how far past each object's own position to aim "
-                          f"run_fast() at, in meters (default "
-                          f"{DEFAULT_OVERSHOOT_M}).")
+    ap.add_argument("--arrival-distance", type=float, default=ARRIVAL_DISTANCE_M,
+                     help=f"how close to each object's own position counts "
+                          f"as having reached it -- the approach stops this "
+                          f"far short of the object's (x, y) and moves on "
+                          f"to the next objective (default "
+                          f"{ARRIVAL_DISTANCE_M:.2f}, matching core.config."
+                          f"FOUND_DISTANCE_M).")
     ap.add_argument("--native", action="store_true",
                      help="open the native MuJoCo window instead of the "
                           "browser panel (see module docstring)")
@@ -543,12 +627,23 @@ def main():
         time.sleep(1.0)  # let the first frame/pose settle before moving
 
         results = []
-        for name in scenarios_to_run:
+        for i, name in enumerate(scenarios_to_run):
             if name == "open_ground":
                 result = run_open_ground_scenario(skills)
             else:
-                result = run_object_scenario(skills, name, overshoot=args.overshoot)
+                result = run_object_scenario(skills, name,
+                                              arrival_distance=args.arrival_distance)
             results.append(result)
+            # "process to the next objective or end": this loop just
+            # continuing is that -- each scenario (reached, not reached,
+            # or skipped) is final once run_object_scenario() returns, so
+            # there's nothing more to do here than announce which way it
+            # goes next.
+            is_last = (i == len(scenarios_to_run) - 1)
+            if is_last:
+                print(f"\n({name!r} was the last objective -- finishing up.)")
+            else:
+                print(f"\n(Moving on to next objective: {scenarios_to_run[i + 1]!r}.)")
 
         print("\n=== Summary ===")
         for r in results:
@@ -561,7 +656,7 @@ def main():
                 print(f"  [SKIPPED] {r['name']}: return-to-staging leg did "
                       f"not complete cleanly, object was not approached")
             else:
-                status = "COLLIDED" if r["likely_collision"] else "OK"
+                status = "REACHED" if r["reached"] else "NOT REACHED"
                 print(f"  [{status}] {r['name']}: outcome={r['outcome']!r} "
                       f"dist_to_object={r['dist_to_object']:.2f} m "
                       f"trunk_z {r['start_height']:.3f} -> {r['end_height']:.3f} m")
