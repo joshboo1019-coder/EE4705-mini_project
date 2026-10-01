@@ -6,26 +6,39 @@ a short clip as evidence."
 This is intentionally independent of Task 4: it only calls
 RealSkills.get_camera_frame() (the exact same call perception.detect() uses
 internally), so what gets saved here is proof of the camera pipeline itself
--- the onboard dog_front_camera feed at the project's configured CAMERA_HZ
--- with no YOLO/detection dependency. Compare to tools/visual_test_task4.py's
---debug_frames, which only saves frames as a side effect of running
-detection and is owned by Task 4.
+-- the onboard dog_front_camera feed -- with no YOLO/detection dependency.
+Compare to tools/visual_test_task4.py's --debug_frames, which only saves
+frames as a side effect of running detection and is owned by Task 4.
 
-Each saved PNG is annotated (frame index, elapsed sim time, target vs.
-achieved capture rate) directly on the image, satisfying the handout's
-"annotated frames" wording without needing a YOLO box to annotate with --
-this is evidence the camera pipeline itself works at the stated rate, which
-is what Task 2 (not Task 4) is responsible for showing.
+Each saved PNG is annotated (frame index, elapsed time, target vs. achieved
+capture rate) directly on the image, satisfying the handout's "annotated
+frames" wording without needing a YOLO box to annotate with -- this is
+evidence the camera pipeline itself works at the stated rate, which is what
+Task 2 (not Task 4) is responsible for showing.
+
+Rate used: defaults to core/config.py's CAMERA_HZ (the project's real,
+documented rate). --hz lets you run a one-off comparison at a different
+rate (e.g. 10 or 20, the handout's recommended range's endpoints) WITHOUT
+editing core/config.py on disk: it overrides the shared `config.CAMERA_HZ`
+attribute in memory before RealSkills is constructed, and skills_real.py
+reads `config.CAMERA_HZ` fresh at __init__ time (`from core import
+config`, not `from core.config import CAMERA_HZ`), so this genuinely
+changes the real offscreen-render throttle for this one process only --
+every other script/test that imports core.config in a separate process
+still sees the real 15 Hz default.
 
 Usage:
     python -m tools.capture_camera_evidence
     python -m tools.capture_camera_evidence --duration 8 --walk
+    python -m tools.capture_camera_evidence --hz 10 --walk
+    python -m tools.capture_camera_evidence --hz 20 --walk
     python -m tools.capture_camera_evidence --no-clip
     python -m tools.capture_camera_evidence --out docs/camera_evidence --gui
 
-Output:
-    <out>/frame_0000.png, frame_0001.png, ...   (always)
-    <out>/camera_evidence.mp4                   (unless --no-clip, needs cv2)
+Output (per run, grouped by the rate actually used so --hz 10/15/20 runs
+don't overwrite each other):
+    <out>/<hz>hz/frame_0000.png, frame_0001.png, ...   (always)
+    <out>/<hz>hz/camera_evidence.mp4                   (unless --no-clip)
 """
 
 import argparse
@@ -38,6 +51,15 @@ from PIL import Image, ImageDraw
 
 from core import config
 from skills.skills_real import RealSkills
+
+# How long to wait for the background sim thread's first real camera
+# render before starting the timed capture window. Without this, frame 0
+# is reliably get_camera_frame()'s documented all-zero placeholder (see
+# skills_real.py's own comment on that fallback) -- a black frame that's
+# misleading evidence and, before this fix, also produced a nonsense
+# achieved-Hz reading on the very first sample (dividing by a near-zero
+# elapsed time).
+WARMUP_TIMEOUT_S = 2.0
 
 
 def _annotate(frame: np.ndarray, frame_index: int, elapsed_s: float,
@@ -75,6 +97,22 @@ def _walk_pattern(skills: "RealSkills", total_duration: float) -> None:
     skills.move(vx=0.3, vy=0.0, wz=0.0, duration=tail_s)
 
 
+def _wait_for_first_real_frame(skills: "RealSkills",
+                                timeout_s: float = WARMUP_TIMEOUT_S) -> bool:
+    """Polls get_camera_frame() until it stops returning the all-zero
+    placeholder (or timeout_s elapses). Returns True if a real frame showed
+    up in time, False if we gave up (capture still proceeds either way --
+    a timeout just means the first frame or two may still be black, same
+    as before this fix, instead of hanging the script forever)."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        frame = skills.get_camera_frame()
+        if np.any(frame):
+            return True
+        time.sleep(0.02)
+    return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Capture annotated onboard-camera frames (+ optional "
@@ -83,8 +121,18 @@ def main() -> None:
     )
     parser.add_argument("--duration", type=float, default=6.0,
                          help="seconds of capture (default 6.0)")
+    parser.add_argument("--hz", type=float, default=None,
+                         help="override the camera rate for this run only "
+                              "(e.g. --hz 10 or --hz 20, to compare against "
+                              "the handout's 10-20 Hz range). Defaults to "
+                              "core/config.py's real CAMERA_HZ (15) if "
+                              "omitted; core/config.py itself is never "
+                              "edited by this flag.")
+
     parser.add_argument("--out", type=str, default="docs/camera_evidence",
-                         help="output directory (default docs/camera_evidence)")
+                         help="base output directory; a <hz>hz/ subfolder "
+                              "is created under it per run (default "
+                              "docs/camera_evidence)")
     parser.add_argument("--walk", action="store_true",
                          help="command a slow forward walk + turn during "
                               "capture so frames show real scene motion "
@@ -96,7 +144,13 @@ def main() -> None:
                               "capturing (same flag as skills_real.py)")
     args = parser.parse_args()
 
-    out_dir = Path(args.out)
+    if args.hz is not None:
+        if args.hz <= 0:
+            parser.error("--hz must be > 0")
+        config.CAMERA_HZ = args.hz  # in-memory only; core/config.py on disk is untouched
+
+    effective_hz = config.CAMERA_HZ
+    out_dir = Path(args.out) / f"{effective_hz:g}hz"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("Booting RealSkills (headless unless --gui) for camera capture...")
@@ -104,28 +158,48 @@ def main() -> None:
         gui=args.gui,
         default_camera="dog_front_camera" if args.gui else None,
     )
-    print(f"Ready. Capturing at CAMERA_HZ={config.CAMERA_HZ} Hz "
-          f"(core/config.py) for {args.duration:.1f}s...")
+
+    got_real_frame = _wait_for_first_real_frame(skills)
+    if not got_real_frame:
+        print(f"[WARN] no real camera render landed within "
+              f"{WARMUP_TIMEOUT_S:.1f}s warm-up; first saved frame(s) may "
+              f"still be the all-zero placeholder.")
+
+    print(f"Ready. Capturing at {effective_hz:g} Hz "
+          f"{'(overridden via --hz)' if args.hz is not None else '(core/config.py CAMERA_HZ)'} "
+          f"for {args.duration:.1f}s...")
 
     if args.walk:
         threading.Thread(
             target=_walk_pattern, args=(skills, args.duration), daemon=True
         ).start()
 
-    period = 1.0 / config.CAMERA_HZ
+    period = 1.0 / effective_hz
     frames = []
     start = time.time()
     next_capture = start
     frame_index = 0
+    last_capture_time = None  # for a real inter-frame Hz reading, not a
+                               # cumulative frame_count/elapsed figure that
+                               # spikes on the very first sample
 
     while time.time() - start < args.duration:
         now = time.time()
         if now >= next_capture:
             raw_frame = skills.get_camera_frame()
             elapsed = now - start
-            achieved_hz = (frame_index + 1) / elapsed if elapsed > 0 else 0.0
+            if last_capture_time is None:
+                achieved_hz = effective_hz  # first sample: nothing to
+                                             # compare against yet, so
+                                             # report the target rather
+                                             # than a divide-by-near-zero
+                                             # artifact
+            else:
+                achieved_hz = 1.0 / (now - last_capture_time)
+            last_capture_time = now
+
             img = _annotate(raw_frame, frame_index, elapsed,
-                             config.CAMERA_HZ, achieved_hz)
+                             effective_hz, achieved_hz)
             img.save(out_dir / f"frame_{frame_index:04d}.png")
             frames.append(img)
             frame_index += 1
@@ -141,12 +215,12 @@ def main() -> None:
             w, h = frames[0].size
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             writer = cv2.VideoWriter(str(clip_path), fourcc,
-                                      config.CAMERA_HZ, (w, h))
+                                      effective_hz, (w, h))
             for img in frames:
                 writer.write(cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR))
             writer.release()
-            print(f"Saved clip to {clip_path} ({config.CAMERA_HZ} fps, "
-                  f"{len(frames)} frames, {len(frames) / config.CAMERA_HZ:.1f}s)")
+            print(f"Saved clip to {clip_path} ({effective_hz:g} fps, "
+                  f"{len(frames)} frames, {len(frames) / effective_hz:.1f}s)")
         except Exception as exc:
             print(f"[WARN] could not write .mp4 clip ({exc}); PNG frames "
                   f"are still saved in {out_dir}/.")
