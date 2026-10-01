@@ -160,27 +160,44 @@ FEATURES = {
         # right at the staircase's own far edge) well before the actual
         # crossing phase even started.
         #
-        # Fixed properly below: detour WEST of both staircases (and east
-        # of rubble's own x<=-0.43) at x=0.3 before turning north to
-        # y=6.0, so the final approach leg is a short, stairs_steep-free
-        # hop from (0.3, 6.0) east to (0.9, 6.0) -- still short of
-        # stairs_steep's own x=1.4 start, same as running this feature
-        # alone from spawn. Each leg's own clearance, checked against
-        # every feature's real extent in custom_scene.xml:
-        #   (6.4, 3.5):  east of stairs_gentle (x<=5.9) and stairs_steep
-        #                (x<=4.5); y=3.5 is north of stairs_gentle's own
-        #                y<=3.0 edge with a 0.5 m margin.
-        #   (0.3, 3.5):  straight line at y=3.5 from x=6.4 to x=0.3 stays
-        #                north of stairs_gentle (y<=3.0) and well east
-        #                of rubble's own y=[5.17,6.90] row entirely.
-        #   (0.3, 6.0):  straight line at x=0.3 from y=3.5 to y=6.0 stays
+        # Second fix attempt detoured WEST of both staircases at x=0.3,
+        # but routed that westward leg at y=3.5 -- only ~0.5 m clear of
+        # stairs_gentle's own nominal y<=3.0 edge. A real run got stuck
+        # there too, right around x=3.4-3.6 (stairs_gentle's own peak is
+        # at x=3.45), trunk_z dipping to ~0.22 m -- a real stumble, not
+        # just slow. The trunk's OWN (x, y) was a legitimate 0.4-0.5 m
+        # clear of the nominal edge, so the most likely explanation is
+        # the robot's physical footprint (legs swinging out from the
+        # trunk during a turned-around, yaw~177 deg walk) reaching back
+        # into the stairs' real collision geometry even though the
+        # TRUNK's own position reads clear -- i.e. 0.5 m isn't enough
+        # margin for the robot's actual physical extent, not just its
+        # trunk point.
+        #
+        # Fixed below by widening that margin substantially (y=3.5 ->
+        # y=4.2, roughly doubling the clearance past stairs_gentle's own
+        # y<=3.0 edge to ~1.2 m) rather than assuming the first
+        # "looks clear on paper" margin was enough. Each leg's own
+        # clearance, checked against every feature's real extent in
+        # custom_scene.xml:
+        #   (6.4, 4.2):  east of stairs_gentle (x<=5.9) and stairs_steep
+        #                (x<=4.5); y=4.2 is ~1.2 m north of stairs_gentle's
+        #                own y<=3.0 edge.
+        #   (0.3, 4.2):  straight line at y=4.2 from x=6.4 to x=0.3 stays
+        #                well north of stairs_gentle (y<=3.0) and well
+        #                south of rubble's own y=[5.17,6.90] row.
+        #   (0.3, 6.0):  straight line at x=0.3 from y=4.2 to y=6.0 stays
         #                west of stairs_steep (x>=1.4) and east of
         #                rubble (x<=-0.43) the whole way.
         # Only matters for --feature all/when run after stairs_gentle;
         # run alone (--feature stairs_steep) the robot starts at spawn
         # (0,0) and never gets near any of this, so the detour is just
-        # harmless extra distance either way.
-        "approach_via": [(6.4, 3.5), (0.3, 3.5), (0.3, 6.0)],
+        # harmless extra distance either way. If a future run still
+        # catches an edge here, widen the margin further rather than
+        # assume the geometry reasoning above is exactly right --
+        # it hasn't been confirmed against the scene file's actual
+        # collision geoms, only inferred from two real-run failures.
+        "approach_via": [(6.4, 4.2), (0.3, 4.2), (0.3, 6.0)],
     },
     # custom_scene.xml ~lines 184-320: ~70 boxes with small random
     # roll/pitch, forming a continuously uneven patch rather than discrete
