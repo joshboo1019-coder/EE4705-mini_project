@@ -51,6 +51,42 @@ itself (see its own docstring in skills_real.py): the overshoot distance,
 max_height_jump threshold, and the "how close counts as collided" distance
 below are first-pass, reasoned defaults, not real-run-tuned values.
 
+REVISED after a real run: a real run reported the robot wandering into and
+getting stuck at a STAIRCASE while this script was running an object-
+collision scenario -- not something this script was ever trying to test.
+Root cause: each object scenario's approach target was computed dynamically
+as "overshoot past the object, as seen from wherever the robot CURRENTLY
+is" -- fine right after open_ground, but after a collision the robot's
+stopping position is unpredictable, so the straight line from THAT spot to
+the next object was never checked against the rest of the scene (stairs,
+rubble, the tilted plate -- see tools/visual_test_rough_terrain.py's own
+module docstring for all three) and could run through any of them.
+
+Fixed by routing every object approach through a single, fixed STAGING_
+POINT (0.0, -3.5) first, instead of chaining straight from wherever the
+previous scenario ended. This is deliberately NOT just "closer to the
+objects" -- every one of core.config.OBJECT_POSITIONS has x <= -1.3, and
+STAGING_POINT's x is 0.0, so BOTH legs (return-to-staging, then staging-to-
+object-plus-overshoot) are straight lines between two points that each have
+x <= 0, which means the entire line segment stays at x <= 0 too (a straight
+line's x never leaves the range of its endpoints' x values). That alone
+clears every piece of other scene geometry in this project: stairs_gentle/
+stairs_steep both start at x >= 1.0, the tilted plate starts at x >= 0.5,
+and rubble's y range (>= 5.17) is never reached either, since every
+relevant y value here (staging, all six objects, and up to one overshoot
+distance past them) stays well under that. In other words: this isn't a
+"probably fine" margin call the way some earlier detours in this project
+needed real-run iteration to get right (see stairs_steep's own approach_via
+history in visual_test_rough_terrain.py) -- it's a hard geometric guarantee
+given these specific coordinates, checked once here rather than something
+that needs re-verifying per object.
+
+run_object_scenario() now does the return-to-staging leg itself before
+aiming at the object, and reports the object scenario as skipped (not run)
+if that return leg doesn't complete cleanly -- starting a collision test
+from an unknown, uncontrolled position would defeat the point of having a
+known-clear approach in the first place.
+
 RUN (from the project root):
     python tools/visual_test_run_fast.py                                  # open_ground + two objects (default set)
     python tools/visual_test_run_fast.py --scenario open_ground
@@ -106,17 +142,29 @@ MAX_HEIGHT_JUMP_M = 0.15
 # --scenario "<name>", or all at once via --scenario all.
 DEFAULT_SCENARIOS = ["open_ground", "red_stop sign", "green_chair"]
 
+# Fixed staging point every object scenario returns to before aiming at its
+# object -- see the "REVISED after a real run" paragraph in this module's
+# docstring for the full reasoning. In short: every core.config.OBJECT_
+# POSITIONS entry has x <= -1.3, and this point's x is 0.0, so any straight
+# line between STAGING_POINT and an object (or an overshoot point past it)
+# is mathematically guaranteed to stay at x <= 0 the whole way, which
+# clears stairs_gentle/stairs_steep (x >= 1.0), the tilted plate
+# (x >= 0.5), and rubble (y >= 5.17, never reached at these y-values) --
+# not a tuned/guessed value, a geometric guarantee given these coordinates.
+STAGING_POINT = (0.0, -3.5)
+
 
 def _target_beyond(start_x: float, start_y: float, obj_x: float, obj_y: float,
                     overshoot: float) -> tuple:
     """A point `overshoot` meters past (obj_x, obj_y), as seen from
     (start_x, start_y) -- i.e. continuing straight on the same line.
-    Computed fresh from the robot's CURRENT position every time this is
-    called (not a fixed world coordinate baked into a FEATURES-style
-    dict), so the collision test is still valid run-to-run and regardless
-    of which scenario happened to run before it and where it left the
-    robot -- unlike tools/visual_test_rough_terrain.py's FEATURES dict,
-    there's no fixed "approach point" here to make that assumption safe."""
+    run_object_scenario() now always calls this with (start_x, start_y) =
+    STAGING_POINT (after first returning there -- see that function and
+    the module docstring's "REVISED after a real run" paragraph), so in
+    practice this is "overshoot past the object, as seen from the fixed
+    staging point" -- kept as a generic start-point function rather than
+    hardcoding STAGING_POINT in here, since open_ground has no use for it
+    at all."""
     dx = obj_x - start_x
     dy = obj_y - start_y
     dist = math.hypot(dx, dy)
@@ -176,19 +224,52 @@ def run_open_ground_scenario(skills: RealSkills) -> dict:
 
 def run_object_scenario(skills: RealSkills, obj_name: str,
                          overshoot: float = DEFAULT_OVERSHOOT_M) -> dict:
-    """Aim run_fast() directly at obj_name's own registered position
-    (core.config.OBJECT_POSITIONS), continuing `overshoot` meters past it
-    -- i.e. deliberately on a collision course, since run_fast() has no
-    obstacle avoidance to route around it with."""
+    """Return to STAGING_POINT first (so the approach below always starts
+    from a known, scene-clear position regardless of where the previous
+    scenario left the robot -- see the "REVISED after a real run"
+    docstring paragraph), then aim run_fast() directly at obj_name's own
+    registered position (core.config.OBJECT_POSITIONS), continuing
+    `overshoot` meters past it -- i.e. deliberately on a collision course,
+    since run_fast() has no obstacle avoidance to route around it with.
+
+    If the return-to-staging leg itself doesn't complete cleanly, the
+    object approach is skipped rather than run from an unknown position --
+    see module docstring."""
     obj_x, obj_y = config.OBJECT_POSITIONS[obj_name]
 
-    start_pose = skills.get_robot_pose()
+    stage_x, stage_y = STAGING_POINT
+    pre_stage_pose = skills.get_robot_pose()
+    print(f"\n=== {obj_name}: returning to staging point "
+          f"({stage_x}, {stage_y}) before approaching "
+          f"(currently at x={pre_stage_pose.x:.2f} y={pre_stage_pose.y:.2f}) ===")
+    stage_outcome = skills.run_fast(stage_x, stage_y)
+    staged_pose = skills.get_robot_pose()
+    dist_from_staging = math.hypot(stage_x - staged_pose.x, stage_y - staged_pose.y)
+
+    if stage_outcome != "completed" or dist_from_staging > COLLISION_DISTANCE_M:
+        print(f"  Staging leg result: outcome={stage_outcome!r} "
+              f"dist_from_staging_point={dist_from_staging:.2f} m")
+        print(f"  Verdict: SKIPPED -- the return-to-staging leg did not "
+              f"complete cleanly, so {obj_name} was not approached (an "
+              f"uncontrolled starting position would defeat the point of "
+              f"having a known-clear approach -- see module docstring).")
+        return {
+            "name": obj_name,
+            "outcome": "skipped",
+            "dist_short_of_target": None,
+            "dist_to_object": None,
+            "start_height": None,
+            "end_height": None,
+            "likely_collision": False,
+        }
+
+    start_pose = staged_pose
     start_height = skills.get_trunk_height()
     target_x, target_y = _target_beyond(start_pose.x, start_pose.y, obj_x, obj_y, overshoot)
 
-    print(f"\n=== {obj_name}: run_fast() aimed through its own position "
-          f"({obj_x}, {obj_y}), continuing {overshoot:.1f} m past it "
-          f"(target=({target_x:.2f}, {target_y:.2f})) ===")
+    print(f"  Staged cleanly. Now aiming run_fast() through {obj_name}'s "
+          f"own position ({obj_x}, {obj_y}), continuing {overshoot:.1f} m "
+          f"past it (target=({target_x:.2f}, {target_y:.2f})) ===")
     print(f"  Starting at x={start_pose.x:.2f} y={start_pose.y:.2f} "
           f"yaw={start_pose.yaw_deg:.1f} trunk_z={start_height:.3f} m")
 
@@ -302,6 +383,9 @@ def main():
                 print(f"  [{status}] open_ground: outcome={r['outcome']!r} "
                       f"dist_short_of_target={r['dist_short_of_target']:.2f} m "
                       f"trunk_z {r['start_height']:.3f} -> {r['end_height']:.3f} m")
+            elif r["outcome"] == "skipped":
+                print(f"  [SKIPPED] {r['name']}: return-to-staging leg did "
+                      f"not complete cleanly, object was not approached")
             else:
                 status = "COLLIDED" if r["likely_collision"] else "OK"
                 print(f"  [{status}] {r['name']}: outcome={r['outcome']!r} "
