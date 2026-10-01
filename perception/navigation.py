@@ -9,31 +9,38 @@ skills_mock.MockSkills before Student A's simulation exists:
 
     python tests/test_navigation_with_mock.py
 
-Ground-truth object positions (config.OBJECT_POSITIONS, filled in by
-Student A during Task 2 scene building) are used ONLY for the planar
-distance check and [FOUND] log — never to steer the robot.
+Ground-truth object positions (config.OBJECT_POSITIONS) are used only for
+the [FOUND] distance log. Navigation and the found decision use a calibrated
+range estimate from the live detection bounding box.
 """
 
+import math
 import time
 from core.interfaces import SkillsAPI, PerceptionAPI
 from core.schema import RobotPose
 from core import config
 
 _CLEARANCE_MIN_M = 0.7
-_CLEARANCE_MAX_M = 0.8
-_APPROACH_TARGET_M = 0.75
-_APPROACH_STEP_FRACTION = 0.25
+_CAMERA_VERTICAL_FOV_DEG = 80.0
+_CAMERA_DOWN_PITCH_DEG = 14.0
+_CAMERA_HEIGHT_ABOVE_TRUNK_M = 0.16
+_DEFAULT_TRUNK_HEIGHT_M = 0.45
+_CAMERA_FORWARD_OFFSET_M = 0.28
+_PLANAR_RANGE_BIAS_M = 0.35
 
 
 def goto_object(object_class: str, color: str,
                  skills: SkillsAPI, perception: PerceptionAPI) -> bool:
     """Runs the full search -> steer -> approach -> stop behavior.
-    Returns True iff the target is visible when stopped within found distance."""
+    Returns True iff the target is visible when stopped within the estimated
+    found distance."""
     t0 = time.time()
     consecutive_misses = 0
     scan_degrees = 0.0
     target_acquired = False
     target_centered = False
+    initial_center_scan_complete = False
+    target_position = None
     last_steer_direction = 0.0
     centering_retries = 0
     clear_target_history = getattr(perception, "clear_target_history", None)
@@ -62,30 +69,12 @@ def goto_object(object_class: str, color: str,
                         skills.turn(2.0 * last_steer_direction)
                         centering_retries += 1
                     else:
-                        pose, distance = _approach_steps(
-                            skills, object_class, color, steps=1
-                        )
-                        if _finish_if_found(
-                                skills, perception, object_class, color,
-                            distance, t0):
-                            return True
-                        if distance <= _CLEARANCE_MAX_M:
-                            print("[MISSION] status=FAIL reason=stop_verification")
-                            return False
+                        skills.turn(config.SEARCH_TURN_DEG)
                         target_centered = True
                         centering_retries = 0
                     consecutive_misses = 0
                 elif target_centered and consecutive_misses >= config.MAX_MISSES_BEFORE_LOST:
-                    pose, distance = _approach_steps(
-                        skills, object_class, color, steps=1
-                    )
-                    if _finish_if_found(
-                            skills, perception, object_class, color,
-                            distance, t0):
-                        return True
-                    if distance <= _CLEARANCE_MAX_M:
-                        print("[MISSION] status=FAIL reason=stop_verification")
-                        return False
+                    skills.turn(config.SEARCH_TURN_DEG)
                     consecutive_misses = 0
                 continue
 
@@ -117,17 +106,52 @@ def goto_object(object_class: str, color: str,
             # not centered yet — small turn step and re-detect next loop
             continue
 
-        # Advance in short steps, rechecking the stopping distance after each.
-        pose, distance = _approach_steps(
-            skills, object_class, color, steps=1
+        if not initial_center_scan_complete:
+            skills.stop()
+            time.sleep(1.5)
+            frame = skills.get_camera_frame()
+            detections = perception.detect(frame)
+            target = _pick_target(detections, object_class, color)
+            if target is None:
+                continue
+            if callable(remember_target):
+                remember_target(frame, target)
+
+            x1, _, x2, _ = target.bbox
+            offset_x = (x1 + x2) / 2.0 - frame.shape[1] / 2.0
+            target_centered = abs(offset_x) <= config.CENTER_TOLERANCE_PX
+            if not target_centered:
+                last_steer_direction = -1.0 if offset_x > 0 else 1.0
+                if not _steer_to_center(target, skills, frame.shape[1]):
+                    continue
+            else:
+                last_steer_direction = 0.0
+            initial_center_scan_complete = True
+
+        pose = skills.get_robot_pose()
+        camera_height = _camera_height_above_ground(skills)
+        if target_position is None:
+            target_position = _estimated_target_position(
+                pose, target, frame.shape, camera_height
+            )
+        distance = _estimated_planar_distance(
+            pose, target, frame.shape, camera_height, target_position
         )
-        if _finish_if_found(
-                skills, perception, object_class, color,
-            distance, t0):
-            return True
-        if distance <= _CLEARANCE_MAX_M:
+        ground_truth_distance = _ground_truth_distance(
+            pose, object_class, color
+        )
+        print(f"[RANGE] estimated_planar={distance:.2f} m "
+              f"ground_truth={ground_truth_distance:.2f} m phase=approach")
+        if distance <= config.FOUND_DISTANCE_M:
+            if _finish_if_found(
+                    skills, perception, object_class, color, t0,
+                    target_position):
+                return True
             print("[MISSION] status=FAIL reason=stop_verification")
+            skills.stop()
             return False
+
+        _approach_step(skills, distance)
 
     print("[MISSION] status=FAIL reason=timeout")
     skills.stop()
@@ -157,44 +181,100 @@ def _steer_to_center(detection, skills: SkillsAPI,
     return False
 
 
-def _approach_steps(skills: SkillsAPI, object_class: str, color: str,
-                    steps: int):
-    pose = skills.get_robot_pose()
-    distance = _ground_truth_distance(pose, object_class, color)
-    max_step_distance = abs(config.APPROACH_VX) * config.APPROACH_STEP_S
+def _approach_step(skills: SkillsAPI, distance: float) -> None:
+    if distance <= config.FOUND_DISTANCE_M:
+        skills.stop()
+        return
 
-    for _ in range(steps):
-        if distance <= _CLEARANCE_MAX_M:
-            skills.stop()
-            break
+    approach_vx = abs(config.APPROACH_VX)
+    normal_step_distance = approach_vx * config.APPROACH_STEP_S
+    step_distance = min(
+        normal_step_distance,
+        distance - config.FOUND_DISTANCE_M,
+    )
 
-        remaining_distance = distance - _APPROACH_TARGET_M
-        step_distance = min(
-            max_step_distance,
-            remaining_distance * _APPROACH_STEP_FRACTION,
+    step_duration = step_distance / approach_vx
+    skills.move(vx=approach_vx, vy=0.0, wz=0.0,
+                duration=step_duration)
+
+
+def _camera_height_above_ground(skills: SkillsAPI) -> float:
+    get_trunk_height = getattr(skills, "get_trunk_height", None)
+    if callable(get_trunk_height):
+        try:
+            trunk_height = float(get_trunk_height())
+        except (AttributeError, NotImplementedError, TypeError, ValueError):
+            pass
+        else:
+            if math.isfinite(trunk_height) and trunk_height > 0.0:
+                return trunk_height + _CAMERA_HEIGHT_ABOVE_TRUNK_M
+    return _DEFAULT_TRUNK_HEIGHT_M + _CAMERA_HEIGHT_ABOVE_TRUNK_M
+
+
+def _estimated_planar_distance(pose: RobotPose, detection,
+                               frame_shape,
+                               camera_height: float = (
+                                   _DEFAULT_TRUNK_HEIGHT_M
+                                   + _CAMERA_HEIGHT_ABOVE_TRUNK_M
+                               ),
+                               target_position: tuple | None = None) -> float:
+    """Estimate range from a fixed target point or the current bbox."""
+    if target_position is None:
+        target_position = _estimated_target_position(
+            pose, detection, frame_shape, camera_height
         )
-        step_duration = step_distance / abs(config.APPROACH_VX)
-        skills.move(vx=config.APPROACH_VX, vy=0.0, wz=0.0,
-                    duration=step_duration)
-        pose = skills.get_robot_pose()
-        distance = _ground_truth_distance(pose, object_class, color)
-        if distance <= _CLEARANCE_MAX_M:
-            skills.stop()
-            break
-    return pose, distance
+    if target_position is None:
+        return float("inf")
+    return math.hypot(
+        pose.x - target_position[0], pose.y - target_position[1]
+    )
 
 
-def _finish_if_found(skills, perception, object_class, color, distance, t0) -> bool:
-    if not _CLEARANCE_MIN_M <= distance <= _CLEARANCE_MAX_M:
-        return False
+def _estimated_target_position(pose: RobotPose, detection, frame_shape,
+                               camera_height: float) -> tuple | None:
+    """Project a centered bbox to a fixed, corrected world-space point."""
+    frame_height, frame_width = frame_shape[:2]
+    if frame_height <= 0 or frame_width <= 0:
+        return None
+
+    focal_length_px = frame_height / (
+        2.0 * math.tan(math.radians(_CAMERA_VERTICAL_FOV_DEG) / 2.0)
+    )
+    bbox_center_x = (detection.bbox[0] + detection.bbox[2]) / 2.0
+    bbox_bottom_y = min(max(detection.bbox[3], 0.0), float(frame_height))
+    image_down_angle = math.atan(
+        (bbox_bottom_y - frame_height / 2.0) / focal_length_px
+    )
+    ray_down_angle = math.radians(_CAMERA_DOWN_PITCH_DEG) + image_down_angle
+    if not 0.0 < ray_down_angle < math.pi / 2.0:
+        return None
+
+    camera_forward = camera_height / math.tan(ray_down_angle)
+    bearing = math.atan(
+        (bbox_center_x - frame_width / 2.0) / focal_length_px
+    )
+    target_forward = camera_forward + _CAMERA_FORWARD_OFFSET_M
+    target_left = -camera_forward * math.tan(bearing)
+    target_range = math.hypot(target_forward, target_left)
+    if target_range <= 1e-9:
+        return None
+    correction_scale = (target_range + _PLANAR_RANGE_BIAS_M) / target_range
+    target_forward *= correction_scale
+    target_left *= correction_scale
+
+    yaw = math.radians(pose.yaw_deg)
+    object_x = pose.x + target_forward * math.cos(yaw) \
+        - target_left * math.sin(yaw)
+    object_y = pose.y + target_forward * math.sin(yaw) \
+        + target_left * math.cos(yaw)
+    return object_x, object_y
+
+
+def _finish_if_found(skills, perception, object_class, color, t0,
+                     target_position) -> bool:
 
     skills.stop()
     time.sleep(0.4)  # let the gait settle and a fresh frame render
-
-    pose = skills.get_robot_pose()
-    d = _ground_truth_distance(pose, object_class, color)   # distance AT stop
-    if not _CLEARANCE_MIN_M <= d <= _CLEARANCE_MAX_M:        # C2
-        return False
 
     frame = skills.get_camera_frame()
     detections = perception.detect(
@@ -227,6 +307,16 @@ def _finish_if_found(skills, perception, object_class, color, distance, t0) -> b
     if target is None:                                       # C1: current-frame match required
         return False
 
+    pose = skills.get_robot_pose()
+    estimated_distance = _estimated_planar_distance(
+        pose, target, frame.shape, target_position=target_position
+    )
+    d = _ground_truth_distance(pose, object_class, color)  # log only
+    print(f"[RANGE] estimated_planar={estimated_distance:.2f} m "
+          f"ground_truth={d:.2f} m phase=stop_check")
+    if not _CLEARANCE_MIN_M <= estimated_distance <= config.FOUND_DISTANCE_M:  # C2
+        return False
+
     print(f"[FOUND] class={object_class} color={color} "
           f"t={time.time() - t0:.1f} s d={d:.2f} m")          # C3
     print("[MISSION] status=SUCCESS")
@@ -234,7 +324,7 @@ def _finish_if_found(skills, perception, object_class, color, distance, t0) -> b
 
 
 def _ground_truth_distance(pose: RobotPose, object_class: str, color: str) -> float:
-    """Planar trunk-to-object distance for the [FOUND] check and log only."""
+    """Planar ground-truth distance for the [FOUND] log only."""
     key = f"{color}_{object_class}"
     x_obj, y_obj = config.OBJECT_POSITIONS[key]
     x_base, y_base = pose.x, pose.y
