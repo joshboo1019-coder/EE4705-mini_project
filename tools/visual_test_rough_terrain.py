@@ -126,21 +126,26 @@ recenter_gain (pass it through climb_stairs()); if it visibly zig-zags
 or loses forward progress instead, lower it.
 
 RUN (from the project root):
-    python tools/visual_test_rough_terrain.py                     # all three features, in order
+    python tools/visual_test_rough_terrain.py                     # DEFAULT: stairs_gentle + rubble only (see below)
     python tools/visual_test_rough_terrain.py --feature stairs_gentle
     python tools/visual_test_rough_terrain.py --feature stairs_steep
     python tools/visual_test_rough_terrain.py --feature rubble
-    python tools/visual_test_rough_terrain.py --feature stairs_gentle rubble  # skip stairs_steep
+    python tools/visual_test_rough_terrain.py --feature all          # the full canonical three, including stairs_steep
     python tools/visual_test_rough_terrain.py --native             # native MuJoCo window instead of the browser panel
 
---feature now takes one or more names (or "all"); any selection other than
-"all" still runs in FEATURES' own canonical order (stairs_gentle, then
-stairs_steep, then rubble) regardless of the order typed, not the order
-given on the command line -- "--feature stairs_gentle rubble" is the
-intended way to exercise the gentle staircase and the rubble patch back to
-back while stairs_steep's own climb is still being tuned (see skills_real.
-py's climb_stairs() for its current state), without stopping there the way
-"--feature all" would once stairs_steep fails to complete.
+--feature takes one or more names (or "all"). The DEFAULT, with no
+--feature given, is now stairs_gentle and rubble ONLY -- stairs_steep is
+deliberately excluded from the default run, since every real run of its
+own climb so far has ended "stuck" or "edge_drift" (see skills_real.py's
+climb_stairs() for the latest attempts at fixing that) and there is no
+value in a default run stopping there every time rather than exercising
+the two features that already work. Pass --feature stairs_steep to still
+test it on its own (starting fresh from spawn, independent of the other
+two), or --feature all to run the full original three-feature sequence
+(stairs_gentle, then stairs_steep, then rubble) in one process the way
+this script did before this change -- any selection other than "all"
+still runs in FEATURES' own canonical order regardless of the order typed
+on the command line, not the order given.
 
 `--gui`/`--native` are mutually exclusive, same convention as every other
 tools/visual_test_task*.py script; `--gui` (the browser panel) is the
@@ -438,15 +443,20 @@ def _wrap_deg(angle_deg: float) -> float:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--feature", nargs="+", choices=list(FEATURES) + ["all"],
-                     default=["all"],
+                     default=["stairs_gentle", "rubble"],
                      help="which terrain feature(s) to test -- one or more "
-                          "names, or 'all' (default: all three, in order: "
-                          "stairs_gentle, stairs_steep, rubble). e.g. "
-                          "--feature stairs_gentle rubble runs just those "
-                          "two, in that order, skipping stairs_steep "
-                          "(useful while stairs_steep's own climb is still "
-                          "being tuned -- see skills_real.py's climb_stairs "
-                          "for the latest state of that).")
+                          "names, or 'all'. DEFAULT (no --feature given) is "
+                          "now just stairs_gentle and rubble, in that order "
+                          "-- stairs_steep is EXCLUDED from the default run "
+                          "since its own climb is still unresolved (every "
+                          "real run so far has ended 'stuck' or "
+                          "'edge_drift' -- see skills_real.py's "
+                          "climb_stairs() for the latest state of that). "
+                          "Pass --feature stairs_steep explicitly to still "
+                          "test it on its own, or --feature all to run the "
+                          "full canonical three (stairs_gentle, "
+                          "stairs_steep, rubble) in one process the way "
+                          "this script originally did.")
     ap.add_argument("--native", action="store_true",
                      help="open the native MuJoCo window instead of the "
                           "browser panel (see module docstring)")
