@@ -38,11 +38,8 @@ def goto_object(object_class: str, color: str,
     consecutive_misses = 0
     scan_degrees = 0.0
     target_acquired = False
-    target_centered = False
     initial_center_scan_complete = False
     target_position = None
-    last_steer_direction = 0.0
-    centering_retries = 0
     clear_target_history = getattr(perception, "clear_target_history", None)
     if callable(clear_target_history):
         clear_target_history()
@@ -62,20 +59,8 @@ def goto_object(object_class: str, color: str,
 
         if target is None:
             if target_acquired:
-                consecutive_misses += 1
-                if not target_centered and last_steer_direction != 0.0 \
-                        and consecutive_misses >= 2:
-                    if centering_retries < 3:
-                        skills.turn(2.0 * last_steer_direction)
-                        centering_retries += 1
-                    else:
-                        skills.turn(config.SEARCH_TURN_DEG)
-                        target_centered = True
-                        centering_retries = 0
-                    consecutive_misses = 0
-                elif target_centered and consecutive_misses >= config.MAX_MISSES_BEFORE_LOST:
-                    skills.turn(config.SEARCH_TURN_DEG)
-                    consecutive_misses = 0
+                # Keep checking live frames; recover_target() above consults
+                # the stored target history before this fallback is reached.
                 continue
 
             consecutive_misses += 1
@@ -92,15 +77,6 @@ def goto_object(object_class: str, color: str,
 
         target_acquired = True
         consecutive_misses = 0
-        centering_retries = 0
-
-        x1, _, x2, _ = target.bbox
-        offset_x = (x1 + x2) / 2.0 - frame.shape[1] / 2.0
-        target_centered = abs(offset_x) <= config.CENTER_TOLERANCE_PX
-        if not target_centered:
-            last_steer_direction = -1.0 if offset_x > 0 else 1.0
-        else:
-            last_steer_direction = 0.0
 
         if not _steer_to_center(target, skills, frame.shape[1]):
             # not centered yet — small turn step and re-detect next loop
@@ -117,15 +93,8 @@ def goto_object(object_class: str, color: str,
             if callable(remember_target):
                 remember_target(frame, target)
 
-            x1, _, x2, _ = target.bbox
-            offset_x = (x1 + x2) / 2.0 - frame.shape[1] / 2.0
-            target_centered = abs(offset_x) <= config.CENTER_TOLERANCE_PX
-            if not target_centered:
-                last_steer_direction = -1.0 if offset_x > 0 else 1.0
-                if not _steer_to_center(target, skills, frame.shape[1]):
-                    continue
-            else:
-                last_steer_direction = 0.0
+            if not _steer_to_center(target, skills, frame.shape[1]):
+                continue
             initial_center_scan_complete = True
 
         pose = skills.get_robot_pose()
