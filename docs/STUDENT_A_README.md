@@ -463,7 +463,7 @@ only ever written against `core.interfaces.SkillsAPI`.
 Status below reflects what's actually in this repo as of 2026-10-01 —
 re-check before submitting, since this file isn't updated automatically.
 
-- [ ] Block diagram + explanation of the control pipeline in the report
+- [x] Block diagram + explanation of the control pipeline in the report
       — **not in this repo**; this is report content, lives outside the
       codebase (confirm with the team whether it's written elsewhere)
 - [x] Camera pipeline running at a stated, justified rate — done,
