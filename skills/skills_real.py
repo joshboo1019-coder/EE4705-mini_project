@@ -627,12 +627,37 @@ class RealSkills(SkillsAPI):
     #      incident left the robot essentially stuck/fallen, and the
     #      walk kept logging segments of a robot that wasn't moving at
     #      all instead of saying so).
-    # Returns one of "completed", "edge_drift", or "stuck" -- a caller
-    # chaining multiple walks (e.g. an approach then a crossing) should
-    # check for "stuck" and skip the next walk rather than attempting it
-    # from a robot that's already stuck/fallen (see run_feature() in
-    # tools/visual_test_rough_terrain.py for a worked example of exactly
-    # this pattern).
+    #   6. otherwise keeps walking segments until the robot actually
+    #      ARRIVES (within arrival_tolerance of the target) -- it does
+    #      NOT give up after some fixed, precomputed segment count. A
+    #      real run showed why that matters: stairs_gentle's crossing
+    #      was budgeted 20 segments up front (total_dist/segment_len at
+    #      the START), but climbing the stairs while re-facing every
+    #      segment made each one cover noticeably less than segment_len
+    #      (yaw correction eats into forward progress) -- by segment 20
+    #      the robot was still 2.71 m short of the target, genuinely
+    #      still making progress (not stuck), just slower than the
+    #      budget assumed. The caller then moved on to the NEXT feature
+    #      from that still-mid-climb, unfinished position, which is
+    #      exactly the kind of corrupted-starting-state chain this
+    #      engine's stuck-detector exists to prevent elsewhere. Looping
+    #      on actual arrival instead of a precomputed count fixes this
+    #      at the source: a feature's walk only ends when the robot
+    #      either truly gets there, or a real failure (stuck/edge_drift)
+    #      is detected -- never "ran out of its turn". max_segments is
+    #      still a hard safety cap (so a genuinely endless drift can't
+    #      hang forever), generous relative to the straight-line segment
+    #      count so a real, slower-than-nominal climb has room to finish;
+    #      hitting it returns "incomplete" rather than silently stopping.
+    # Returns one of "completed", "edge_drift", "stuck", or "incomplete"
+    # -- a caller chaining multiple walks (e.g. an approach then a
+    # crossing, or one feature then the next) should treat anything
+    # other than "completed" as "did not actually finish" and NOT start
+    # the next walk from this one's end position (see run_feature()/
+    # main() in tools/visual_test_rough_terrain.py for a worked example:
+    # it now stops running further features entirely the moment one
+    # doesn't come back "completed", rather than chaining onward from an
+    # unfinished or fallen state).
     def _walk_terrain_segment_loop(self, target_x: float, target_y: float,
                                     segment_len: float, speed: float,
                                     width_axis: Optional[str] = None,
@@ -640,17 +665,49 @@ class RealSkills(SkillsAPI):
                                     width_limit: Optional[float] = None,
                                     max_height_jump: float = 0.15,
                                     stuck_dist_fraction: float = 0.25,
-                                    stuck_segments_before_abort: int = 3) -> str:
+                                    stuck_segments_before_abort: int = 3,
+                                    arrival_tolerance: Optional[float] = None,
+                                    max_segments: Optional[int] = None) -> str:
         pose = self.get_robot_pose()
         total_dist = math.hypot(target_x - pose.x, target_y - pose.y)
-        n_segments = max(1, round(total_dist / segment_len))
-        actual_segment_len = total_dist / n_segments
-        segment_duration = actual_segment_len / speed
 
+        # Arrival band defaults to half a segment -- tight enough to mean
+        # "actually there", loose enough that one segment's worth of
+        # overshoot/undershoot doesn't bounce it back and forth forever.
+        if arrival_tolerance is None:
+            arrival_tolerance = segment_len * 0.5
+        # Safety cap, not a target budget: a real climb can take several
+        # times the straight-line segment count once re-facing/slowdowns
+        # are accounted for (see the class comment above), so this is
+        # deliberately generous (4x the straight-line estimate, floor of
+        # 20) rather than the old "exactly total_dist/segment_len and no
+        # more". Only hit by a genuine endless drift, which the width/
+        # stuck guards below should normally catch first anyway.
+        if max_segments is None:
+            nominal = max(1, round(total_dist / segment_len))
+            max_segments = max(20, nominal * 4)
+
+        segment_duration = segment_len / speed
         prev_trunk_z = self.get_trunk_height()
         stuck_streak = 0
+        i = 0
 
-        for i in range(n_segments):
+        while True:
+            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            if dist_remaining <= arrival_tolerance:
+                self.stop()
+                return "completed"
+            if i >= max_segments:
+                print(f"    !! still {dist_remaining:.2f} m short of the "
+                      f"target after {i} segments (safety cap {max_segments}) "
+                      f"-- stopping rather than walking indefinitely; this "
+                      f"wasn't flagged stuck/edge_drift, so it was still "
+                      f"making SOME progress, just too slowly to finish "
+                      f"within a generous budget")
+                self.stop()
+                return "incomplete"
+
+            i += 1
             self._face_waypoint(target_x, target_y)
             pose_before = self.get_robot_pose()
             self.move(vx=speed, vy=0.0, wz=0.0, duration=segment_duration)
@@ -663,9 +720,10 @@ class RealSkills(SkillsAPI):
             if abs(height_delta) > max_height_jump:
                 flag = (f"  <-- trunk_z jumped {height_delta:+.3f} m in one "
                          f"segment, likely stumble/launch")
-            print(f"    [{i + 1}/{n_segments}] x={pose.x:.2f} y={pose.y:.2f} "
-                  f"yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
-                  f"(dist remaining={dist_remaining:.2f} m){flag}")
+            print(f"    [{i}/~{max(1, round(total_dist / segment_len))}] "
+                  f"x={pose.x:.2f} y={pose.y:.2f} yaw={pose.yaw_deg:.1f} "
+                  f"trunk_z={trunk_z:.3f} m (dist remaining="
+                  f"{dist_remaining:.2f} m){flag}")
 
             if width_axis is not None:
                 lateral = pose.y if width_axis == "y" else pose.x
@@ -678,11 +736,11 @@ class RealSkills(SkillsAPI):
                     return "edge_drift"
 
             moved_this_segment = math.hypot(pose.x - pose_before.x, pose.y - pose_before.y)
-            if moved_this_segment < stuck_dist_fraction * actual_segment_len:
+            if moved_this_segment < stuck_dist_fraction * segment_len:
                 stuck_streak += 1
                 if stuck_streak >= stuck_segments_before_abort:
                     print(f"    !! moved only {moved_this_segment:.3f} m "
-                          f"(planned {actual_segment_len:.2f} m) for "
+                          f"(planned {segment_len:.2f} m) for "
                           f"{stuck_streak} segments running -- robot appears "
                           f"stuck/fallen, not just slow; stopping rather than "
                           f"logging more segments of a robot that isn't moving")
@@ -690,8 +748,6 @@ class RealSkills(SkillsAPI):
                     return "stuck"
             else:
                 stuck_streak = 0
-        self.stop()
-        return "completed"
 
     def _face_waypoint(self, target_x: float, target_y: float) -> None:
         """Closed-loop turn (reusing turn()'s own [TURN] diagnostic) to
@@ -728,8 +784,16 @@ class RealSkills(SkillsAPI):
         scene) so the printed trunk-height trace actually resolves
         individual steps rather than averaging across several of them.
 
-        Returns "completed", "edge_drift", or "stuck" -- see
-        _walk_terrain_segment_loop's own comment for what each means."""
+        Keeps walking until it actually ARRIVES at the target (or a
+        real failure is detected) rather than giving up after a fixed
+        segment count -- see _walk_terrain_segment_loop's own comment
+        for why that matters on a real climb.
+
+        Returns "completed", "edge_drift", "stuck", or "incomplete" --
+        see _walk_terrain_segment_loop's own comment for what each
+        means. Only "completed" means it actually got there; a caller
+        chaining features/steps should treat any other value as "this
+        one didn't finish" and not continue onward from here."""
         return self._walk_terrain_segment_loop(
             target_x, target_y, segment_len=segment_len, speed=speed,
             width_axis=width_axis, width_center=width_center,
@@ -751,10 +815,13 @@ class RealSkills(SkillsAPI):
         actually covered over 22 segments, after an earlier incident on
         a staircase left the robot stuck/fallen).
 
-        Returns "completed" or "stuck" in practice (width_axis is unset
-        here so "edge_drift" can't trigger, but is still a possible
-        return value if you pass width_axis explicitly via the
-        underlying engine)."""
+        Also keeps walking until it actually arrives rather than giving
+        up after a fixed segment count (see _walk_terrain_segment_loop).
+
+        Returns "completed", "stuck", or "incomplete" in practice
+        (width_axis is unset here so "edge_drift" can't trigger, but is
+        still a possible return value if you pass width_axis explicitly
+        via the underlying engine)."""
         return self._walk_terrain_segment_loop(
             target_x, target_y, segment_len=segment_len, speed=speed,
         )
