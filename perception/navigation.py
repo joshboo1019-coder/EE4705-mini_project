@@ -169,7 +169,10 @@ def _finish_if_found(skills, perception, object_class, color, distance, t0) -> b
         return False
 
     frame = skills.get_camera_frame()
-    target = _pick_target(perception.detect(frame), object_class, color)
+    detections = perception.detect(
+        frame, conf_threshold=config.FOUND_DETECTION_CONF_THRESHOLD
+    )
+    target = _pick_target(detections, object_class, color)
     if target is None:                                       # C1: live detection only
         return False
 

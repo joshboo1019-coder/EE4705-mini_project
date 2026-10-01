@@ -9,7 +9,7 @@ plausible detection, so you can exercise both the [SEARCH] and [FOUND]
 branches of navigation.py.
 """
 
-from typing import List
+from typing import List, Optional
 import numpy as np
 from core.interfaces import PerceptionAPI
 from core.schema import Detection
@@ -20,7 +20,8 @@ class MockPerception(PerceptionAPI):
         self._calls = 0
         self._misses_before_found = misses_before_found
 
-    def detect(self, frame: np.ndarray) -> List[Detection]:
+    def detect(self, frame: np.ndarray,
+               conf_threshold: Optional[float] = None) -> List[Detection]:
         self._calls += 1
         if self._calls <= self._misses_before_found:
             return []

@@ -16,7 +16,7 @@ the mock" (see main.py's USE_REAL_SKILLS / USE_REAL_PERCEPTION flags).
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 import numpy as np
 from core.schema import RobotPose, Detection
 
@@ -54,6 +54,8 @@ class PerceptionAPI(ABC):
     """Task 4 detection + color grounding. Implemented by Student C."""
 
     @abstractmethod
-    def detect(self, frame: np.ndarray) -> List[Detection]:
+    def detect(self, frame: np.ndarray,
+               conf_threshold: Optional[float] = None) -> List[Detection]:
         """Run YOLO + HSV color grounding on one camera frame and return
-        all detections. Printing [DETECT] lines is this method's job."""
+        all detections. Printing [DETECT] lines is this method's job.
+        `conf_threshold` optionally overrides the default for this scan."""

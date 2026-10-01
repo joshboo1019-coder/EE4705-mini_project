@@ -35,7 +35,8 @@ class RealPerception(PerceptionAPI):
         if self.debug_dir is not None:
             self.debug_dir.mkdir(parents=True, exist_ok=True)
 
-    def detect(self, frame: np.ndarray) -> List[Detection]:
+    def detect(self, frame: np.ndarray,
+               conf_threshold: Optional[float] = None) -> List[Detection]:
         frame_index = self._debug_frame_index
         if self.debug_dir is not None:
             self._debug_frame_index += 1
@@ -44,7 +45,10 @@ class RealPerception(PerceptionAPI):
             )
 
         results = self.model.predict(
-            frame, conf=self.conf_threshold, verbose=False
+            frame,
+            conf=(self.conf_threshold if conf_threshold is None
+                  else conf_threshold),
+            verbose=False,
         )
         detections = []
         for result in results:
