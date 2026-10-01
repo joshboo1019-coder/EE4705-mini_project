@@ -184,10 +184,29 @@ def _finish_if_found(skills, perception, object_class, color, distance, t0) -> b
         frame, conf_threshold=config.FOUND_DETECTION_CONF_THRESHOLD
     )
     target = _pick_target(detections, object_class, color)
-    if target is None:
-        recover_target = getattr(perception, "recover_target", None)
-        if callable(recover_target):
+    recover_target = getattr(perception, "recover_target", None)
+    if callable(recover_target):
+        recovered_target = None
+        for detection in detections:
+            recovered_target = recover_target(
+                frame, object_class, color, search_bbox=detection.bbox
+            )
+            if recovered_target is not None:
+                if (detection.class_name != object_class
+                        or detection.color != color):
+                    print(
+                        f"[TRACK] final label corrected "
+                        f"from={detection.class_name}/{detection.color} "
+                        f"to={object_class}/{color}"
+                    )
+                break
+
+        if recovered_target is not None:
+            target = recovered_target
+        elif not detections:
             target = recover_target(frame, object_class, color)
+        elif target is None:
+            print("[TRACK] final label conflict not confirmed by target history")
     if target is None:                                       # C1: current-frame match required
         return False
 

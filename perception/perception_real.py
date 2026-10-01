@@ -104,9 +104,23 @@ class RealPerception(PerceptionAPI):
         del self._target_history[:-5]
 
     def recover_target(self, frame: np.ndarray, object_class: str,
-                       color: str) -> Optional[Detection]:
+                       color: str,
+                       search_bbox: Optional[tuple] = None) -> Optional[Detection]:
         current = np.asarray(frame, dtype=np.uint8)
         frame_height, frame_width = current.shape[:2]
+        search_x = 0
+        search_y = 0
+        search_region = current
+        if search_bbox is not None:
+            x1, y1, x2, y2 = search_bbox
+            search_x = max(0, min(frame_width, int(x1)))
+            search_y = max(0, min(frame_height, int(y1)))
+            x2 = max(search_x, min(frame_width, int(x2)))
+            y2 = max(search_y, min(frame_height, int(y2)))
+            search_region = current[search_y:y2, search_x:x2]
+            if search_region.size == 0:
+                return None
+        search_height, search_width = search_region.shape[:2]
         best_match = None
 
         for encoded, bbox, stored_class, stored_color in reversed(self._target_history):
@@ -154,7 +168,7 @@ class RealPerception(PerceptionAPI):
                 for scale in (0.75, 1.0, 1.25, 1.5, 2.0):
                     scaled_width = int(patch.shape[1] * scale)
                     scaled_height = int(patch.shape[0] * scale)
-                    if scaled_width > frame_width or scaled_height > frame_height:
+                    if scaled_width > search_width or scaled_height > search_height:
                         continue
                     interpolation = (cv2.INTER_AREA if scale < 1.0
                                      else cv2.INTER_LINEAR)
@@ -163,10 +177,10 @@ class RealPerception(PerceptionAPI):
                         interpolation=interpolation,
                     )
                     scores = cv2.matchTemplate(
-                        current, template, cv2.TM_CCOEFF_NORMED
+                        search_region, template, cv2.TM_CCOEFF_NORMED
                     )
                     _, score, _, location = cv2.minMaxLoc(scores)
-                    match_region = current[
+                    match_region = search_region[
                         location[1]:location[1] + scaled_height,
                         location[0]:location[0] + scaled_width,
                     ]
@@ -183,8 +197,8 @@ class RealPerception(PerceptionAPI):
             return None
 
         score, location, scale, patch_x, patch_y, crop_width, crop_height = best_match
-        recovered_x1 = max(0.0, location[0] - patch_x * scale)
-        recovered_y1 = max(0.0, location[1] - patch_y * scale)
+        recovered_x1 = max(0.0, search_x + location[0] - patch_x * scale)
+        recovered_y1 = max(0.0, search_y + location[1] - patch_y * scale)
         recovered_x2 = min(frame_width, recovered_x1 + crop_width * scale)
         recovered_y2 = min(frame_height, recovered_y1 + crop_height * scale)
         print(f"[TRACK] recovered {color} {object_class} in live frame "
