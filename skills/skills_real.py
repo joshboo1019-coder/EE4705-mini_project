@@ -608,7 +608,18 @@ class RealSkills(SkillsAPI):
     #      (not just once before the whole walk -- a real run showed a
     #      single step-edge yaw nudge otherwise goes uncorrected and
     #      compounds into the robot drifting off the structure's own
-    #      side edge before reaching the far end);
+    #      side edge before reaching the far end). When width_axis/
+    #      width_center are given, this re-facing now ALSO adds an
+    #      explicit cross-track correction (recenter_gain, default 1.5)
+    #      biasing the aim point toward the centerline -- plain bearing-
+    #      to-the-far-off-target turned out to be too weak a signal on
+    #      its own: a real run on stairs_steep's crossing drifted from
+    #      y=6.02 to y=5.43 (centerline 6.0, real edge 5.25) over 10
+    #      segments while most of that drift's back half never tripped
+    #      the per-segment turn deadband, because bearing-to-target and
+    #      the robot's own (disturbance-driven) yaw were drifting in
+    #      step with each other. See _face_waypoint's own comment for
+    #      the full mechanism and the exact numbers;
     #   2. walks one short segment with move();
     #   3. logs pose + trunk height, flagging a single-segment trunk_z
     #      DELTA above max_height_jump as a likely stumble/launch (NOT an
@@ -667,7 +678,8 @@ class RealSkills(SkillsAPI):
                                     stuck_dist_fraction: float = 0.25,
                                     stuck_segments_before_abort: int = 3,
                                     arrival_tolerance: Optional[float] = None,
-                                    max_segments: Optional[int] = None) -> str:
+                                    max_segments: Optional[int] = None,
+                                    recenter_gain: float = 1.5) -> str:
         pose = self.get_robot_pose()
         total_dist = math.hypot(target_x - pose.x, target_y - pose.y)
 
@@ -708,7 +720,9 @@ class RealSkills(SkillsAPI):
                 return "incomplete"
 
             i += 1
-            self._face_waypoint(target_x, target_y)
+            self._face_waypoint(target_x, target_y, width_axis=width_axis,
+                                 width_center=width_center,
+                                 recenter_gain=recenter_gain)
             pose_before = self.get_robot_pose()
             self.move(vx=speed, vy=0.0, wz=0.0, duration=segment_duration)
             pose = self.get_robot_pose()
@@ -749,12 +763,55 @@ class RealSkills(SkillsAPI):
             else:
                 stuck_streak = 0
 
-    def _face_waypoint(self, target_x: float, target_y: float) -> None:
+    def _face_waypoint(self, target_x: float, target_y: float,
+                        width_axis: Optional[str] = None,
+                        width_center: Optional[float] = None,
+                        recenter_gain: float = 1.5) -> None:
         """Closed-loop turn (reusing turn()'s own [TURN] diagnostic) to
         face a world-frame waypoint, using the same yaw convention as
-        _yaw_from_wxyz (yaw=0 faces +x, positive yaw turns toward +y)."""
+        _yaw_from_wxyz (yaw=0 faces +x, positive yaw turns toward +y).
+
+        Plain pure-pursuit (bearing-to-target only, no width_axis) has a
+        real failure mode a run on stairs_steep's own crossing surfaced:
+        as the robot drifts sideways off a strip's centerline, the
+        bearing-to-target angle grows in step with the robot's own
+        (disturbed) yaw, so the TURN-NEEDED error between them can stay
+        under the 1 deg deadband below the whole time even while the
+        robot keeps sliding toward the edge -- bearing-to-a-fixed-point-
+        far-ahead is just a weak corrective signal when something (an
+        asymmetric stair-riser disturbance, in that run) is actively
+        pushing the robot off-center every segment. That run's own
+        numbers: climbing from (0.9,6.0) toward (5.0,6.0) with
+        width_center=6.0, y drifted 6.02->5.43 over 10 segments while
+        logged TURN corrections mostly went silent (deadbanded) for the
+        back half of that drift, and it hit the edge_drift guard at
+        y=5.43 (real physical edge is y=5.25).
+
+        Fix: when width_axis/width_center are given (i.e. this waypoint
+        sits on a guarded strip), bias the bearing calculation with an
+        explicit proportional cross-track term -- not just bearing to
+        the far-off target, but bearing amplified by how far off the
+        centerline the robot currently is. This makes the correction
+        react to CURRENT lateral error directly (classic cross-track/
+        path-following control) instead of only to the angle-to-a-
+        distant-point, which is what let the drift above go uncorrected.
+        recenter_gain=1.5 is a first-pass guess (not yet verified against
+        a real run) -- if the next run still drifts, raise it; if it
+        overcorrects/oscillates (zig-zagging, net forward progress
+        dropping), lower it."""
         pose = self.get_robot_pose()
-        bearing_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
+        dx = target_x - pose.x
+        dy = target_y - pose.y
+
+        if width_axis is not None and width_center is not None:
+            if width_axis == "y":
+                cross_track_error = width_center - pose.y
+                dy = dy + recenter_gain * cross_track_error
+            else:  # "x"
+                cross_track_error = width_center - pose.x
+                dx = dx + recenter_gain * cross_track_error
+
+        bearing_deg = math.degrees(math.atan2(dy, dx))
         turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
         if abs(turn_needed) > 1.0:
             self.turn(turn_needed)
@@ -763,7 +820,8 @@ class RealSkills(SkillsAPI):
                       width_axis: Optional[str] = None,
                       width_center: Optional[float] = None,
                       width_limit: Optional[float] = None,
-                      segment_len: float = 0.3, speed: float = 0.3) -> str:
+                      segment_len: float = 0.3, speed: float = 0.3,
+                      recenter_gain: float = 1.5) -> str:
         """Walk to (target_x, target_y) across a staircase, re-facing the
         target every short segment and logging a trunk-height profile
         that should track the stairs' own step heights (see the class
@@ -793,11 +851,20 @@ class RealSkills(SkillsAPI):
         see _walk_terrain_segment_loop's own comment for what each
         means. Only "completed" means it actually got there; a caller
         chaining features/steps should treat any other value as "this
-        one didn't finish" and not continue onward from here."""
+        one didn't finish" and not continue onward from here.
+
+        recenter_gain controls how hard _face_waypoint pulls the robot
+        back toward width_center every segment when it's drifted off it
+        (see that method's own comment for the real-run failure this
+        fixes -- a stairs_steep crossing drifting from the centerline
+        toward the edge without ever tripping the per-segment turn
+        deadband). 1.5 is a first-pass guess, not yet verified against a
+        real run; raise it if a future run still drifts toward an edge,
+        lower it if the robot visibly zig-zags/overcorrects instead."""
         return self._walk_terrain_segment_loop(
             target_x, target_y, segment_len=segment_len, speed=speed,
             width_axis=width_axis, width_center=width_center,
-            width_limit=width_limit,
+            width_limit=width_limit, recenter_gain=recenter_gain,
         )
 
     def cross_rough_terrain(self, target_x: float, target_y: float,
