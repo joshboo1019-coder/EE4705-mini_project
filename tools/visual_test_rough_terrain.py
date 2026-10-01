@@ -39,19 +39,30 @@ WHAT THIS SCRIPT DOES NOT DO: it does not modify skills_real.py or add any
 new SkillsAPI method. Navigation to each feature is done entirely in this
 script using the three methods SkillsAPI already exposes
 (get_robot_pose(), move(), turn()) plus RealSkills' own get_trunk_height()
-diagnostic (same one tools/visual_test_crouch_only.py uses) -- turn-to-face
-a world (x, y) waypoint via atan2, then move() straight at it, logging pose
-+ trunk height in short segments along the way so the printed trace reads
-like a height-over-distance profile across each feature.
+diagnostic (same one tools/visual_test_crouch_only.py uses) -- re-aiming at
+the target waypoint via atan2 before every short move() segment (not just
+once at the start -- see _walk_to_with_logging's own docstring for why
+that changed after a real run), logging pose + trunk height after each
+segment so the printed trace reads like a height-over-distance profile
+across each feature. stairs_gentle/stairs_steep also carry a width_axis/
+width_center/width_limit in FEATURES below: the crossing aborts (and says
+so) the moment the robot drifts past that margin off the strip's own
+centerline, rather than continuing to log meaningless pose data after it's
+already walked off the structure's side edge.
 
-THIS HAS NOT BEEN RUN: written from a sandbox with no MuJoCo installed (see
-the project's other tools/*.py docstrings for the same caveat). The
-waypoint coordinates are read directly from custom_scene.xml's actual
-<geom> positions, and move()/turn()'s body-frame-vx / world-yaw convention
-matches _yaw_from_wxyz's documented formula (yaw=0 faces +x, positive yaw
-turns toward +y) -- but nobody has watched this drive across the real
-stairs/rubble yet. Expect to tune SPEED_MPS / SEGMENT_LEN_M after a first
-real run, especially for STAIRS_STEEP, which is expected to struggle.
+VERIFIED AGAINST A REAL RUN (2026-10-01, team's WSL2 laptop, --native):
+the first version of this script (single _face() call per crossing, no
+width guard) correctly surfaced a real failure -- on stairs_gentle, a
+step-edge-induced yaw nudge around x=1.17 went uncorrected for the rest of
+the ~6 m crossing, drifted the robot's y steadily from 1.89 toward the
+strip's actual y=3.0 edge, and it walked off the side before reaching the
+far end (confirmed by eye, not just inferred from the logged trunk_z
+spike to 0.69 m). The continuous re-facing and width-abort above are the
+fix, informed by that run -- but re-facing every segment hasn't itself
+been run yet, so the usual caveat still applies to whether it's enough to
+keep the robot centered through a real climb (as opposed to just detecting
+a side-drift sooner). Expect to tune SPEED_MPS / SEGMENT_LEN_M / each
+feature's width_limit after trying it.
 
 RUN (from the project root):
     python tools/visual_test_rough_terrain.py                     # all three features, in order
@@ -85,27 +96,41 @@ from skills.skills_real import RealSkills
 FEATURES = {
     # custom_scene.xml lines 159-173: 7 steps up (0.05 m each) to a flat
     # peak at x=3.45 z=0.375, then 7 steps back down to x=5.9 -- spans
-    # x=[1.0, 5.9] at y=2.0.
+    # x=[1.0, 5.9] at y=2.0. Step geoms are size="0.15 1.0 0.025" -> 1.0 m
+    # half-width in y, so the usable strip is y=[1.0, 3.0] around the
+    # y=2.0 centerline. width_limit below is that half-width minus a
+    # margin for the robot's own footprint, so a drift-off-the-side is
+    # flagged a bit before the robot is actually past the physical edge.
     "stairs_gentle": {
         "approach": (0.3, 2.0),
         "clear": (6.4, 2.0),
         "description": "gentle staircase, 0.05 m risers, peak 0.375 m "
                         "(y=2.0 strip, x 1.0->5.9)",
+        "width_axis": "y",
+        "width_center": 2.0,
+        "width_limit": 0.8,
     },
     # custom_scene.xml lines 175-183: steps of 0.10 m up to a 0.5 m peak
-    # at x=2.95, spans x=[1.4, 4.5] at y=6.0. Deliberately the "probably
+    # at x=2.95, spans x=[1.4, 4.5] at y=6.0. Step geoms are size="0.15
+    # 0.75 ..." -> 0.75 m half-width in y (narrower than stairs_gentle's
+    # strip), so the margin below is tighter. Deliberately the "probably
     # too tall" case -- see module docstring.
     "stairs_steep": {
         "approach": (0.9, 6.0),
         "clear": (5.0, 6.0),
         "description": "steep staircase, 0.10 m risers, peak 0.5 m "
                         "(y=6.0 strip, x 1.4->4.5)",
+        "width_axis": "y",
+        "width_center": 6.0,
+        "width_limit": 0.55,
     },
     # custom_scene.xml ~lines 184-320: ~70 boxes with small random
     # roll/pitch, forming a continuously uneven patch rather than discrete
     # steps. Walked diagonally across its longer axis (corner to corner)
     # rather than straight through the middle of one row, so more of the
-    # random bumps are actually crossed.
+    # random bumps are actually crossed. No width_axis/limit here -- it's
+    # an open patch, not a narrow strip with a fall-off edge, so there's
+    # no equivalent "walked off the side" failure mode to guard against.
     "rubble": {
         "approach": (0.0, 5.0),
         "clear": (-2.6, 7.1),
@@ -142,14 +167,36 @@ def _face(skills: RealSkills, target_x: float, target_y: float) -> None:
 
 def _walk_to_with_logging(skills: RealSkills, target_x: float, target_y: float,
                             segment_len: float = SEGMENT_LEN_M,
-                            speed: float = SPEED_MPS) -> None:
-    """Turn to face (target_x, target_y), then walk straight at it in
-    `segment_len`-sized steps, printing pose + trunk height after each
-    segment -- this is what turns a single move() into a readable
-    height-over-distance trace across a staircase/rubble patch instead of
-    one before/after pair that would hide the climb in between."""
-    _face(skills, target_x, target_y)
+                            speed: float = SPEED_MPS,
+                            width_axis: str = None, width_center: float = None,
+                            width_limit: float = None) -> bool:
+    """Walk toward (target_x, target_y) in `segment_len`-sized segments,
+    printing pose + trunk height after each one.
 
+    Re-aims at the target with _face() before EVERY segment, not just
+    once up front. An earlier version only called _face() once before the
+    whole crossing -- fine on flat ground, but on a staircase a single
+    step-edge-induced yaw nudge (the policy has no terrain-height input,
+    so it can't anticipate or correct for a leg catching an edge) then
+    went uncorrected for the rest of the crossing and compounded into a
+    steady sideways drift. A real run confirmed this: yaw climbed from 0
+    to 22 deg over ~15 segments on stairs_gentle, and the robot walked
+    off the staircase's own side edge (y drifted from 1.89 toward the
+    strip's actual y=3.0 edge) before ever reaching the far end. Re-facing
+    every segment is the standard fix (equivalent to perception/
+    navigation.py's own steer-to-center loop, just steering toward a
+    world waypoint instead of a bbox center) -- it can't undo a stumble
+    that already happened, but it stops a small heading error from ever
+    accumulating into a walk-off-the-edge in the first place.
+
+    If width_axis/width_center/width_limit are given (stairs_gentle/
+    stairs_steep only -- see FEATURES), aborts early and returns False
+    the moment the robot's position along width_axis strays past
+    width_limit from width_center, instead of continuing to log pose data
+    after it's already fallen off the side (that data is meaningless --
+    once it's off the structure entirely, trunk_z/yaw no longer describe
+    "how is the climb going"). Returns True if the full distance was
+    covered without tripping that guard."""
     pose = skills.get_robot_pose()
     total_dist = math.hypot(target_x - pose.x, target_y - pose.y)
     n_segments = max(1, round(total_dist / segment_len))
@@ -157,6 +204,7 @@ def _walk_to_with_logging(skills: RealSkills, target_x: float, target_y: float,
     segment_duration = actual_segment_len / speed
 
     for i in range(n_segments):
+        _face(skills, target_x, target_y)
         skills.move(vx=speed, vy=0.0, wz=0.0, duration=segment_duration)
         pose = skills.get_robot_pose()
         trunk_z = skills.get_trunk_height()
@@ -167,7 +215,18 @@ def _walk_to_with_logging(skills: RealSkills, target_x: float, target_y: float,
         print(f"    [{i + 1}/{n_segments}] x={pose.x:.2f} y={pose.y:.2f} "
               f"yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
               f"(dist remaining={dist_remaining:.2f} m){flag}")
+
+        if width_axis is not None:
+            lateral = pose.y if width_axis == "y" else pose.x
+            if abs(lateral - width_center) > width_limit:
+                print(f"    !! drifted {width_axis}={lateral:.2f} past the "
+                      f"+/-{width_limit:.2f} m margin around "
+                      f"{width_axis}={width_center:.2f} -- stopping before "
+                      f"it walks off the structure's edge")
+                skills.stop()
+                return False
     skills.stop()
+    return True
 
 
 def run_feature(skills: RealSkills, name: str) -> dict:
@@ -184,7 +243,12 @@ def run_feature(skills: RealSkills, name: str) -> dict:
     print(f"  At approach point: x={start_pose.x:.2f} y={start_pose.y:.2f} "
           f"yaw={start_pose.yaw_deg:.1f} trunk_z={start_height:.3f} m")
     print(f"  Crossing to ({clear_x}, {clear_y})...")
-    _walk_to_with_logging(skills, clear_x, clear_y)
+    completed = _walk_to_with_logging(
+        skills, clear_x, clear_y,
+        width_axis=spec.get("width_axis"),
+        width_center=spec.get("width_center"),
+        width_limit=spec.get("width_limit"),
+    )
 
     end_pose = skills.get_robot_pose()
     end_height = skills.get_trunk_height()
@@ -199,10 +263,16 @@ def run_feature(skills: RealSkills, name: str) -> dict:
     # staircase's own step heights is the actual result worth reporting;
     # this verdict line is just a quick glance, especially useful for
     # stairs_steep where "fail" is an expected, informative outcome).
-    likely_ok = dist_short_of_target < 0.5 and heading_drift_deg < 30.0
-    verdict = "reached target, no obvious tip-over/stall" if likely_ok else \
-        "did NOT cleanly reach target -- check the segment trace above " \
-        "for where it stalled/veered (expected for stairs_steep)"
+    if not completed:
+        verdict = "aborted -- drifted off the structure's side edge " \
+            "(see the '!!' line above); not a height/balance failure " \
+            "at that point, a lateral-drift one"
+        likely_ok = False
+    else:
+        likely_ok = dist_short_of_target < 0.5 and heading_drift_deg < 30.0
+        verdict = "reached target, no obvious tip-over/stall" if likely_ok else \
+            "did NOT cleanly reach target -- check the segment trace above " \
+            "for where it stalled/veered (expected for stairs_steep)"
 
     print(f"  Result: dist_short_of_target={dist_short_of_target:.2f} m, "
           f"heading_drift={heading_drift_deg:.1f} deg -> {verdict}")
@@ -213,6 +283,7 @@ def run_feature(skills: RealSkills, name: str) -> dict:
         "end_height": end_height,
         "dist_short_of_target": dist_short_of_target,
         "heading_drift_deg": heading_drift_deg,
+        "completed": completed,
         "likely_ok": likely_ok,
     }
 
@@ -243,10 +314,11 @@ def main():
         print("\n=== Summary ===")
         for r in results:
             status = "OK" if r["likely_ok"] else "CHECK"
+            edge_note = "" if r["completed"] else "  (aborted: drifted off edge)"
             print(f"  [{status}] {r['name']}: trunk_z {r['start_height']:.3f} -> "
                   f"{r['end_height']:.3f} m, dist_short_of_target="
                   f"{r['dist_short_of_target']:.2f} m, heading_drift="
-                  f"{r['heading_drift_deg']:.1f} deg")
+                  f"{r['heading_drift_deg']:.1f} deg{edge_note}")
 
         print("\nDone. Ctrl+C to exit (the sim keeps running otherwise).")
         while True:
