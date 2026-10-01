@@ -490,15 +490,22 @@ class RealSkills(SkillsAPI):
     # actually change it at runtime.
     #
     # Which direction is "crouch" vs "stand" (larger height_cmd = taller
-    # stance, smaller = crouched) is inferred from height_range=(0.20,
-    # 0.35) being handed to the platform as a trunk-height range in
-    # meters, and 0.25 (the old fixed default) sitting near its lower-
-    # middle -- consistent with 0.25 being an ordinary walking stance
-    # rather than either extreme. NOT independently verified by actually
-    # running the sim (can't from here) -- if crouch() looks like it's
-    # standing taller instead of crouching down when you watch the
-    # browser panel, the two are simply swapped from what was guessed
-    # here; flip which bound each method targets.
+    # stance, smaller = crouched) is inferred from height_range being
+    # handed to the platform as a trunk-height range in meters, and 0.25
+    # (the old fixed default) sitting near its lower-middle -- consistent
+    # with 0.25 being an ordinary walking stance rather than either
+    # extreme. If crouch() looks like it's standing taller instead of
+    # crouching down when you watch the browser panel, the two are
+    # simply swapped from what was guessed here; flip which bound each
+    # method targets.
+    #
+    # height_range's lower bound was originally 0.20, then raised to
+    # 0.28 after a real run (see set_height()'s own docstring below)
+    # showed crouch() targeting 0.20 barely moved the trunk at all even
+    # with extra settle time -- i.e. 0.20 was below a stance the
+    # policy/PD loop can actually hold, not just a slow transition. 0.28
+    # is a real-run-confirmed reachable floor; if a future run shows
+    # otherwise, raise it further rather than assuming 0.20-0.27 works.
     def set_height(self, height_cmd: float, settle_s: float = 1.0,
                    step_size: float = 0.02, step_hold_s: float = 0.3) -> None:
         """Change the commanded trunk height and hold still for `settle_s`
@@ -581,6 +588,176 @@ class RealSkills(SkillsAPI):
         than only being able to compare before/after a height command
         the way set_height()'s own [HEIGHT] print does."""
         return float(self._data.qpos[2])
+
+    # ------------------------------------------------------------------
+    # Terrain traversal (stairs / rough terrain). Not part of core.
+    # interfaces.SkillsAPI, same reasoning as crouch()/stand()/
+    # get_trunk_height() above -- that interface is frozen by group
+    # agreement, and Task 2/3/4's executor/navigation code never calls
+    # these. Ported in from tools/visual_test_rough_terrain.py (where
+    # this logic was first written and verified against two real runs on
+    # this project's own custom_scene.xml staircases/rubble patch -- see
+    # that script's own module docstring for the full history) so any
+    # script can reuse it directly off a RealSkills instance instead of
+    # reimplementing it.
+    #
+    # climb_stairs() and cross_rough_terrain() are both thin wrappers
+    # around the same engine, _walk_terrain_segment_loop(), which
+    # repeatedly:
+    #   1. re-faces the target waypoint via turn() before EVERY segment
+    #      (not just once before the whole walk -- a real run showed a
+    #      single step-edge yaw nudge otherwise goes uncorrected and
+    #      compounds into the robot drifting off the structure's own
+    #      side edge before reaching the far end);
+    #   2. walks one short segment with move();
+    #   3. logs pose + trunk height, flagging a single-segment trunk_z
+    #      DELTA above max_height_jump as a likely stumble/launch (NOT an
+    #      absolute height check -- get_trunk_height() is the trunk's
+    #      absolute world-frame z, so standing on an elevated staircase
+    #      peak reads a high-but-correct value on its own; only a sudden
+    #      single-segment CHANGE is actually anomalous);
+    #   4. aborts with "edge_drift" if a width_axis/width_center/
+    #      width_limit guard is given and tripped (use this for a
+    #      staircase's own strip -- there's a real fall-off-the-side
+    #      edge to guard against; leave it unset for an open patch like
+    #      rubble, which has no equivalent edge);
+    #   5. aborts with "stuck" if stuck_segments_before_abort consecutive
+    #      segments each cover under stuck_dist_fraction of their own
+    #      planned distance (added after a real run where an earlier
+    #      incident left the robot essentially stuck/fallen, and the
+    #      walk kept logging segments of a robot that wasn't moving at
+    #      all instead of saying so).
+    # Returns one of "completed", "edge_drift", or "stuck" -- a caller
+    # chaining multiple walks (e.g. an approach then a crossing) should
+    # check for "stuck" and skip the next walk rather than attempting it
+    # from a robot that's already stuck/fallen (see run_feature() in
+    # tools/visual_test_rough_terrain.py for a worked example of exactly
+    # this pattern).
+    def _walk_terrain_segment_loop(self, target_x: float, target_y: float,
+                                    segment_len: float, speed: float,
+                                    width_axis: Optional[str] = None,
+                                    width_center: Optional[float] = None,
+                                    width_limit: Optional[float] = None,
+                                    max_height_jump: float = 0.15,
+                                    stuck_dist_fraction: float = 0.25,
+                                    stuck_segments_before_abort: int = 3) -> str:
+        pose = self.get_robot_pose()
+        total_dist = math.hypot(target_x - pose.x, target_y - pose.y)
+        n_segments = max(1, round(total_dist / segment_len))
+        actual_segment_len = total_dist / n_segments
+        segment_duration = actual_segment_len / speed
+
+        prev_trunk_z = self.get_trunk_height()
+        stuck_streak = 0
+
+        for i in range(n_segments):
+            self._face_waypoint(target_x, target_y)
+            pose_before = self.get_robot_pose()
+            self.move(vx=speed, vy=0.0, wz=0.0, duration=segment_duration)
+            pose = self.get_robot_pose()
+            trunk_z = self.get_trunk_height()
+            dist_remaining = math.hypot(target_x - pose.x, target_y - pose.y)
+            height_delta = trunk_z - prev_trunk_z
+            prev_trunk_z = trunk_z
+            flag = ""
+            if abs(height_delta) > max_height_jump:
+                flag = (f"  <-- trunk_z jumped {height_delta:+.3f} m in one "
+                         f"segment, likely stumble/launch")
+            print(f"    [{i + 1}/{n_segments}] x={pose.x:.2f} y={pose.y:.2f} "
+                  f"yaw={pose.yaw_deg:.1f} trunk_z={trunk_z:.3f} m "
+                  f"(dist remaining={dist_remaining:.2f} m){flag}")
+
+            if width_axis is not None:
+                lateral = pose.y if width_axis == "y" else pose.x
+                if abs(lateral - width_center) > width_limit:
+                    print(f"    !! drifted {width_axis}={lateral:.2f} past the "
+                          f"+/-{width_limit:.2f} m margin around "
+                          f"{width_axis}={width_center:.2f} -- stopping before "
+                          f"it walks off the structure's edge")
+                    self.stop()
+                    return "edge_drift"
+
+            moved_this_segment = math.hypot(pose.x - pose_before.x, pose.y - pose_before.y)
+            if moved_this_segment < stuck_dist_fraction * actual_segment_len:
+                stuck_streak += 1
+                if stuck_streak >= stuck_segments_before_abort:
+                    print(f"    !! moved only {moved_this_segment:.3f} m "
+                          f"(planned {actual_segment_len:.2f} m) for "
+                          f"{stuck_streak} segments running -- robot appears "
+                          f"stuck/fallen, not just slow; stopping rather than "
+                          f"logging more segments of a robot that isn't moving")
+                    self.stop()
+                    return "stuck"
+            else:
+                stuck_streak = 0
+        self.stop()
+        return "completed"
+
+    def _face_waypoint(self, target_x: float, target_y: float) -> None:
+        """Closed-loop turn (reusing turn()'s own [TURN] diagnostic) to
+        face a world-frame waypoint, using the same yaw convention as
+        _yaw_from_wxyz (yaw=0 faces +x, positive yaw turns toward +y)."""
+        pose = self.get_robot_pose()
+        bearing_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
+        turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
+        if abs(turn_needed) > 1.0:
+            self.turn(turn_needed)
+
+    def climb_stairs(self, target_x: float, target_y: float,
+                      width_axis: Optional[str] = None,
+                      width_center: Optional[float] = None,
+                      width_limit: Optional[float] = None,
+                      segment_len: float = 0.3, speed: float = 0.3) -> str:
+        """Walk to (target_x, target_y) across a staircase, re-facing the
+        target every short segment and logging a trunk-height profile
+        that should track the stairs' own step heights (see the class
+        comment above _walk_terrain_segment_loop for exactly what's
+        logged/guarded). Pass width_axis/width_center/width_limit for a
+        staircase strip with a real fall-off-the-side edge -- e.g. for
+        this project's own custom_scene.xml stairs_gentle (y=2.0 strip,
+        ~1.0 m half-width in y) something like width_axis="y",
+        width_center=2.0, width_limit=0.8 (leave a margin short of the
+        strip's actual physical half-width, so a drift is caught before
+        the robot is actually past the edge, not after -- see
+        tools/visual_test_rough_terrain.py's own FEATURES dict for the
+        values already tuned against a real run on both of this
+        project's staircases).
+
+        segment_len is deliberately short (0.3 m default) relative to a
+        typical stair tread depth (0.3-0.5 m in this project's own
+        scene) so the printed trunk-height trace actually resolves
+        individual steps rather than averaging across several of them.
+
+        Returns "completed", "edge_drift", or "stuck" -- see
+        _walk_terrain_segment_loop's own comment for what each means."""
+        return self._walk_terrain_segment_loop(
+            target_x, target_y, segment_len=segment_len, speed=speed,
+            width_axis=width_axis, width_center=width_center,
+            width_limit=width_limit,
+        )
+
+    def cross_rough_terrain(self, target_x: float, target_y: float,
+                             segment_len: float = 0.3, speed: float = 0.3) -> str:
+        """Walk to (target_x, target_y) across an uneven/rubble patch --
+        same engine as climb_stairs(), just with no width_axis/width_
+        limit guard by default: an open rough-terrain patch (like this
+        project's own rubble feature in custom_scene.xml) has no
+        equivalent "fall off the strip's side edge" failure mode to
+        guard against the way a narrow staircase does. Still gets the
+        same re-facing, per-segment trunk-height delta flagging, and
+        stuck-detector as climb_stairs() -- a stuck/fallen robot on
+        rough terrain is just as real a failure mode as on stairs (a
+        real run found exactly this: ~3% of the commanded distance
+        actually covered over 22 segments, after an earlier incident on
+        a staircase left the robot stuck/fallen).
+
+        Returns "completed" or "stuck" in practice (width_axis is unset
+        here so "edge_drift" can't trigger, but is still a possible
+        return value if you pass width_axis explicitly via the
+        underlying engine)."""
+        return self._walk_terrain_segment_loop(
+            target_x, target_y, segment_len=segment_len, speed=speed,
+        )
 
     def get_camera_frame(self) -> np.ndarray:
         with self._frame_lock:
