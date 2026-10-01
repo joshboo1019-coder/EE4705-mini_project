@@ -1,5 +1,7 @@
 """
-Student B: exercise parse -> queue -> executor end-to-end without needing
+tests/test_student_b.py — STUDENT B OWNS THIS FILE. Part of Task 3 (60%).
+
+Exercise parse -> queue -> executor end-to-end without needing
 Student A's MuJoCo sim or Student C's YOLO to exist yet.
 
     python -m pytest -q tests/test_student_b.py   # offline: fake LLM, no keys
@@ -98,9 +100,17 @@ def test_precheck_rejects_without_calling_llm(fake_llm, text, reason):
     ('{"foo": 1}', "invalid_field:actions"),
     ('{"actions": []}', "empty_actions"),
     (_actions({"action": "dance"}), "unknown_action:dance"),
-    (_actions({**MOVE_3S, "vx": 2.0}), "out_of_range:vx"),
-    (_actions({**MOVE_3S, "duration": 0}), "out_of_range:duration"),
-    (_actions({**MOVE_3S, "duration": 999}), "out_of_range:duration"),
+    (_actions({**MOVE_3S, "vx": 2.0}), "invalid_field:vx"),
+    (_actions({**MOVE_3S, "duration": 0}), "invalid_field:duration"),
+    (_actions({**MOVE_3S, "duration": 999}), "invalid_field:duration"),
+    (_actions({**MOVE_3S, "vy": -1.5}), "invalid_field:vy"),
+    (_actions({**MOVE_3S, "wz": 1.01}), "invalid_field:wz"),
+    (_actions({**MOVE_3S, "duration": 30.5}), "invalid_field:duration"),
+    ('{"actions": [{"action": "turn", "angle_deg": Infinity}]}', "invalid_field:angle_deg"),
+    (_actions({"action": "turn", "angle_deg": "left"}), "invalid_field:angle_deg"),
+    (_actions({"action": "move", "vx": 0.5, "vy": 0, "wz": 0}), "invalid_field:duration"),
+    (_actions({"action": "goto_object", "color": "red"}), "invalid_field:class"),
+    (_actions("move"), "invalid_field:action"),
     (_actions({**MOVE_3S, "vx": "fast"}), "invalid_field:vx"),
     (_actions({**MOVE_3S, "vx": True}), "invalid_field:vx"),
     (_actions({"action": "move", "vx": 0.5}), "invalid_field:vy"),
@@ -131,6 +141,55 @@ def test_llm_failure_becomes_rejection(monkeypatch):
     monkeypatch.setattr(llm_parser, "_call_llm", boom)
     r = llm_parser.parse_command("walk forward", [])
     assert not r.accepted and r.reject_reason == "llm_error:TimeoutError"
+
+
+def test_chat_loop_survives_llm_errors(monkeypatch, capsys):
+    """An LLM/network/auth failure is a printed rejection, and the loop
+    goes on to read (and parse) the next line."""
+    calls = []
+
+    def flaky(user_text, history):
+        calls.append(user_text)
+        if len(calls) == 1:
+            raise ConnectionError("down")
+        return _actions({"action": "stop"})
+
+    lines = iter(["walk forward", "stop"])
+
+    def fake_input(prompt=""):
+        try:
+            return next(lines)
+        except StopIteration:
+            raise EOFError
+
+    monkeypatch.setattr(llm_parser, "_call_llm", flaky)
+    monkeypatch.setattr("builtins.input", fake_input)
+    queue = CommandQueue()
+    chat_interface._chat_loop(queue)
+    out = capsys.readouterr().out
+    assert "[CMD] rejected reason=llm_error:ConnectionError" in out
+    assert calls == ["walk forward", "stop"]
+    assert isinstance(queue.pop(timeout=0), StopCommand)
+
+
+def test_chat_runs_in_its_own_thread(monkeypatch):
+    import threading
+    started = threading.Event()
+    release = threading.Event()
+
+    def blocking_input(prompt=""):
+        started.set()
+        release.wait(5)   # the chat thread sits in input() ...
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", blocking_input)
+    t = chat_interface.start_chat_thread(CommandQueue())
+    assert started.wait(2)
+    # ... while the caller (the executor's thread) is free to carry on.
+    assert t is not threading.current_thread() and t.daemon and t.is_alive()
+    release.set()
+    t.join(2)
+    assert not t.is_alive()
 
 
 def test_unknown_service_is_reported(monkeypatch):

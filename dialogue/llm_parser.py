@@ -138,6 +138,12 @@ Each <action> is one of:
       a short spoken reply: answer a question about the robot, or ask a
       clarifying question when the request is ambiguous. Produces no motion.
 
+Sign convention (robot's own point of view; get this right):
+- vx  + = forward,  - = backward
+- vy  + = LEFT,     - = RIGHT       ("left" is POSITIVE vy)
+- wz  + = turn left (counter-clockwise),  - = turn right
+- turn angle_deg  + = left,  - = right
+
 Conventions:
 - Normal walking speed vx=0.8; "slowly" ~0.3-0.4; "fast"/"run" 1.0;
   "a bit"/"a little"/"a few steps" = 1.5 s. No duration given = 2 s.
@@ -158,8 +164,12 @@ Conventions:
 Examples:
 User: walk forward for three seconds, then turn back
 {"actions": [{"action": "move", "vx": 0.8, "vy": 0.0, "wz": 0.0, "duration": 3.0}, {"action": "turn", "angle_deg": 180}]}
-User: turn right
+User: turn right 90 degrees
 {"actions": [{"action": "turn", "angle_deg": -90}]}
+User: move left for two seconds
+{"actions": [{"action": "move", "vx": 0.0, "vy": 0.8, "wz": 0.0, "duration": 2.0}]}
+User: strafe right a bit
+{"actions": [{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 1.5}]}
 User: could you walk forwards a bit
 {"actions": [{"action": "move", "vx": 0.8, "vy": 0.0, "wz": 0.0, "duration": 1.5}]}
 User: go to the green chair
@@ -391,7 +401,7 @@ def _to_command(a):
         wz = _number(a, "wz", -1.0, 1.0)
         duration = _number(a, "duration", 0.0, MAX_DURATION_S)
         if duration <= 0.0:
-            raise _Invalid("out_of_range:duration")
+            raise _Invalid("invalid_field:duration")
         return MoveCommand(vx, vy, wz, duration)
     if kind == "turn":
         return TurnCommand(_number(a, "angle_deg"))
@@ -417,7 +427,7 @@ def _number(a: Dict, name: str, lo: Optional[float] = None,
     if not math.isfinite(v):
         raise _Invalid(f"invalid_field:{name}")
     if (lo is not None and v < lo) or (hi is not None and v > hi):
-        raise _Invalid(f"out_of_range:{name}")
+        raise _Invalid(f"invalid_field:{name}")
     return v
 
 

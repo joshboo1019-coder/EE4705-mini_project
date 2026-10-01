@@ -1,20 +1,81 @@
-| Service | Runs | Accuracy | basic | multi-step | paraphrase | follow-up | chat | invalid | Svc errors | Latency mean / median / p95 (s) | Tokens in / out per call | Cost per call (USD) | Cost per 1k calls |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| qwen-flash | 3 | 96% (81/84) | 100% | 100% | 88% | 100% | 100% | 100% | 0 | 0.36 / 0.29 / 0.57 | 981 / 29 | 0.000061 | 0.061 |
-| gpt-5-nano | 3 | 96% (81/84) | 100% | 100% | 88% | 100% | 100% | 100% | 0 | 0.97 / 0.93 / 1.41 | 968 / 38 | 0.000064 | 0.064 |
+Test set: 31 utterances. Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
 
-Failures (every run):
+### Prompt v1
+
+| Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
+|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 87.1% (27/31) | 87.1% (27/31) | 87.1% (27/31) | **87.1% (81/93)** | 0 | 0.35 / 0.54 | 980 / 30 | 0.061 |
+| gemini-3.8-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 1.81 / 2.41 | 1013 / 31 | 0.874 |
+| gpt-5-nano | 93.5% (29/31) | 93.5% (29/31) | 90.3% (28/31) | **92.5% (86/93)** | 0 | 0.93 / 1.22 | 967 / 39 | 0.064 |
+
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | invalid |
+|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 87.5% | 0.0% | 100.0% | 100.0% | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 87.5% | 55.6% | 100.0% | 100.0% | 100.0% |
+
+Failures (v1):
 
 | Service | Run | Case | Utterance | Got | Why |
 |---|---|---|---|---|---|
+| qwen-flash | 1 | L1 | sidestep to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| qwen-flash | 1 | L2 | shuffle right for one second | `{"action": "move", "vx": 0.0, "vy": 0.8, "wz": 0.0, "duration": 1.0}` | action 1 wrong: move(vx=0, vy=0.8, 1.0 s) |
+| qwen-flash | 1 | L3 | slide over to the right a little | `{"action": "move", "vx": 0.0, "vy": 0.3, "wz": 0.0, "duration": 1.5}` | action 1 wrong: move(vx=0, vy=0.3, 1.5 s) |
 | qwen-flash | 1 | P8 | shuffle sideways to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| qwen-flash | 2 | L1 | sidestep to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| qwen-flash | 2 | L2 | shuffle right for one second | `{"action": "move", "vx": 0.0, "vy": 0.8, "wz": 0.0, "duration": 1.0}` | action 1 wrong: move(vx=0, vy=0.8, 1.0 s) |
+| qwen-flash | 2 | L3 | slide over to the right a little | `{"action": "move", "vx": 0.0, "vy": 0.4, "wz": 0.0, "duration": 1.5}` | action 1 wrong: move(vx=0, vy=0.4, 1.5 s) |
 | qwen-flash | 2 | P8 | shuffle sideways to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| qwen-flash | 3 | L1 | sidestep to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| qwen-flash | 3 | L2 | shuffle right for one second | `{"action": "move", "vx": 0.0, "vy": 0.8, "wz": 0.0, "duration": 1.0}` | action 1 wrong: move(vx=0, vy=0.8, 1.0 s) |
+| qwen-flash | 3 | L3 | slide over to the right a little | `{"action": "move", "vx": 0.0, "vy": 0.4, "wz": 0.0, "duration": 1.5}` | action 1 wrong: move(vx=0, vy=0.4, 1.5 s) |
 | qwen-flash | 3 | P8 | shuffle sideways to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| gpt-5-nano | 1 | L2 | shuffle right for one second | `{"action": "move", "vx": 0.8, "vy": -0.0, "wz": 0.0, "duration": 1.0}` | action 1 wrong: move(vx=0.8, 1.0 s) |
 | gpt-5-nano | 1 | P8 | shuffle sideways to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| gpt-5-nano | 2 | L1 | sidestep to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
 | gpt-5-nano | 2 | P8 | shuffle sideways to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
+| gpt-5-nano | 3 | L2 | shuffle right for one second | `{"action": "move", "vx": 0.8, "vy": 0.0, "wz": -1.0, "duration": 1.0}` | action 1 wrong: move(vx=0.8, wz=-1, 1.0 s) |
+| gpt-5-nano | 3 | L3 | slide over to the right a little | `{"action": "move", "vx": 0.8, "vy": -0.3, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0.8, vy=-0.3, 2.0 s) |
 | gpt-5-nano | 3 | P8 | shuffle sideways to your left for two seconds | `{"action": "move", "vx": 0.0, "vy": -0.8, "wz": 0.0, "duration": 2.0}` | action 1 wrong: move(vx=0, vy=-0.8, 2.0 s) |
 
-Reject reasons given for the invalid cases (all runs):
+### Prompt v2
 
-- **qwen-flash**: X1: impossible:fly; X2: non-English; X3: non-English; X4: empty; X5: out_of_range:duration; X6: unsafe:knock_over; X7: impossible:pick_up; X8: non-English
-- **gpt-5-nano**: X1: impossible:fly; X2: non-English; X3: non-English; X4: empty; X5: out_of_range:duration, out_of_range:ten_minutes; X6: unsafe:person; X7: impossible:pick, impossible:picking_up_objects; X8: empty
+| Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
+|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 0.35 / 0.52 | 1164 / 30 | 0.070 |
+| gemini-3.8-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 2.03 / 2.34 | 1201 / 31 | 1.017 |
+| gpt-5-nano | 100.0% (31/31) | 96.8% (30/31) | 96.8% (30/31) | **97.8% (91/93)** | 0 | 1.02 / 1.23 | 1150 / 39 | 0.073 |
+
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | invalid |
+|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 91.7% | 100.0% | 100.0% | 100.0% | 100.0% |
+
+Failures (v2):
+
+| Service | Run | Case | Utterance | Got | Why |
+|---|---|---|---|---|---|
+| gpt-5-nano | 2 | P7 | halt! | `rejected: empty` | rejected (empty) |
+| gpt-5-nano | 3 | P7 | halt! | `rejected: invalid_field:actions` | rejected (invalid_field:actions) |
+
+### Items that flipped between v1 and v2 (passes out of 3 runs)
+
+| Service | Case | Utterance | v1 | v2 |
+|---|---|---|---|---|
+| qwen-flash | P8 | shuffle sideways to your left for two seconds | 0/3 | 3/3 |
+| qwen-flash | L1 | sidestep to your left for two seconds | 0/3 | 3/3 |
+| qwen-flash | L2 | shuffle right for one second | 0/3 | 3/3 |
+| qwen-flash | L3 | slide over to the right a little | 0/3 | 3/3 |
+| gpt-5-nano | P7 | halt! | 3/3 | 1/3 |
+| gpt-5-nano | P8 | shuffle sideways to your left for two seconds | 0/3 | 3/3 |
+| gpt-5-nano | L1 | sidestep to your left for two seconds | 2/3 | 3/3 |
+| gpt-5-nano | L2 | shuffle right for one second | 1/3 | 3/3 |
+| gpt-5-nano | L3 | slide over to the right a little | 2/3 | 3/3 |
+
+### Logged spend this evaluation (scored calls + follow-up setup turns)
+
+- qwen-flash v2: $0.0065
+- gemini-3.8-flash v1: $0.0813
+- gemini-3.8-flash v2: $0.0945
+- gpt-5-nano v2: $0.0068

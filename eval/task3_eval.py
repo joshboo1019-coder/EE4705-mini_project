@@ -1,10 +1,14 @@
 """
 eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
 
-    python eval/task3_eval.py --ping        # connectivity check, one call per service
-    python eval/task3_eval.py --services qwen-flash gpt-5-nano --runs 3
-    python eval/task3_eval.py --services gemini-3.8-flash --runs 3   # paced to <=5 RPM
+    python eval/task3_eval.py --ping [SERVICE ...]   # connectivity check, one call per service
+    python eval/task3_eval.py --services qwen-flash gpt-5-nano --prompt v1 v2 --runs 3
+    python eval/task3_eval.py --services gemini-3.8-flash --prompt v1 v2 --budget 2  # paced to <=5 RPM
+    python eval/task3_eval.py --services qwen-flash --prompt v1 --cases L1 L2 L3     # add cases to old runs
     python eval/task3_eval.py --report      # rebuild eval/results/summary.md from the logs
+
+--prompt v1 is the frozen prompt in eval/prompt_v1.py; v2 is the current
+llm_parser.SYSTEM_PROMPT.
 
 (If ROS's PYTHONPATH is set in your shell: `env -u PYTHONPATH .venv/bin/python ...`.)
 
@@ -14,7 +18,7 @@ through the same precheck -> _call_llm -> _to_parse_result path as
 llm_parser.parse_command(), but LLM exceptions are surfaced here so a
 service outage / rate limit / quota error is retried or recorded as a
 service error instead of being scored as a parse failure. Every call is
-appended to eval/results/<service>.jsonl.
+appended to eval/results/<prompt>/<service>.jsonl.
 """
 
 import argparse
@@ -32,6 +36,7 @@ from core.schema import (  # noqa: E402
     MoveCommand, TurnCommand, GotoObjectCommand, StopCommand, ChatCommand,
 )
 from dialogue import llm_parser  # noqa: E402
+from eval.prompt_v1 import SYSTEM_PROMPT_V1  # noqa: E402
 
 PING_SERVICES = ["qwen-flash", "gemini-3.8-flash", "gpt-5-nano"]
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -52,8 +57,8 @@ PRICES = {
 
 # Free-tier pacing: Gemini allows only a few requests per minute.
 MIN_INTERVAL_S = {"gemini-3.8-flash": 13.0}
-SERVICE_ERROR_RETRIES = 4          # per utterance, for 429 / 5xx / network
-BACKOFF_S = [15, 30, 60, 90]
+API_ERROR_RETRIES = 5              # per utterance, for 429 / 5xx / network
+BACKOFF_BASE_S = 5                 # exponential: 5, 10, 20, 40, 80 s
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +157,13 @@ CASES = [
     ("P7", "paraphrase", [], "halt!", cmds(stop())),
     ("P8", "paraphrase", [], "shuffle sideways to your left for two seconds",
      cmds(move(vx=(-0.1, 0.1), vy=(0.1, 1.0), duration=2))),
+    # --- lateral (added with prompt v2; none is a copy of a few-shot example) ---
+    ("L1", "lateral", [], "sidestep to your left for two seconds",
+     cmds(move(vx=(-0.1, 0.1), vy=(0.1, 1.0), duration=2))),
+    ("L2", "lateral", [], "shuffle right for one second",
+     cmds(move(vx=(-0.1, 0.1), vy=(-1.0, -0.1), duration=1))),
+    ("L3", "lateral", [], "slide over to the right a little",
+     cmds(move(vx=(-0.1, 0.1), vy=(-1.0, -0.1), duration=(0.5, 3.0)))),
     # --- follow-ups (scored on the last turn only) ---
     ("F1", "follow-up", ["walk forward for two seconds"], "do that again, but slower",
      cmds(move((0.05, 0.6), duration=2))),
@@ -174,7 +186,14 @@ CASES = [
 # Running
 # ---------------------------------------------------------------------------
 
+PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": llm_parser.SYSTEM_PROMPT}
+
+
 class QuotaExhausted(Exception):
+    pass
+
+
+class BudgetExceeded(Exception):
     pass
 
 
@@ -190,148 +209,214 @@ class _Pacer:
         self.last = time.monotonic()
 
 
-def _is_daily_quota(err) -> bool:
+class _Spend:
+    """Running cost estimate (from token counts) per service, over every
+    LLM call this process makes — scored calls and follow-up setup turns."""
+    def __init__(self, budget):
+        self.budget = budget
+        self.usd = {}
+        self.calls = {}
+
+    def add(self, service, stats):
+        cost = call_cost(service, stats.get("prompt_tokens"), stats.get("completion_tokens"))
+        self.usd[service] = self.usd.get(service, 0.0) + cost
+        self.calls[service] = self.calls.get(service, 0) + 1
+        if self.budget is not None and self.usd[service] > self.budget:
+            raise BudgetExceeded(f"{service} spend ${self.usd[service]:.4f} > ${self.budget}")
+        return cost
+
+
+def call_cost(service, tin, tout):
+    pin, pout = PRICES.get(service, (0.0, 0.0))
+    return ((tin or 0) * pin + (tout or 0) * pout) / 1e6
+
+
+def _quota_kind(err):
+    """'free_tier' / 'daily' for quota errors that retrying won't fix."""
     msg = str(err).lower()
-    return "perday" in msg or "per day" in msg or "daily" in msg or "insufficient_quota" in msg
+    if "freetier" in msg or "free_tier" in msg:
+        return "free_tier"
+    if "perday" in msg or "per day" in msg or "insufficient_quota" in msg:
+        return "daily"
+    return None
 
 
-def parse_once(text, history, pacer):
-    """precheck -> _call_llm -> _to_parse_result, retrying service errors.
-    Returns (ParseResult, stats dict, service_error or None)."""
+def parse_once(text, history, pacer, spend):
+    """precheck -> _call_llm -> _to_parse_result, retrying 429/5xx/network
+    errors with exponential back-off. Returns (ParseResult, stats,
+    api_error or None); an api_error is NOT a parse error."""
     import openai
     pre = llm_parser.precheck(text)
     if pre is not None:
         return llm_parser._reject(pre), {"llm_called": False}, None
     err = None
-    for attempt in range(SERVICE_ERROR_RETRIES + 1):
+    for attempt in range(API_ERROR_RETRIES + 1):
         pacer.wait()
         try:
             raw = llm_parser._call_llm(text, history)
-            stats = dict(llm_parser.last_call_stats, llm_called=True,
-                         service_retries=attempt, raw=raw)
-            return llm_parser._to_parse_result(raw), stats, None
         except (openai.RateLimitError, openai.InternalServerError,
                 openai.APIConnectionError, openai.APITimeoutError) as e:
-            if isinstance(e, openai.RateLimitError) and _is_daily_quota(e):
-                raise QuotaExhausted(str(e)[:300])
+            if isinstance(e, openai.RateLimitError) and _quota_kind(e):
+                raise QuotaExhausted(f"{_quota_kind(e)}: {str(e)[:400]}")
             err = e
-            print(f"    service error {type(e).__name__}; retry in {BACKOFF_S[min(attempt, 3)]} s")
-            time.sleep(BACKOFF_S[min(attempt, 3)])
+            delay = BACKOFF_BASE_S * 2 ** attempt
+            if attempt < API_ERROR_RETRIES:
+                print(f"    API error {type(e).__name__}; retry in {delay:.0f} s")
+                time.sleep(delay)
+            continue
+        stats = dict(llm_parser.last_call_stats, llm_called=True,
+                     api_retries=attempt, raw=raw)
+        stats["cost_usd"] = spend.add(config.LLM_SERVICE, stats)
+        return llm_parser._to_parse_result(raw), stats, None
     return (llm_parser._reject(f"llm_error:{type(err).__name__}"),
-            dict(llm_parser.last_call_stats, llm_called=True), type(err).__name__)
+            dict(llm_parser.last_call_stats, llm_called=True,
+                 api_retries=API_ERROR_RETRIES), type(err).__name__)
 
 
-def run_service(service, runs):
+def run_service(service, prompt, runs, case_ids, spend):
     config.LLM_SERVICE = service
+    llm_parser.SYSTEM_PROMPT = PROMPTS[prompt]
+    cases = [c for c in CASES if not case_ids or c[0] in case_ids]
     pacer = _Pacer(MIN_INTERVAL_S.get(service, 0.0))
-    RESULTS_DIR.mkdir(exist_ok=True)
-    log = RESULTS_DIR / f"{service}.jsonl"
+    out_dir = RESULTS_DIR / prompt
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log = out_dir / f"{service}.jsonl"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     completed = 0
     for run in range(1, runs + 1):
         rows = []
-        print(f"\n=== {service} run {run}/{runs} ===")
+        print(f"\n=== {service} prompt {prompt} run {run}/{runs} ({len(cases)} cases) ===")
         try:
-            for cid, cat, setup, text, check in CASES:
-                history = []
+            for cid, cat, setup, text, check in cases:
+                history, setup_cost = [], 0.0
                 for s in setup:   # follow-up context, built like chat_interface does
-                    r0, _, _ = parse_once(s, history, pacer)
+                    r0, st0, _ = parse_once(s, history, pacer, spend)
+                    setup_cost += st0.get("cost_usd", 0.0)
                     history += [{"role": "user", "content": s},
                                 {"role": "assistant", "content": llm_parser.history_entry(r0)}]
-                r, stats, service_error = parse_once(text, history, pacer)
-                ok, why = (None, "service error") if service_error else check(r)
-                stats.pop("raw", None) if ok else None
+                r, stats, api_error = parse_once(text, history, pacer, spend)
+                ok, why = (None, "API error") if api_error else check(r)
+                if ok:
+                    stats.pop("raw", None)
                 rows.append(dict(
-                    session=stamp, run=run, id=cid, category=cat, text=text,
-                    setup=setup, ok=ok, why=why, service_error=service_error,
+                    session=stamp, prompt=prompt, run=run, id=cid, category=cat,
+                    text=text, setup=setup, ok=ok, why=why, api_error=api_error,
                     accepted=r.accepted, reject_reason=r.reject_reason,
-                    actions=json.loads(llm_parser.history_entry(r)), **stats))
-                print(f"  {cid:3s} {'PASS' if ok else 'ERR ' if ok is None else 'FAIL'}  {text!r}  {why}")
-        except QuotaExhausted as e:
-            print(f"  daily quota exhausted during run {run}: {e}")
+                    actions=json.loads(llm_parser.history_entry(r)),
+                    setup_cost_usd=setup_cost, **stats))
+                print(f"  {cid:3s} {'PASS' if ok else 'APIE' if ok is None else 'FAIL'}  {text!r}  {why}")
+        except (QuotaExhausted, BudgetExceeded) as e:
+            print(f"  STOPPED during run {run}: {type(e).__name__}: {e}")
             print(f"  -> {completed} complete run(s); partial run {run} discarded")
-            return completed, str(e)
+            raise
         with log.open("a") as f:
             for row in rows:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
         completed += 1
-    return completed, None
+        print(f"  spend so far: {service} ${spend.usd.get(service, 0):.4f} "
+              f"over {spend.calls.get(service, 0)} calls")
+    return completed
 
 
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 
-def _load(service):
-    path = RESULTS_DIR / f"{service}.jsonl"
+def load(prompt, service):
+    """All logged rows for (prompt, service), latest row per (run, case),
+    restricted to the current CASES — so cases added later can be run on
+    their own (--cases) and merged with earlier runs of the other cases."""
+    path = RESULTS_DIR / prompt / f"{service}.jsonl"
     if not path.is_file():
         return []
-    rows = [json.loads(line) for line in path.open()]
-    # Keep only the latest session's runs.
-    latest = max(r["session"] for r in rows)
-    return [r for r in rows if r["session"] == latest]
+    ids = {c[0] for c in CASES}
+    latest = {}
+    for line in path.open():
+        r = json.loads(line)
+        r.setdefault("api_error", r.get("service_error"))
+        if r["id"] in ids:
+            latest[(r["run"], r["id"])] = r
+    return sorted(latest.values(), key=lambda r: (r["run"], r["id"]))
 
 
-def _pct(xs):
-    return f"{100 * sum(xs) / len(xs):.0f}%" if xs else "–"
+def _acc(rows):
+    scored = [r for r in rows if r["ok"] is not None]
+    if not scored:
+        return "–"
+    k = sum(r["ok"] for r in scored)
+    return f"{100 * k / len(scored):.1f}% ({k}/{len(scored)})"
 
 
-def report(services) -> str:
-    out = []
-    cats = []
-    for c in CASES:
-        if c[1] not in cats:
-            cats.append(c[1])
-    out.append("| Service | Runs | Accuracy | " + " | ".join(cats) +
-               " | Svc errors | Latency mean / median / p95 (s) | Tokens in / out per call | Cost per call (USD) | Cost per 1k calls |")
-    out.append("|" + "---|" * (9 + len(cats) - 1))
-    failures = []
+def _quantile(xs, q):
+    xs = sorted(xs)
+    return xs[min(len(xs) - 1, int(round(q * (len(xs) - 1))))] if xs else float("nan")
+
+
+def _got(r):
+    a = r["actions"]
+    return (f"rejected: {a['reason']}" if "rejected" in a else
+            ", ".join(json.dumps(x) for x in a["actions"]))
+
+
+def report(services, prompts=("v1", "v2")) -> str:
+    out = [f"Test set: {len(CASES)} utterances. Accuracy excludes API errors "
+           "(calls that still failed after back-off), which are counted separately.", ""]
+    for prompt in prompts:
+        out += [f"### Prompt {prompt}", "",
+                "| Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |",
+                "|---|---|---|---|---|---|---|---|---|"]
+        for s in services:
+            rows = load(prompt, s)
+            if not rows:
+                continue
+            runs = sorted({r["run"] for r in rows})
+            per_run = [_acc([r for r in rows if r["run"] == n]) for n in runs]
+            per_run += ["–"] * (3 - len(per_run))
+            llm = [r for r in rows if r.get("llm_called") and not r["api_error"]
+                   and r.get("latency_s") is not None]
+            lat = [r["latency_s"] for r in llm]
+            tin = statistics.mean(r["prompt_tokens"] or 0 for r in llm)
+            tout = statistics.mean(r["completion_tokens"] or 0 for r in llm)
+            n_err = sum(1 for r in rows if r["api_error"])
+            out.append(f"| {s} | " + " | ".join(per_run) + f" | **{_acc(rows)}** | {n_err} | "
+                       f"{statistics.median(lat):.2f} / {_quantile(lat, 0.9):.2f} | "
+                       f"{tin:.0f} / {tout:.0f} | {1000 * call_cost(s, tin, tout):.3f} |")
+        out.append("")
+        cats = list(dict.fromkeys(c[1] for c in CASES))
+        out += ["| Service | " + " | ".join(cats) + " |", "|---|" + "---|" * len(cats)]
+        for s in services:
+            rows = load(prompt, s)
+            if rows:
+                out.append(f"| {s} | " + " | ".join(
+                    _acc([r for r in rows if r["category"] == c]).split(" ")[0] for c in cats) + " |")
+        out += ["", f"Failures ({prompt}):", "",
+                "| Service | Run | Case | Utterance | Got | Why |", "|---|---|---|---|---|---|"]
+        for s in services:
+            for r in load(prompt, s):
+                if r["ok"] is False:
+                    out.append(f"| {s} | {r['run']} | {r['id']} | {r['text']} | `{_got(r)}` | {r['why']} |")
+        out.append("")
+
+    out += ["### Items that flipped between v1 and v2 (passes out of 3 runs)", "",
+            "| Service | Case | Utterance | v1 | v2 |", "|---|---|---|---|---|"]
     for s in services:
-        rows = _load(s)
-        if not rows:
+        a, b = load("v1", s), load("v2", s)
+        if not a or not b:
             continue
-        runs = len({r["run"] for r in rows})
-        scored = [r for r in rows if r["ok"] is not None]
-        acc = _pct([r["ok"] for r in scored])
-        per_cat = [_pct([r["ok"] for r in scored if r["category"] == c]) for c in cats]
-        llm = [r for r in rows if r.get("llm_called") and r.get("latency_s") is not None
-               and not r["service_error"]]
-        lat = sorted(r["latency_s"] for r in llm)
-        p95 = lat[min(len(lat) - 1, int(round(0.95 * (len(lat) - 1))))] if lat else 0
-        tin = statistics.mean(r["prompt_tokens"] or 0 for r in llm) if llm else 0
-        tout = statistics.mean(r["completion_tokens"] or 0 for r in llm) if llm else 0
-        pin, pout = PRICES.get(s, (0, 0))
-        cost = (tin * pin + tout * pout) / 1e6
-        n_err = sum(1 for r in rows if r["service_error"])
-        out.append(f"| {s} | {runs} | {acc} ({sum(r['ok'] for r in scored)}/{len(scored)}) | "
-                   + " | ".join(per_cat) +
-                   f" | {n_err} | {statistics.mean(lat):.2f} / {statistics.median(lat):.2f} / {p95:.2f}"
-                   f" | {tin:.0f} / {tout:.0f} | {cost:.6f} | {1000 * cost:.3f} |")
-        for r in rows:
-            if r["ok"] is False:
-                failures.append((s, r))
+        for cid, _, _, text, _ in CASES:
+            pa = sum(1 for r in a if r["id"] == cid and r["ok"])
+            pb = sum(1 for r in b if r["id"] == cid and r["ok"])
+            if pa != pb:
+                out.append(f"| {s} | {cid} | {text} | {pa}/3 | {pb}/3 |")
     out.append("")
-    out.append("Failures (every run):")
-    out.append("")
-    out.append("| Service | Run | Case | Utterance | Got | Why |")
-    out.append("|---|---|---|---|---|---|")
-    for s, r in failures:
-        got = r["actions"]
-        got = (f"rejected: {got['reason']}" if "rejected" in got else
-               ", ".join(json.dumps(a) for a in got["actions"]))
-        out.append(f"| {s} | {r['run']} | {r['id']} | {r['text']} | `{got}` | {r['why']} |")
-    out.append("")
-    out.append("Reject reasons given for the invalid cases (all runs):")
-    out.append("")
+
+    out += ["### Logged spend this evaluation (scored calls + follow-up setup turns)", ""]
     for s in services:
-        rows = _load(s)
-        if rows:
-            reasons = {}
-            for r in rows:
-                if r["category"] == "invalid":
-                    reasons.setdefault(r["id"], []).append(r["reject_reason"] or "ACCEPTED")
-            out.append(f"- **{s}**: " + "; ".join(
-                f"{k}: {', '.join(sorted(set(v)))}" for k, v in reasons.items()))
+        for prompt in prompts:
+            rows = load(prompt, s)
+            if rows and "cost_usd" in rows[0]:
+                usd = sum(r.get("cost_usd", 0) + r.get("setup_cost_usd", 0) for r in rows)
+                out.append(f"- {s} {prompt}: ${usd:.4f}")
     return "\n".join(out)
 
 
@@ -365,18 +450,30 @@ def ping(services=PING_SERVICES) -> bool:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ping", action="store_true")
+    ap.add_argument("--ping", nargs="*", metavar="SERVICE",
+                    help="connectivity check (default: all three services)")
     ap.add_argument("--services", nargs="+", default=[])
+    ap.add_argument("--prompt", nargs="+", choices=sorted(PROMPTS), default=["v2"])
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--cases", nargs="+", default=[], help="only these case ids")
+    ap.add_argument("--budget", type=float, default=None,
+                    help="stop if any one service's estimated spend in this process exceeds USD")
     ap.add_argument("--report", action="store_true")
     args = ap.parse_args()
-    if args.ping:
-        sys.exit(0 if ping() else 1)
-    for s in args.services:
-        n, quota = run_service(s, args.runs)
-        print(f"\n{s}: {n}/{args.runs} complete runs" + (f" (daily quota: {quota})" if quota else ""))
+    if args.ping is not None:
+        sys.exit(0 if ping(args.ping or PING_SERVICES) else 1)
+    spend = _Spend(args.budget)
+    try:
+        for prompt in args.prompt:
+            for s in args.services:
+                n = run_service(s, prompt, args.runs, set(args.cases), spend)
+                print(f"\n{s} {prompt}: {n}/{args.runs} complete runs")
+    finally:
+        for s, usd in spend.usd.items():
+            print(f"TOTAL estimated spend {s}: ${usd:.4f} over {spend.calls[s]} calls")
     if args.report or args.services:
-        services = [s for s in llm_parser.SERVICES if (RESULTS_DIR / f"{s}.jsonl").is_file()]
+        services = [s for s in llm_parser.SERVICES
+                    if any((RESULTS_DIR / p / f"{s}.jsonl").is_file() for p in PROMPTS)]
         md = report(services)
         (RESULTS_DIR / "summary.md").write_text(md + "\n")
         print("\n" + md)
