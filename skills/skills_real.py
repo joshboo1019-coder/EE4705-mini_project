@@ -1596,10 +1596,30 @@ if __name__ == "__main__":
              "before process exit) is fixed and unrelated to that. If you "
              "hit a crash, use --gui instead. Mutually exclusive with --gui.",
     )
-    parser.add_argument(
+        parser.add_argument(
         "--compare-turn",
         action="store_true",
         help="run the open-loop-vs-closed-loop turn comparison for the Task 2 report",
+    )
+    parser.add_argument(
+        "--angles",
+        type=float,
+        nargs="+",
+        default=[90.0],
+        metavar="DEG",
+        help="target angle(s) in degrees to test with --compare-turn, e.g. "
+             "--angles 45 90 180. Defaults to [90.0] (the original single-"
+             "angle behavior) if omitted, so existing report data at 90 deg "
+             "stays reproducible by running with no --angles flag at all.",
+    )
+    parser.add_argument(
+        "--trials",
+        type=int,
+        default=1,
+        metavar="N",
+        help="repeat the closed-loop/open-loop pair this many times PER "
+             "angle in --angles (default 1). Each angle's N trials are run "
+             "back-to-back before moving to the next angle.",
     )
     args = parser.parse_args()
     if args.gui and args.native:
@@ -1615,18 +1635,62 @@ if __name__ == "__main__":
               "above if it failed to open).")
 
     if args.compare_turn:
-        print("\n--- Closed-loop turn ---")
-        skills.turn(90.0)
-        print(f"pose after closed-loop turn: {skills.get_robot_pose()}")
+        # Open-loop reference point: a real run calibrated "1.5s @ wz=0.6"
+        # as the (wrong, systematically-biased) open-loop guess for a 90 deg
+        # turn -- see docs/turn_accuracy_data.md. There is no measured
+        # open-loop formula for OTHER angles (nobody has calibrated one),
+        # so for --angles other than 90 this harness does the same naive
+        # thing an open-loop implementation actually would: linearly scale
+        # that one calibration point by angle (duration = 1.5 * |angle|/90,
+        # same wz magnitude/sign as the angle's sign). This is deliberately
+        # NOT a better model -- the whole point of this comparison is that
+        # open-loop timing doesn't generalize, so extrapolating one
+        # guessed data point linearly is exactly the kind of mistake an
+        # open-loop implementation would actually make. If the real
+        # turning dynamics aren't linear in angle (e.g. a fixed spin-up/
+        # spin-down cost per turn, independent of distance), this scaling
+        # will itself be measurably wrong in a way worth reporting.
+        base_angle, base_duration, base_wz = 90.0, 1.5, 0.6
 
-        print("\n--- Open-loop (timing-only) turn, for comparison ---")
-        t0 = time.time()
-        skills.move(vx=0.0, vy=0.0, wz=0.6, duration=1.5)  # guessed duration, no feedback
-        pose = skills.get_robot_pose()
-        print(
-            f"[OPEN-LOOP] commanded 1.5s @ wz=0.6, wall_time={time.time() - t0:.2f}s, "
-            f"resulting yaw={pose.yaw_deg:.1f} deg (compare against a 90 deg target)"
-        )
+        results = []
+        for angle in args.angles:
+            open_loop_duration = base_duration * (abs(angle) / base_angle)
+            open_loop_wz = math.copysign(base_wz, angle) if angle != 0 else 0.0
+            for trial in range(1, args.trials + 1):
+                label = f"angle={angle:.1f} deg, trial {trial}/{args.trials}"
+
+                print(f"\n--- Closed-loop turn ({label}) ---")
+                skills.turn(angle)
+                closed_pose = skills.get_robot_pose()
+                print(f"pose after closed-loop turn: {closed_pose}")
+
+                print(f"\n--- Open-loop (timing-only) turn, for comparison ({label}) ---")
+                t0 = time.time()
+                skills.move(vx=0.0, vy=0.0, wz=open_loop_wz, duration=open_loop_duration)
+                open_pose = skills.get_robot_pose()
+                wall_time = time.time() - t0
+                print(
+                    f"[OPEN-LOOP] commanded {open_loop_duration:.2f}s @ wz={open_loop_wz:.2f}, "
+                    f"wall_time={wall_time:.2f}s, resulting yaw={open_pose.yaw_deg:.1f} deg "
+                    f"(target magnitude {angle:.1f} deg)"
+                )
+                results.append({
+                    "angle": angle,
+                    "trial": trial,
+                    "open_loop_duration": open_loop_duration,
+                    "open_loop_wz": open_loop_wz,
+                    "open_loop_wall_time": wall_time,
+                })
+
+        print("\n--- Summary (raw numbers -- compute |error| against each row's own "
+              "target angle; closed-loop error is also in each [TURN] line above) ---")
+        for r in results:
+            print(
+                f"angle={r['angle']:.1f} trial={r['trial']} "
+                f"open_loop_duration={r['open_loop_duration']:.2f}s "
+                f"open_loop_wz={r['open_loop_wz']:.2f} "
+                f"open_loop_wall_time={r['open_loop_wall_time']:.2f}s"
+            )
         skills.shutdown()
         raise SystemExit(0)
 
