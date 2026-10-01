@@ -31,11 +31,22 @@ def goto_object(object_class: str, color: str,
     target_centered = False
     last_steer_direction = 0.0
     centering_retries = 0
+    clear_target_history = getattr(perception, "clear_target_history", None)
+    if callable(clear_target_history):
+        clear_target_history()
 
     while time.time() - t0 < config.APPROACH_TIMEOUT_S:
         frame = skills.get_camera_frame()
         detections = perception.detect(frame)
         target = _pick_target(detections, object_class, color)
+        remember_target = getattr(perception, "remember_target", None)
+        if target is not None:
+            if callable(remember_target):
+                remember_target(frame, target)
+        elif target_acquired:
+            recover_target = getattr(perception, "recover_target", None)
+            if callable(recover_target):
+                target = recover_target(frame, object_class, color)
 
         if target is None:
             if target_acquired:
@@ -173,7 +184,11 @@ def _finish_if_found(skills, perception, object_class, color, distance, t0) -> b
         frame, conf_threshold=config.FOUND_DETECTION_CONF_THRESHOLD
     )
     target = _pick_target(detections, object_class, color)
-    if target is None:                                       # C1: live detection only
+    if target is None:
+        recover_target = getattr(perception, "recover_target", None)
+        if callable(recover_target):
+            target = recover_target(frame, object_class, color)
+    if target is None:                                       # C1: current-frame match required
         return False
 
     print(f"[FOUND] class={object_class} color={color} "
