@@ -46,6 +46,11 @@ class MockSkills(SkillsAPI):
         """Mirrors RealSkills.stand()."""
         print("[MOCK] stand -> [HEIGHT] target=0.35 m (no real physics here)")
 
+    def get_trunk_height(self) -> float:
+        """Mirrors RealSkills.get_trunk_height() -- no real physics here,
+        just returns a fixed plausible value."""
+        return 0.25
+
     def get_camera_frame(self) -> np.ndarray:
         return np.zeros((240, 320, 3), dtype=np.uint8)
 
