@@ -1596,7 +1596,7 @@ if __name__ == "__main__":
              "before process exit) is fixed and unrelated to that. If you "
              "hit a crash, use --gui instead. Mutually exclusive with --gui.",
     )
-        parser.add_argument(
+    parser.add_argument(
         "--compare-turn",
         action="store_true",
         help="run the open-loop-vs-closed-loop turn comparison for the Task 2 report",
