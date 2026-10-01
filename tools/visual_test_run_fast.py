@@ -87,6 +87,30 @@ if that return leg doesn't complete cleanly -- starting a collision test
 from an unknown, uncontrolled position would defeat the point of having a
 known-clear approach in the first place.
 
+REVISED AGAIN after a real run: STAGING_POINT only guarantees clearing
+TERRAIN (stairs/plate/rubble -- see the paragraph above), not the other
+FIVE graded objects. A real run showed exactly that gap: after the red_
+stop_sign scenario, the green_chair scenario's return-to-staging leg (a
+straight line from wherever red_stop_sign's approach left the robot, back
+to STAGING_POINT) swung back past red_stop_sign itself -- a straight line
+between two points that are each individually fine can still clip a THIRD
+point neither endpoint is near. The robot got stuck ~0.3 m from red_stop_
+sign while simply trying to get back to staging.
+
+Fixed with a small path-planning helper, _safe_route(): before any leg
+(return-to-staging OR staging-to-object), it checks the direct line's
+clearance (SAFE_MARGIN_M = 0.8 m) against every object in core.config.
+OBJECT_POSITIONS except the one this specific leg is allowed to pass close
+to (the object actually being approached, for the staging-to-object leg;
+nothing, for the return-to-staging leg -- it should clear all six). If the
+direct line isn't clear, it tries an L-shaped detour through STAGING_
+POINT's own column (x = STAGING_POINT[0]) or row (y = STAGING_POINT[1]) --
+one leg of each detour is clear by construction, for the same x<=0 / y<=
+-2 reasons as the terrain guarantee above, so only the other leg needs
+checking. run_object_scenario() and the staging-return leg both now run
+whatever waypoint list _safe_route() returns via a small helper,
+_run_waypoints(), instead of a single skills.run_fast() call.
+
 RUN (from the project root):
     python tools/visual_test_run_fast.py                                  # open_ground + two objects (default set)
     python tools/visual_test_run_fast.py --scenario open_ground
@@ -152,6 +176,30 @@ DEFAULT_SCENARIOS = ["open_ground", "red_stop sign", "green_chair"]
 # (x >= 0.5), and rubble (y >= 5.17, never reached at these y-values) --
 # not a tuned/guessed value, a geometric guarantee given these coordinates.
 STAGING_POINT = (0.0, -3.5)
+TRANSIT_X, TRANSIT_Y = STAGING_POINT  # aliases used by _safe_route() below
+
+# REVISED AGAIN after a real run: STAGING_POINT alone only guarantees
+# clearing TERRAIN (stairs/plate/rubble, see above) -- it says nothing
+# about the OTHER five graded objects. A real run showed the green_chair
+# scenario's return-to-staging leg (straight line from wherever red_stop
+# sign's scenario left the robot, back to STAGING_POINT) cutting right
+# back past red_stop_sign itself -- the two endpoints don't involve red_
+# stop_sign at all, but a straight line between them can still pass close
+# to a THIRD point that's near neither endpoint. The robot got stuck
+# ~0.3 m from red_stop_sign's own (x, y) while just trying to get back to
+# staging, not while approaching anything.
+#
+# SAFE_MARGIN_M is the clearance _safe_route() (below) insists on from
+# every object it isn't deliberately aiming at. Deliberately kept just
+# UNDER COLLISION_DISTANCE_M (0.6 m, the threshold used elsewhere to
+# *detect* a likely collision after the fact): the real run behind this
+# fix showed the return leg getting stuck ~0.3 m from an object (clearly
+# worth detouring around) while a different, unrelated leg passed ~0.64 m
+# from another object and completed with no issue at all -- so a margin
+# at or above 0.64 would force a detour (or, worse, an impossible one --
+# see the "no clear route" fallback below) around passes that are
+# actually fine, while anything under ~0.3-0.5 m is the real danger zone.
+SAFE_MARGIN_M = 0.5
 
 
 def _target_beyond(start_x: float, start_y: float, obj_x: float, obj_y: float,
@@ -176,6 +224,113 @@ def _target_beyond(start_x: float, start_y: float, obj_x: float, obj_y: float,
     return obj_x + ux * overshoot, obj_y + uy * overshoot
 
 
+def _point_to_segment_dist(px: float, py: float, ax: float, ay: float,
+                            bx: float, by: float) -> float:
+    """Shortest distance from (px, py) to the line SEGMENT from (ax, ay)
+    to (bx, by) -- not the infinite line, so a point only "behind" or
+    "past" the segment's ends is measured from the nearest endpoint, not
+    an imaginary extension of the line."""
+    dx, dy = bx - ax, by - ay
+    length_sq = dx * dx + dy * dy
+    if length_sq < 1e-9:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / length_sq))
+    proj_x, proj_y = ax + t * dx, ay + t * dy
+    return math.hypot(px - proj_x, py - proj_y)
+
+
+def _segment_clears_objects(ax: float, ay: float, bx: float, by: float,
+                             exclude: str = None, margin: float = SAFE_MARGIN_M):
+    """True if the straight segment (ax,ay)->(bx,by) stays at least
+    `margin` meters from every core.config.OBJECT_POSITIONS entry except
+    `exclude` (the one object this particular leg is allowed -- even
+    meant -- to pass close to, e.g. the object actually being
+    approached). Returns (True, None) or (False, name_of_nearest_offender)."""
+    for name, (ox, oy) in config.OBJECT_POSITIONS.items():
+        if name == exclude:
+            continue
+        if _point_to_segment_dist(ox, oy, ax, ay, bx, by) < margin:
+            return False, name
+    return True, None
+
+
+def _route_is_clear(ax: float, ay: float, waypoints, exclude: str = None):
+    """True if EVERY leg of (ax,ay) -> waypoints[0] -> waypoints[1] -> ...
+    stays clear (see _segment_clears_objects), checked explicitly leg by
+    leg -- no leg is ever assumed safe "by construction" without this
+    actually confirming it, since a detour through STAGING_POINT's own
+    column/row only keeps ONE coordinate fixed on ONE leg of a two-leg
+    route; the other leg is still a diagonal that needs checking like any
+    other."""
+    cur_x, cur_y = ax, ay
+    for wx, wy in waypoints:
+        ok, who = _segment_clears_objects(cur_x, cur_y, wx, wy, exclude=exclude)
+        if not ok:
+            return False, who
+        cur_x, cur_y = wx, wy
+    return True, None
+
+
+def _safe_route(ax: float, ay: float, bx: float, by: float, exclude: str = None):
+    """Plan a path from (ax,ay) to (bx,by) as a list of waypoints (NOT
+    including the start, always ending with (bx,by)) that stays
+    SAFE_MARGIN_M clear of every object except `exclude`.
+
+    REVISED AGAIN after a real run (see the SAFE_MARGIN_M comment above):
+    a straight line between two points that are each individually fine
+    can still clip a THIRD object neither endpoint is near. Tries the
+    direct line first, then a short list of two-leg detours through
+    STAGING_POINT's own column/row and through the object endpoints'
+    own column/row -- each candidate is verified leg-by-leg via
+    _route_is_clear() rather than assumed safe, since (as an earlier,
+    buggier version of this function found out) a detour leg that
+    happens to have zero length, or isn't actually axis-fixed the way
+    it looks, can silently pass a check that doesn't really prove
+    anything. Falls back to the direct line (with a printed warning)
+    only if no candidate route is fully clear -- seen in this project
+    only for legs ending very close to an unrelated object (nothing to
+    be done geometrically about that; see the warning text)."""
+    direct = [(bx, by)]
+    clear, _ = _route_is_clear(ax, ay, direct, exclude=exclude)
+    if clear:
+        return direct
+
+    candidates = [
+        [(TRANSIT_X, ay), (bx, by)],
+        [(ax, TRANSIT_Y), (bx, by)],
+        [(TRANSIT_X, TRANSIT_Y), (bx, by)],
+        [(TRANSIT_X, by), (bx, by)],
+        [(bx, TRANSIT_Y), (bx, by)],
+    ]
+    for route in candidates:
+        clear, _ = _route_is_clear(ax, ay, route, exclude=exclude)
+        if clear:
+            return route
+
+    print(f"  [WARN] _safe_route found no detour that clears every other "
+          f"object by {SAFE_MARGIN_M:.1f} m -- falling back to the direct "
+          f"line (only checked clear of {exclude!r}). If this leg reports "
+          f"'stuck', it may be a different object than the one this "
+          f"scenario names, or the target itself may just be close to "
+          f"another object -- nothing a route detour alone can fix.")
+    return direct
+
+
+def _run_waypoints(skills: RealSkills, waypoints):
+    """Run skills.run_fast() toward each (x, y) in `waypoints` in order,
+    stopping at the first leg that doesn't return 'completed'. Returns
+    (outcome_of_last_leg_run, final_pose) -- the outcome from whichever
+    leg stopped the sequence (or the last one, if every leg completed)."""
+    outcome = "completed"
+    pose = skills.get_robot_pose()
+    for wx, wy in waypoints:
+        outcome = skills.run_fast(wx, wy)
+        pose = skills.get_robot_pose()
+        if outcome != "completed":
+            break
+    return outcome, pose
+
+
 def run_open_ground_scenario(skills: RealSkills) -> dict:
     """Baseline, no object in the path -- run_fast() should simply
     complete. Target is a fixed point well clear of every terrain feature
@@ -184,7 +339,7 @@ def run_open_ground_scenario(skills: RealSkills) -> dict:
     docstring) and every graded object (all clustered in x [-4.5, -1.3],
     y [-2.0, 2.0] -- see core/config.py's OBJECT_POSITIONS), so a straight
     run from wherever an earlier scenario left the robot stays open."""
-    target_x, target_y = 3.0, -3.5
+    target_x, target_y = 3.0, -3.0
     print(f"\n=== open_ground: baseline run_fast() with nothing in the "
           f"path (target=({target_x}, {target_y})) ===")
 
@@ -242,8 +397,16 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
     print(f"\n=== {obj_name}: returning to staging point "
           f"({stage_x}, {stage_y}) before approaching "
           f"(currently at x={pre_stage_pose.x:.2f} y={pre_stage_pose.y:.2f}) ===")
-    stage_outcome = skills.run_fast(stage_x, stage_y)
-    staged_pose = skills.get_robot_pose()
+
+    # exclude=None: the return leg has no object it's "allowed" to pass
+    # close to -- it should clear ALL of them, including whichever one
+    # the previous scenario just approached (see SAFE_MARGIN_M comment).
+    return_route = _safe_route(pre_stage_pose.x, pre_stage_pose.y,
+                                stage_x, stage_y, exclude=None)
+    if len(return_route) > 1:
+        print(f"  Direct line to staging would pass within {SAFE_MARGIN_M:.1f} m "
+              f"of another object -- detouring via {return_route[:-1]} first.")
+    stage_outcome, staged_pose = _run_waypoints(skills, return_route)
     dist_from_staging = math.hypot(stage_x - staged_pose.x, stage_y - staged_pose.y)
 
     if stage_outcome != "completed" or dist_from_staging > COLLISION_DISTANCE_M:
@@ -267,13 +430,24 @@ def run_object_scenario(skills: RealSkills, obj_name: str,
     start_height = skills.get_trunk_height()
     target_x, target_y = _target_beyond(start_pose.x, start_pose.y, obj_x, obj_y, overshoot)
 
+    # exclude=obj_name: this leg is DELIBERATELY aimed through obj_name's
+    # own position (that's the whole point of this scenario), so it's the
+    # one object _safe_route() should NOT detour around -- only check
+    # clearance from everything else.
+    approach_route = _safe_route(start_pose.x, start_pose.y,
+                                  target_x, target_y, exclude=obj_name)
+    if len(approach_route) > 1:
+        print(f"  Direct line to {obj_name}'s overshoot target would pass "
+              f"within {SAFE_MARGIN_M:.1f} m of a DIFFERENT object -- "
+              f"detouring via {approach_route[:-1]} first.")
+
     print(f"  Staged cleanly. Now aiming run_fast() through {obj_name}'s "
           f"own position ({obj_x}, {obj_y}), continuing {overshoot:.1f} m "
           f"past it (target=({target_x:.2f}, {target_y:.2f})) ===")
     print(f"  Starting at x={start_pose.x:.2f} y={start_pose.y:.2f} "
           f"yaw={start_pose.yaw_deg:.1f} trunk_z={start_height:.3f} m")
 
-    outcome = skills.run_fast(target_x, target_y)
+    outcome, _ = _run_waypoints(skills, approach_route)
 
     end_pose = skills.get_robot_pose()
     end_height = skills.get_trunk_height()
