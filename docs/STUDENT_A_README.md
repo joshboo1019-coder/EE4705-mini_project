@@ -119,40 +119,60 @@ If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=eg
 
    **⚠️ Current status: `custom_scene.xml`'s chairs/signs are still
    primitive geoms, exactly what the handout warns will fail YOLO
-   detection** — see `assets/scenes/README.md`'s "Known risk" section
-   for the full explanation and a prepared (but not yet finished) fix:
+   detection.** The mesh-replacement scene is partway done — the mesh
+   *files* have already been downloaded, but they are not yet sized,
+   oriented, or switched on. Here's exactly where things stand and what's
+   left, in order:
 
-```bash
-   # On a machine with real internet access (this sandbox has none to
-   # Objaverse/Sketchfab), not this one:
-   pip install objaverse trimesh
-   python tools/fetch_scene_meshes.py
-   python tools/fit_mesh_scale.py assets/scenes/meshes/chair.obj --target-height 0.85
-   python tools/fit_mesh_scale.py assets/scenes/meshes/stop_sign.obj --target-height 2.0
-```
+   **Already done:**
+   - `assets/scenes/meshes/` already contains the real downloaded files:
+     `chair.obj`, `stop_sign.obj`, `manifest.json` (records the Objaverse
+     source + license for each, for the report's citation), plus their
+     textures (`material.mtl`, `material_0.png`, `02_-_Default.png`).
+   - `assets/scenes/custom_scene_meshes.xml` already exists and already
+     points at those files correctly (`<mesh name="chair_mesh"
+     file="chair.obj" .../>` etc., with `<compiler meshdir="meshes" />`
+     telling MuJoCo where to look). It has the same terrain/positions/
+     colors as `custom_scene.xml`, just with `<geom type="mesh">` object
+     bodies instead of primitives.
 
-   That downloads real Objaverse-LVIS-tagged chair/sign meshes and tells
-   you the MJCF `<mesh scale="..."/>` to use. `assets/scenes/custom_scene_meshes.xml`
-   is already scaffolded with the same terrain/positions/colors as
-   `custom_scene.xml`, just with `<geom type="mesh">` object bodies
-   instead of primitives — it has exactly two kinds of placeholder left
-   for you to fill in by hand:
-   - Two `scale="1 1 1"` placeholders in the `<asset>` block (one for
-     `chair_mesh`, one for `stop_sign_mesh`) — replace each with the
-     `sx sy sz` triple `fit_mesh_scale.py` prints for that mesh.
-   - Six `euler="0 0 0"` placeholders, one on every
-     `<geom type="mesh">` (two chair geoms, three sign geoms, both
-     colors of each) — adjust each by eye, after test-loading the
-     scene, until the mesh stands upright and faces a sensible
-     direction; also re-check floor contact (each object body's `pos`
-     assumes the mesh's own bounding-box floor sits at `z=0`, which is
-     rarely true for a downloaded mesh without adjustment).
+   **Still left to do (needs a machine with MuJoCo + internet, not this
+   sandbox):**
+   1. Install the sizing tool and run it against both meshes:
+      ```bash
+      pip install trimesh numpy
+      python tools/fit_mesh_scale.py assets/scenes/meshes/chair.obj --target-height 0.85
+      python tools/fit_mesh_scale.py assets/scenes/meshes/stop_sign.obj --target-height 2.0
+      ```
+      Each prints the mesh's native bounding box and a computed uniform
+      scale (`sx sy sz`) to make it a sensible real-world size.
+   2. Paste those two computed scale values into
+      `assets/scenes/custom_scene_meshes.xml`'s `<asset>` block, over the
+      two placeholder lines that currently read `scale="1 1 1"` (one for
+      `chair_mesh`, one for `stop_sign_mesh`).
+   3. Test-load the scene (`RealSkills(scene_path=
+      "assets/scenes/custom_scene_meshes.xml")`) and look at it in the
+      browser panel. Adjust the six `euler="0 0 0"` placeholders — one on
+      every `<geom type="mesh">` (two chair geoms, three sign-color
+      geoms) — by eye, degree by degree, until each mesh stands upright
+      and faces a sensible direction instead of lying on its side or
+      upside down. Also check each object's floor contact: the body
+      `pos` values assume the mesh's own bounding-box floor sits at
+      `z=0`, which is rarely true for a downloaded mesh without a small
+      z-offset adjustment.
+   4. Once it visibly looks right, re-run the Task 4 debug-frames check
+      to confirm YOLO detection actually improved on the real meshes —
+      that's the entire point of this change, so don't skip the check.
+   5. Only after step 4 looks good, flip `core.config.SCENE_PATH` from
+      `"assets/scenes/custom_scene.xml"` to
+      `"assets/scenes/custom_scene_meshes.xml"`.
 
-   Once it visibly looks right, re-run the Task 4 debug-frames check to
-   confirm YOLO detection actually improved before flipping
-   `core.config.SCENE_PATH` over to it. None of this has been run or
-   verified yet — it's scaffolding for you to finish on your own
-   machine.
+   None of steps 1–4 have been run yet — they need `trimesh` and a real
+   MuJoCo render, neither available in the sandbox that built this
+   scaffolding. If you're picking this up for the first time: the mesh
+   download is the part that needed real internet access and is already
+   behind you; what's left is just numbers-in-a-script (step 1) and
+   eyeballing a render (steps 3–4).
 4. **Motion skills** — the two methods everyone else calls (see
    [`docs/DECISIONS.md`](DECISIONS.md) §2 for why these are two separate
    methods rather than one general `drive()`):
@@ -319,6 +339,61 @@ frames of your scene from robot height, run YOLO on them, draw boxes,
 and save one screenshot for the report — this doubles as your first
 integration check with Student C's detector.
 
+### High-speed movement: `run_fast()` and its test script
+
+`RealSkills.run_fast(target_x, target_y, max_speed=1.0, ...)` is an extra
+helper (like `crouch()`/`stand()`, not part of the frozen `SkillsAPI`
+contract) for covering distance quickly: it ramps velocity up to
+`max_speed` (accelerate), holds it (cruise), then ramps back down
+(brake gently) while steering toward `(target_x, target_y)` — unlike
+`move()`, which takes a fixed `(vx, vy, wz, duration)` and never adjusts
+based on position. It has **no obstacle avoidance of its own**: it just
+drives a straight line toward the target and will run into anything in
+the way, the same as `move()`/`turn()` always have.
+
+**Turn-settle behavior (fixed this round):** after a sharp turn
+(>45°) inside `run_fast()`, the robot's yaw can keep drifting for a bit
+even after the turn command finishes — a real run showed yaw still
+moving 162.2°→172.7° several segments after a fixed, one-shot 0.3 s
+pause. `run_fast()` now holds position in short 0.3 s bursts, re-checking
+yaw drift between each burst, and keeps holding (up to 1.8 s total) until
+the drift between consecutive bursts is under 1°, instead of a single
+fixed-length pause. A later real run confirmed every big turn settles
+cleanly now with no more "frozen position, still drifting" false-stuck
+results.
+
+`tools/visual_test_run_fast.py` is the test harness for `run_fast()` —
+it drives the robot through a short tour of this project's graded
+objects (`core.config.OBJECT_POSITIONS`), one at a time:
+
+```bash
+python tools/visual_test_run_fast.py                        # default: open_ground + red_stop sign
+python tools/visual_test_run_fast.py --scenario "green_chair" "red_chair"
+python tools/visual_test_run_fast.py --scenario all          # every graded object, in order
+python tools/visual_test_run_fast.py --native                # native window instead of the browser panel
+```
+
+How each scenario works: the robot returns to a fixed staging point,
+then approaches the object and stops `ARRIVAL_DISTANCE_M` (0.80 m — the
+same "close enough" threshold Task 4 itself uses) short of it, counting
+that as **reached**, then moves on to the next scenario (or ends, if it
+was the last one). It is deliberately NOT a collision-course test
+anymore — an earlier version of this script aimed straight through each
+object on purpose, to find out whether `run_fast()` needed obstacle
+avoidance (real runs confirmed it does collide if aimed directly at
+something); that question is answered, so the script now treats getting
+close as success instead of repeating the same crash every run.
+
+Because `run_fast()` has no obstacle avoidance, the script itself has to
+route every leg (return-to-staging, staging-to-object) around the OTHER
+five objects and around the scene's terrain (stairs, the tilted plate,
+rubble) using its own small path-planner (`_safe_route()` — tries a
+direct line first, then a couple of L-shaped detours through the staging
+point's column/row, each fully checked for clearance before being used).
+If you add or move objects in the scene, keep `core.config.
+OBJECT_POSITIONS` in sync — this script reads straight from it, so a
+stale position will make it plan routes around the wrong spot.
+
 ### Watch it run in the simulation
 
 `tools/visual_test_task2.py` boots the real `RealSkills` (`gui=True`)
@@ -385,11 +460,29 @@ only ever written against `core.interfaces.SkillsAPI`.
 
 ## 6. Deliverables checklist (Task 2)
 
+Status below reflects what's actually in this repo as of 2026-10-01 —
+re-check before submitting, since this file isn't updated automatically.
+
 - [ ] Block diagram + explanation of the control pipeline in the report
-- [ ] Camera pipeline running at a stated, justified rate
-- [ ] Scene file with ≥3 objects, ≥2 COCO classes, one same-class color pair
-- [ ] `object_positions` config filled in
-- [ ] `move()` and `turn()` implemented and keyboard-tested
-- [ ] Table/plot: open-loop vs. closed-loop turn accuracy
+      — **not in this repo**; this is report content, lives outside the
+      codebase (confirm with the team whether it's written elsewhere)
+- [x] Camera pipeline running at a stated, justified rate — done,
+      `CAMERA_HZ = 15` in `core/config.py`, justified inline (§2.2 above)
+- [x] Scene file with ≥3 objects, ≥2 COCO classes, one same-class color
+      pair — done, 6 objects in `custom_scene.xml` (chairs, stop signs,
+      a sports ball); **but see the ⚠️ mesh status above** — they're
+      still primitive geoms, which the handout says YOLO won't detect
+- [x] `object_positions` config filled in — done, `core.config.
+      OBJECT_POSITIONS` matches the scene file exactly
+- [x] `move()` and `turn()` implemented and keyboard-tested — done, no
+      `TODO(Student A)`/`NotImplementedError` left in `skills_real.py`;
+      `turn()` prints the required `[TURN]` line
+- [x] Table/plot: open-loop vs. closed-loop turn accuracy — done, see
+      `docs/turn_accuracy_data.md` (6 trials, closed-loop mean error
+      1.81°, open-loop mean error 22.98°, ~13x improvement) and the
+      summary table in §2 above
 - [ ] `Video_Task2`: scene + objects, onboard camera view, a timed move,
-      a closed-loop turn with `[TURN]` visibleal
+      a closed-loop turn with `[TURN]` visible — **not in this repo**;
+      no video file found. `tools/visual_test_task2.py`'s choreography
+      (forward/strafe/turn/crouch/stand) is a ready-made source clip for
+      this once you record your screen running it
