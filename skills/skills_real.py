@@ -679,7 +679,8 @@ class RealSkills(SkillsAPI):
                                     stuck_segments_before_abort: int = 3,
                                     arrival_tolerance: Optional[float] = None,
                                     max_segments: Optional[int] = None,
-                                    recenter_gain: float = 1.5) -> str:
+                                    recenter_gain: float = 1.0,
+                                    max_recenter_turn_deg: float = 6.0) -> str:
         pose = self.get_robot_pose()
         total_dist = math.hypot(target_x - pose.x, target_y - pose.y)
 
@@ -722,7 +723,8 @@ class RealSkills(SkillsAPI):
             i += 1
             self._face_waypoint(target_x, target_y, width_axis=width_axis,
                                  width_center=width_center,
-                                 recenter_gain=recenter_gain)
+                                 recenter_gain=recenter_gain,
+                                 max_recenter_turn_deg=max_recenter_turn_deg)
             pose_before = self.get_robot_pose()
             self.move(vx=speed, vy=0.0, wz=0.0, duration=segment_duration)
             pose = self.get_robot_pose()
@@ -766,7 +768,8 @@ class RealSkills(SkillsAPI):
     def _face_waypoint(self, target_x: float, target_y: float,
                         width_axis: Optional[str] = None,
                         width_center: Optional[float] = None,
-                        recenter_gain: float = 1.5) -> None:
+                        recenter_gain: float = 1.0,
+                        max_recenter_turn_deg: float = 6.0) -> None:
         """Closed-loop turn (reusing turn()'s own [TURN] diagnostic) to
         face a world-frame waypoint, using the same yaw convention as
         _yaw_from_wxyz (yaw=0 faces +x, positive yaw turns toward +y).
@@ -795,23 +798,55 @@ class RealSkills(SkillsAPI):
         react to CURRENT lateral error directly (classic cross-track/
         path-following control) instead of only to the angle-to-a-
         distant-point, which is what let the drift above go uncorrected.
-        recenter_gain=1.5 is a first-pass guess (not yet verified against
-        a real run) -- if the next run still drifts, raise it; if it
-        overcorrects/oscillates (zig-zagging, net forward progress
-        dropping), lower it."""
+        REVISED after a real run with an earlier version of this method
+        (recenter_gain=1.5, no cap): it DID engage (a [TURN] line on
+        almost every segment, versus the earlier uncorrected run's mostly
+        silent back half), but several of those corrective turns were
+        themselves large (targets of 5.6, 3.2, -7.3 deg), and right in
+        that stretch yaw spiked to 20.3 deg and trunk_z jumped +0.176 m
+        in one segment -- a real stumble, not just drift -- ending in
+        "stuck" rather than the earlier run's "edge_drift" (which, in
+        hindsight, was actually the SAFER outcome: caught before any
+        physical stumble). The smaller 1-3 deg corrections earlier in
+        that same crossing caused no anomaly (trunk_z climbed normally
+        through the first few steps) -- frequent LARGE re-orientations
+        while already balancing on stair risers look to be the actual
+        destabilizing factor, not frequent correction per se.
+
+        Fix: the plain bearing-to-target (needed for the normal, often-
+        large initial reorientation at the start of a crossing -- e.g.
+        turning ~75-90 deg to face a detour waypoint) is left uncapped,
+        but the EXTRA angle contributed by the cross-track recentering
+        bias is clamped to max_recenter_turn_deg (default 6.0) before
+        being added back in. So a legitimate "turn toward the target"
+        is never limited, but "turn further because of drift" can only
+        nudge a few degrees per segment, however large the cross-track
+        error currently is -- multiple smaller nudges across segments
+        instead of one potentially destabilizing big one. recenter_gain
+        mainly matters below the cap (how quickly small errors ramp up
+        toward it); still unverified against a real run -- if drift is
+        still a problem but no more stumbles appear, raise
+        max_recenter_turn_deg a little before touching recenter_gain; if
+        a stumble happens again, lower max_recenter_turn_deg further."""
         pose = self.get_robot_pose()
-        dx = target_x - pose.x
-        dy = target_y - pose.y
+        bearing_plain_deg = math.degrees(math.atan2(target_y - pose.y, target_x - pose.x))
 
         if width_axis is not None and width_center is not None:
+            dx = target_x - pose.x
+            dy = target_y - pose.y
             if width_axis == "y":
                 cross_track_error = width_center - pose.y
                 dy = dy + recenter_gain * cross_track_error
             else:  # "x"
                 cross_track_error = width_center - pose.x
                 dx = dx + recenter_gain * cross_track_error
+            bearing_biased_deg = math.degrees(math.atan2(dy, dx))
+            extra = _wrap_deg(bearing_biased_deg - bearing_plain_deg)
+            extra = max(-max_recenter_turn_deg, min(max_recenter_turn_deg, extra))
+            bearing_deg = bearing_plain_deg + extra
+        else:
+            bearing_deg = bearing_plain_deg
 
-        bearing_deg = math.degrees(math.atan2(dy, dx))
         turn_needed = _wrap_deg(bearing_deg - pose.yaw_deg)
         if abs(turn_needed) > 1.0:
             self.turn(turn_needed)
@@ -821,7 +856,8 @@ class RealSkills(SkillsAPI):
                       width_center: Optional[float] = None,
                       width_limit: Optional[float] = None,
                       segment_len: float = 0.3, speed: float = 0.3,
-                      recenter_gain: float = 1.5) -> str:
+                      recenter_gain: float = 1.0,
+                      max_recenter_turn_deg: float = 6.0) -> str:
         """Walk to (target_x, target_y) across a staircase, re-facing the
         target every short segment and logging a trunk-height profile
         that should track the stairs' own step heights (see the class
@@ -860,11 +896,17 @@ class RealSkills(SkillsAPI):
         toward the edge without ever tripping the per-segment turn
         deadband). 1.5 is a first-pass guess, not yet verified against a
         real run; raise it if a future run still drifts toward an edge,
-        lower it if the robot visibly zig-zags/overcorrects instead."""
+        lower it if the robot visibly zig-zags/overcorrects instead.
+        max_recenter_turn_deg caps how much of any single segment's turn
+        can come from the recentering bias specifically (as opposed to
+        the plain "face the target" turn, which is never capped) -- see
+        _face_waypoint's own comment for the real-run stumble this is
+        now tuned against."""
         return self._walk_terrain_segment_loop(
             target_x, target_y, segment_len=segment_len, speed=speed,
             width_axis=width_axis, width_center=width_center,
             width_limit=width_limit, recenter_gain=recenter_gain,
+            max_recenter_turn_deg=max_recenter_turn_deg,
         )
 
     def cross_rough_terrain(self, target_x: float, target_y: float,
