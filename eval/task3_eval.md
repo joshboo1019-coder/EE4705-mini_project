@@ -220,27 +220,42 @@ cheapest ($0.072 per 1k calls, vs $0.075 and $1.05).
 
 ## Video_Task3 demo script
 
-Run the real sim with `main.py` (A/C's flags are already True), or rehearse on mocks with
-`env -u PYTHONPATH .venv/bin/python eval/mock_main.py`. Keep the terminal visible throughout. Type
-each line after the previous `[DONE]` or `[CMD] rejected` line.
+Recorded on the real sim on 2026-10-02 (`~/Videos/Video_Task3.mp4`, 54 s, not committed). Launch from
+the repo root:
 
-The expected lines below were captured on mocks with qwen-flash and prompt v3 (2026-10-02). With the real
-`RealSkills`, `[DONE] t=` shows the real execution time and the `[MOCK …]` lines are replaced by the
-sim's own output. Because the chat thread runs in parallel, the next `User:` prompt can appear before
-the `[EXEC]` lines. That's expected: input never blocks execution.
+```bash
+eval/run_env.sh main.py --gui      # browser panel at http://localhost:8765, camera "Third-person follow"
+```
 
-| # | What it shows | Type exactly | Expected terminal lines |
-|---|---|---|---|
-| 1 | single-step | `walk forward for three seconds` | `[CMD] actions=move(vx=0.8, 3.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.8 vy=0.0 wz=0.0 t=3.0 s`<br>`[DONE] actions=1 t=… s` |
-| 2 | multi-step: the handout's reference command | `walk forward for three seconds, then turn back` | `[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=3.0 s`<br>`[EXEC] action=2/2 turn angle=180.0 deg`<br>`[DONE] actions=2 t=… s` |
-| 3 | second multi-step, with a right turn | `walk forward for two seconds, then turn right 90 degrees` | `[CMD] actions=move(vx=0.8, 2.0 s), turn(-90 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=2.0 s`<br>`[EXEC] action=2/2 turn angle=-90.0 deg`<br>`[DONE] actions=2 t=… s` |
-| 4 | lateral move | `sidestep to your left for two seconds` | `[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.0 vy=0.8 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=… s` (robot moves to its **left**) |
-| 5 | follow-up (uses history; type it right after #4) | `do that again, but slower` | `[CMD] actions=move(vx=0, vy=0.3, 2.0 s) n=1` (same direction, lower speed)<br>`[EXEC] action=1/1 move vx=0.0 vy=0.3 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=… s` |
-| 6 | rejected command | `fly to the roof` | `[CMD] rejected reason=impossible:fly` (no `[EXEC]`; robot stays put) |
-| 7 | non-English command | `avancez tout droit` | `[CMD] rejected reason=non-English` (rejected by the LLM, since the text is ASCII French) |
+`eval/run_env.sh` unsets ROS's `PYTHONPATH`, points `QUADRUPED_MUJOCO_ROOT` at the sibling
+`quadruped_mujoco` clone, and sets `MUJOCO_GL=egl` (see the EGL note below). Use a fresh launch for
+every take, so the robot spawns at the origin. Type each line after the previous `[DONE]` or
+`[CMD] rejected` line. The next `User:` prompt can appear before the `[EXEC]` lines; that's expected,
+since input never blocks execution. On mocks (`eval/mock_main.py`) the same commands give the same
+`[CMD]` lines.
+
+**Why this order.** The robot spawns at the origin facing +x. The rough-terrain track starts at
+x ≈ 1.5 m straight ahead, and the red stop sign is at (−1.3, 0) behind it. The original order
+(`walk forward for three seconds` first) walked onto the track. In the dry run the 180° turn there ended
+**136.7° off** and took 36.6 s. Turning left first sends every move along the clear strip at x ≈ 0
+(±3.5 m in y), so the robot only ever walks on flat floor.
+
+| # | What it shows | Type exactly | Lines in the recorded take | Pose after (x, y, yaw), dry run |
+|---|---|---|---|---|
+| a | single-step | `turn left 90 degrees` | `[CMD] actions=turn(90 deg) n=1`<br>`[EXEC] action=1/1 turn angle=90.0 deg`<br>`[TURN] target=90.0 deg final_error=1.8 deg`<br>`[DONE] actions=1 t=2.5 s` | 0.0, 0.0, 85° |
+| b | multi-step: the handout's reference command | `walk forward for three seconds, then turn back` | `[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=3.0 s`<br>`[EXEC] action=2/2 turn angle=180.0 deg`<br>`[TURN] target=180.0 deg final_error=1.6 deg`<br>`[DONE] actions=2 t=7.8 s` | 0.1, 2.3, −94° |
+| c | second multi-step, with a right turn | `walk forward for two seconds, then turn right 90 degrees` | `[CMD] actions=move(vx=0.8, 2.0 s), turn(-90 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=2.0 s`<br>`[EXEC] action=2/2 turn angle=-90.0 deg`<br>`[TURN] target=-90.0 deg final_error=-1.3 deg`<br>`[DONE] actions=2 t=4.0 s` | 0.0, 0.8, 178° |
+| d | lateral move | `sidestep to your left for two seconds` | `[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.0 vy=0.8 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=2.0 s` (robot moves to its **left**) | 0.0, −0.6, −178° |
+| e | follow-up (uses history; type it right after d) | `do that again, but slower` | `[CMD] actions=move(vx=0, vy=0.3, 2.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.0 vy=0.3 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=2.0 s` | 0.0, −1.1, −176° |
+| f | rejected command | `fly to the roof` | `[CMD] rejected reason=impossible:fly` (no `[EXEC]`; robot stays put) | unchanged |
+| g | non-English command | `avancez tout droit` | `[CMD] rejected reason=non-English` (rejected by the LLM, since the text is ASCII French) | unchanged |
+
+The dry run (`eval/results/video_task3_dryrun.log`) logged contacts and tilt after every command. With
+this order there was no contact with terrain or objects and no fall (max tilt 7.5°), and every turn
+ended within 2°. The recorded take's terminal output is in `eval/results/video_task3_recording.log`.
 
 **Optional: clarification (better in Video_Task4, since the robot then walks to the chair).** Type it
-after #7. On mocks, captured with qwen-flash and v3:
+after g. On mocks, captured with qwen-flash and v3:
 
 | # | Type exactly | Expected terminal lines |
 |---|---|---|
@@ -259,3 +274,19 @@ Notes for recording:
   so a "stop" typed during a move is only queued. It runs after the move has already finished, so on
   camera it looks like stop did nothing. "stop" on its own is parsed correctly (P7 / M2 in the eval).
 - **No `goto_object` in this video**, apart from the optional step 8. Object search and approach belong in Video_Task4.
+- **Stop the screen recorder before pressing Ctrl+C** in the demo terminal. Ctrl+C prints a
+  `KeyboardInterrupt` traceback plus EGL clean-up errors from the render thread.
+
+## EGL note (for Student C / Task 4)
+
+Under the default MuJoCo GL backend (GLFW/GLX), `RealSkills.get_camera_frame()` returns **all-black
+frames** on this machine (Ubuntu, X11, NVIDIA). `mujoco.Renderer` is created on the main thread but
+renders on the sim thread, and a GLX context can't be made current on another thread (`GLFWError 65544:
+GLX: Failed to make context current`). Perception then sees nothing, which looks like a navigation
+failure. With `MUJOCO_GL=egl`, the first render fails once with `EGL_BAD_ACCESS`, the self-heal in
+`_maybe_render_camera` recreates the renderer on the sim thread, and frames are real from then on
+(checked: mean pixel 88 vs 0). `eval/run_env.sh` sets `MUJOCO_GL=egl` by default, except with
+`--native`, which needs GLFW for its window. The one `[CAMERA] render failed (EGLError …)` line at
+startup is that recovery and is harmless. The browser panel's live view renders either way. Only the
+dog's onboard camera is affected.
+
