@@ -41,9 +41,11 @@ MIN_SEPARATION_M = 1.0   # object-object and robot-object
 COLOR_RGBA = {
     "red": "0.80 0.08 0.08 1",
     "green": "0.10 0.55 0.15 1",
-    "blue": "0.10 0.25 0.75 1",
+    "blue": "0.05 0.15 0.90 1",
     "yellow": "0.95 0.80 0.05 1",
     "orange": "0.95 0.55 0.10 1",
+    "purple": "0.55 0.10 0.75 1",
+    "pink": "0.95 0.20 0.55 1",
 }
 SUPPORTED_CLASSES = ("chair", "stop sign", "sports ball")
 

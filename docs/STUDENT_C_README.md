@@ -37,13 +37,12 @@ here is real-time on a laptop; no GPU needed.
 
    The current `_grounded_color()` has two robustness tweaks worth
    knowing about if a color still looks wrong: it shrinks the bbox 15%
-   in from every edge before sampling (a loose box on a thin-legged
-   prop like a chair otherwise lets background bleed in through the
-   gaps and skew the read — this is what caused an early "chair reads
-   blue instead of green" bug), and classifies by the **mode** of a
-   10°-wide hue histogram rather than the median, logging
-   `hue/sat/val/n_valid_px` on every `[DETECT]` line so a bad read is
-   visible in the console instead of silently averaged away. Use
+   in from every edge before sampling, then votes across saturated pixels
+   that fall into distinct hue bands for red, orange, yellow, green, blue,
+   purple, and pink. The blue band excludes the blue-gray checker floor
+   (near 210°); the blue chair material is centered near 226°. Debug output
+   reports the median HSV of pixels in the winning
+   color band. Use
    `tools/visual_test_task4.py --debug-frames DIR` (see below) if you
    need to see the exact pixels a detection's color came from.
 2. **`navigation.goto_object(class, color, skills, perception)`** — the

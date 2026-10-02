@@ -24,6 +24,19 @@ from core.schema import Detection
 from core import config
 
 _TARGET_HISTORY_LIMIT = 8
+_MIN_COLOR_SATURATION = 64
+_MIN_COLOR_VALUE = 32
+_COLOR_HUE_RANGES = {
+    "red": ((0.0, 15.0), (345.0, 360.0)),
+    "orange": ((15.0, 42.0),),
+    "yellow": ((42.0, 78.0),),
+    "green": ((78.0, 170.0),),
+    # The blue checker floor is around 210 degrees; scene chairs use a
+    # more saturated blue near 233 degrees.
+    "blue": ((220.0, 250.0),),
+    "purple": ((250.0, 305.0),),
+    "pink": ((305.0, 345.0),),
+}
 
 
 class RealPerception(PerceptionAPI):
@@ -217,29 +230,15 @@ class RealPerception(PerceptionAPI):
 
     @staticmethod
     def _target_color_fraction(region: np.ndarray, color: str) -> float:
-        if region.size == 0:
+        if region.size == 0 or color not in _COLOR_HUE_RANGES:
             return 0.0
         hsv = cv2.cvtColor(region, cv2.COLOR_RGB2HSV)
-        hue = hsv[..., 0]
+        hue = hsv[..., 0].astype(np.float32) * 2.0
         saturation = hsv[..., 1]
         value = hsv[..., 2]
-        valid = (saturation >= 64) & (value >= 32)
-        if color == "red":
-            matches = (hue < 8) | (hue >= 173)
-        elif color == "orange":
-            matches = (hue >= 8) & (hue < 23)
-        elif color == "yellow":
-            matches = (hue >= 23) & (hue < 35)
-        elif color == "green":
-            matches = (hue >= 35) & (hue < 80)
-        elif color == "blue":
-            matches = (hue >= 80) & (hue < 130)
-        elif color == "purple":
-            matches = (hue >= 130) & (hue < 145)
-        elif color == "pink":
-            matches = (hue >= 145) & (hue < 173)
-        else:
-            return 0.0
+        valid = ((saturation >= _MIN_COLOR_SATURATION)
+                 & (value >= _MIN_COLOR_VALUE))
+        matches = _hue_color_mask(hue, color)
         return float(np.count_nonzero(matches & valid) / region.shape[0] / region.shape[1])
 
     def _grounded_color(self, frame: np.ndarray, bbox: tuple) -> str:
@@ -273,45 +272,55 @@ class RealPerception(PerceptionAPI):
             rgb = np.clip(rgb, 0.0, 255.0).astype(np.uint8)
 
         # MuJoCo's renderer returns RGB with scene lighting already applied.
-        # HSV hue keeps the material color stable as that lighting changes value.
         hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
         hue = hsv[..., 0].astype(np.float32) * 2.0
         saturation = hsv[..., 1]
         value = hsv[..., 2]
-        valid_hues = hue[(saturation >= 64) & (value >= 32)]
-        if valid_hues.size == 0:
+        valid = ((saturation >= _MIN_COLOR_SATURATION)
+                 & (value >= _MIN_COLOR_VALUE))
+        if not np.any(valid):
             if self.debug_dir is not None:
                 print("[HSV] no pixels passed saturation/value filters")
             return "unknown"
 
-        # Unwrap at the largest hue gap so red hues on either side of 0/360
-        # produce a median near red instead of an unrelated midpoint.
-        ordered_hues = np.sort(valid_hues)
+        color_masks = {
+            color: valid & _hue_color_mask(hue, color)
+            for color in _COLOR_HUE_RANGES
+        }
+        color_counts = {
+            color: int(np.count_nonzero(mask))
+            for color, mask in color_masks.items()
+        }
+        color = max(color_counts, key=color_counts.get)
+        if color_counts[color] == 0:
+            return "unknown"
+
+        selected = color_masks[color]
+        selected_hues = hue[selected]
+        # Unwrap red hues on either side of 0/360 before taking the median.
+        ordered_hues = np.sort(selected_hues)
         gaps = np.diff(np.concatenate((ordered_hues, ordered_hues[:1] + 360.0)))
         gap_index = int(np.argmax(gaps))
         start = (gap_index + 1) % ordered_hues.size
         unwrapped = np.concatenate((ordered_hues[start:], ordered_hues[:start] + 360.0))
         median_hue = float(np.median(unwrapped) % 360.0)
+        median_saturation = float(np.median(saturation[selected])) / 255.0
+        median_value = float(np.median(value[selected])) / 255.0
         if self.debug_dir is not None:
             print(
-                f"[HSV] hue={median_hue:.1f} "
-                f"sat={float(np.median(saturation)) / 255.0:.3f} "
-                f"value={float(np.median(value)) / 255.0:.3f}"
+                f"[HSV] color={color} median_hsv=({median_hue:.1f}, "
+                f"{median_saturation:.3f}, {median_value:.3f}) "
+                f"n_color_px={color_counts[color]}"
             )
 
-        if median_hue < 15.0 or median_hue >= 345.0:
-            return "red"
-        if median_hue < 45.0:
-            return "orange"
-        if median_hue < 70.0:
-            return "yellow"
-        if median_hue < 160.0:
-            return "green"
-        if median_hue < 260.0:
-            return "blue"
-        if median_hue < 290.0:
-            return "purple"
-        return "pink"
+        return color
+
+
+def _hue_color_mask(hue_degrees: np.ndarray, color: str) -> np.ndarray:
+    mask = np.zeros(hue_degrees.shape, dtype=bool)
+    for lower, upper in _COLOR_HUE_RANGES[color]:
+        mask |= (hue_degrees >= lower) & (hue_degrees < upper)
+    return mask
 
 
 if __name__ == "__main__":
