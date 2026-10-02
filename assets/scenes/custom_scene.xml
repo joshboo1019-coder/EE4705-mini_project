@@ -107,6 +107,7 @@
     <material name="sign_red_mat" rgba="0.80 0.05 0.05 1" specular="0.2" shininess="0.2" />
     <material name="sign_yellow_mat" rgba="0.95 0.80 0.05 1" specular="0.2" shininess="0.2" />
     <material name="sign_green_mat" rgba="0.10 0.60 0.20 1" specular="0.2" shininess="0.2" />
+    <material name="chair_blue_mat" rgba="0.10 0.25 0.75 1" specular="0.1" shininess="0.1" />
   </asset>
   <worldbody>
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
@@ -295,5 +296,13 @@
       <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_green_mat" />
       <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_green_mat" />
     </body>
+    <body name="blue_chair" pos="3.45 2.0 0.4">
+      <geom type="box" size="0.02 0.02 0.21" pos=" 0.18  0.18 0.21" material="chair_blue_mat" />
+      <geom type="box" size="0.02 0.02 0.21" pos=" 0.18 -0.18 0.21" material="chair_blue_mat" />
+      <geom type="box" size="0.02 0.02 0.21" pos="-0.18  0.18 0.21" material="chair_blue_mat" />
+      <geom type="box" size="0.02 0.02 0.21" pos="-0.18 -0.18 0.21" material="chair_blue_mat" />
+      <geom type="box" size="0.22 0.22 0.02" pos="0 0 0.44" material="chair_blue_mat" />
+      <geom type="box" size="0.22 0.02 0.22" pos="0 -0.20 0.66" material="chair_blue_mat" />
+  </body>
   </worldbody>
 </mujoco>
