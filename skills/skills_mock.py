@@ -52,7 +52,8 @@ class MockSkills(SkillsAPI):
         return 0.25
 
     def get_camera_frame(self) -> np.ndarray:
-        return np.zeros((240, 320, 3), dtype=np.uint8)
+        # before: return np.zeros((240, 320, 3), dtype=np.uint8)
+        return np.zeros((480, 640, 3), dtype=np.uint8)
 
     def get_robot_pose(self) -> RobotPose:
         return RobotPose(x=self._x, y=self._y, yaw_deg=self._yaw)
