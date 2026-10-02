@@ -5,7 +5,7 @@ on units/keys as a group before changing anything below.
 """
 
 # --- Task 2 (Student A) ----------------------------------------------------
-SCENE_PATH = "assets/scenes/custom_scene.xml"
+SCENE_PATH = "assets/scenes/custom_scene_meshes.xml"
 CAMERA_HZ = 15  # perception rate; render every N physics steps accordingly
 
 # Ground-truth object positions in world (x, y) meters, keyed "<color>_<class>".
