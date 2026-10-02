@@ -69,14 +69,61 @@ def test_reacquire_sweep_triggers_after_three_detector_misses_even_if_recovered(
     assert sweeps == [(0, (1.0, 0.0))]
 
 
+def test_target_projection_does_not_add_fixed_range_bias():
+    detection = Detection("sports ball", "orange", 0.9, (310, 200, 330, 300))
+    pose = RobotPose(1.0, -2.0, 0.0)
+    frame_shape = (480, 640, 3)
+    camera_height = 0.6
+    focal_length_px = 480 / (
+        2 * navigation.math.tan(
+            navigation.math.radians(navigation._CAMERA_VERTICAL_FOV_DEG) / 2
+        )
+    )
+    image_down_angle = navigation.math.atan((300 - 240) / focal_length_px)
+    ray_down_angle = (
+        navigation.math.radians(navigation._CAMERA_DOWN_PITCH_DEG)
+        + image_down_angle
+    )
+    expected_forward = (
+        camera_height / navigation.math.tan(ray_down_angle)
+        + navigation._CAMERA_FORWARD_OFFSET_M
+    )
+
+    target_position = navigation._estimated_target_position(
+        pose, detection, frame_shape, camera_height
+    )
+
+    assert target_position == pytest.approx(
+        (pose.x + expected_forward, pose.y)
+    )
+    assert navigation._estimated_planar_distance(
+        pose, detection, frame_shape, camera_height, target_position
+    ) == pytest.approx(expected_forward)
+
+
 def test_reacquire_strafe_refreshes_target_position_for_range(monkeypatch):
     detection = Detection("sports ball", "orange", 0.9, (300, 200, 340, 240))
-    updated_position = (2.0, 1.0)
+    refreshed_detection = Detection(
+        "sports ball", "orange", 0.9, (360, 210, 400, 250)
+    )
+    initial_pose = RobotPose(0.0, 0.0, 0.0)
+    post_strafe_pose = RobotPose(0.8, 0.4, 0.0)
+    estimated_poses = []
+    estimated_detections = []
     estimated_positions = []
     distances = []
+    sleeps = []
 
-    class _FreshPositionUsed(Exception):
+    class _PostStrafeDistanceCalculated(Exception):
         pass
+
+    class _MovingSkills(_Skills):
+        def __init__(self):
+            self.pose_calls = 0
+
+        def get_robot_pose(self):
+            self.pose_calls += 1
+            return initial_pose if self.pose_calls == 1 else post_strafe_pose
 
     class _Perception:
         def __init__(self):
@@ -89,24 +136,36 @@ def test_reacquire_strafe_refreshes_target_position_for_range(monkeypatch):
             self.calls += 1
             if self.calls in (3, 4, 5):
                 return []
+            if self.calls == 7:
+                return [refreshed_detection]
             return [detection]
 
         def remember_target(self, frame, target):
             pass
 
-    def estimate_target_position(*args):
-        position = (1.0, 0.0) if not estimated_positions else updated_position
+    real_estimate_target_position = navigation._estimated_target_position
+    real_estimated_planar_distance = navigation._estimated_planar_distance
+
+    def estimate_target_position(pose, target, frame_shape, camera_height):
+        estimated_poses.append(pose)
+        estimated_detections.append(target)
+        position = real_estimate_target_position(
+            pose, target, frame_shape, camera_height
+        )
         estimated_positions.append(position)
         return position
 
     def calculate_distance(pose, target, frame_shape, camera_height,
                            target_position):
-        distances.append(target_position)
-        if target_position == updated_position:
-            raise _FreshPositionUsed
-        return 2.0
+        distance = real_estimated_planar_distance(
+            pose, target, frame_shape, camera_height, target_position
+        )
+        distances.append((pose, target_position, distance))
+        if target is refreshed_detection:
+            raise _PostStrafeDistanceCalculated
+        return distance
 
-    monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
+    monkeypatch.setattr(navigation.time, "sleep", sleeps.append)
     monkeypatch.setattr(navigation, "_steer_to_center", lambda *args: True)
     monkeypatch.setattr(navigation, "_camera_height_above_ground", lambda _: 0.6)
     monkeypatch.setattr(
@@ -118,13 +177,31 @@ def test_reacquire_strafe_refreshes_target_position_for_range(monkeypatch):
     monkeypatch.setattr(navigation, "_reacquire_sweep", lambda *args: None)
     monkeypatch.setattr(navigation.config, "REACQUIRE_MISSES", 3)
 
-    with pytest.raises(_FreshPositionUsed):
+    with pytest.raises(_PostStrafeDistanceCalculated):
         navigation.goto_object(
-            "sports ball", "orange", _Skills(), _Perception()
+            "sports ball", "orange", _MovingSkills(), _Perception()
         )
 
-    assert estimated_positions == [(1.0, 0.0), updated_position]
-    assert distances == [(1.0, 0.0), updated_position]
+    assert estimated_poses == [initial_pose, post_strafe_pose]
+    assert estimated_detections == [detection, refreshed_detection]
+    assert len(estimated_positions) == 2
+    assert distances[0][0] == initial_pose
+    assert distances[0][1] == estimated_positions[0]
+    assert distances[0][2] == pytest.approx(
+        navigation.math.hypot(
+            initial_pose.x - estimated_positions[0][0],
+            initial_pose.y - estimated_positions[0][1],
+        )
+    )
+    assert distances[1][0] == post_strafe_pose
+    assert distances[1][1] == estimated_positions[1]
+    assert distances[1][2] == pytest.approx(
+        navigation.math.hypot(
+            post_strafe_pose.x - estimated_positions[1][0],
+            post_strafe_pose.y - estimated_positions[1][1],
+        )
+    )
+    assert sleeps.count(1.5) == 2
 
 
 def test_obstructed_approach_backs_up_strafes_and_retries_scan(monkeypatch):

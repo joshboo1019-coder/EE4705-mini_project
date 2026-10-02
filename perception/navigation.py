@@ -25,7 +25,6 @@ _CAMERA_DOWN_PITCH_DEG = 14.0
 _CAMERA_HEIGHT_ABOVE_TRUNK_M = 0.16
 _DEFAULT_TRUNK_HEIGHT_M = 0.45
 _CAMERA_FORWARD_OFFSET_M = 0.28
-_PLANAR_RANGE_BIAS_M = 0.35
 
 
 def goto_object(object_class: str, color: str,
@@ -39,6 +38,7 @@ def goto_object(object_class: str, color: str,
     target_acquired = False
     initial_center_scan_complete = False
     target_position = None
+    post_strafe_reacquire = False
     reacquire_misses = 0
     reacquire_attempts = 0
     forward_attempt_start: RobotPose | None = None
@@ -47,8 +47,10 @@ def goto_object(object_class: str, color: str,
 
     def reacquire_sweep(attempt: int) -> None:
         nonlocal target_position
+        nonlocal post_strafe_reacquire
         _reacquire_sweep(skills, attempt, target_position)
         target_position = None
+        post_strafe_reacquire = True
 
     def recover_if_stuck() -> bool:
         nonlocal forward_attempt_start
@@ -97,14 +99,25 @@ def goto_object(object_class: str, color: str,
         detections = perception.detect(frame)
         detected_target = _pick_target(detections, object_class, color)
         target = detected_target
+        if detected_target is not None and post_strafe_reacquire:
+            skills.stop()
+            time.sleep(1.5)
+            frame = skills.get_camera_frame()
+            detections = perception.detect(frame)
+            target = _pick_target(detections, object_class, color)
+            if target is None:
+                continue
+            post_strafe_reacquire = False
+            target_position = None
+
         remember_target = getattr(perception, "remember_target", None)
-        if detected_target is not None:
+        if target is not None:
             target_acquired = True
             consecutive_misses = 0
             reacquire_misses = 0
             reacquire_attempts = 0
             if callable(remember_target):
-                remember_target(frame, detected_target)
+                remember_target(frame, target)
         elif target_acquired:
             reacquire_misses += 1
             if reacquire_misses >= config.REACQUIRE_MISSES:
@@ -316,7 +329,7 @@ def _estimated_planar_distance(pose: RobotPose, detection,
 
 def _estimated_target_position(pose: RobotPose, detection, frame_shape,
                                camera_height: float) -> tuple | None:
-    """Project a centered bbox to a fixed, corrected world-space point."""
+    """Project the bbox's ground contact point into world coordinates."""
     frame_height, frame_width = frame_shape[:2]
     if frame_height <= 0 or frame_width <= 0:
         return None
@@ -339,12 +352,6 @@ def _estimated_target_position(pose: RobotPose, detection, frame_shape,
     )
     target_forward = camera_forward + _CAMERA_FORWARD_OFFSET_M
     target_left = -camera_forward * math.tan(bearing)
-    target_range = math.hypot(target_forward, target_left)
-    if target_range <= 1e-9:
-        return None
-    correction_scale = (target_range + _PLANAR_RANGE_BIAS_M) / target_range
-    target_forward *= correction_scale
-    target_left *= correction_scale
 
     yaw = math.radians(pose.yaw_deg)
     object_x = pose.x + target_forward * math.cos(yaw) \
