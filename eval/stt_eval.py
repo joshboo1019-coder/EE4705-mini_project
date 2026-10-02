@@ -10,6 +10,8 @@ Task 3 eval (eval/task3_eval.py CASES).
     eval/run_env.sh eval/stt_eval.py              # record + score (~12 utterances)
     eval/run_env.sh eval/stt_eval.py --rescore eval/results/stt/<session>
                                                   # re-score saved WAVs, no microphone
+    eval/run_env.sh eval/stt_eval.py --report eval/results/stt/<session>.jsonl
+                                                  # rebuild the md only, no API calls
 
 WAVs go to eval/results/stt/<session>/ (git-ignored: voice recordings are
 not committed); per-utterance results to eval/results/stt/<session>.jsonl;
@@ -109,50 +111,85 @@ def score(case, audio, transcriber):
                 llm_called=bool(text) and not (lang != "en" and prob >= speech_input.NON_EN_MIN_PROB))
 
 
-def write_report(rows, session):
+def _row_ok(r) -> bool:
+    """English: the parsed command passes the typed-eval checker (X1 "fly to
+    the roof" passes if it is transcribed and then rejected by the parser).
+    Non-English: rejected as non-English, by language ID or by the LLM."""
+    if r["id"] in NON_ENGLISH:
+        return (not r["accepted"]) and r["reject_reason"] == "non-English"
+    return r["parse_ok"]
+
+
+def write_report(rows, session, analysis: str = ""):
     eng = [r for r in rows if r["id"] not in NON_ENGLISH]
     non = [r for r in rows if r["id"] in NON_ENGLISH]
     stt = sorted(r["stt_s"] for r in rows if r["audio_s"])
     llm = sorted(r["stt_llm_s"] for r in rows if r["llm_called"])
     med = lambda xs: xs[len(xs) // 2] if xs else float("nan")
-    wer_words = sum(r["error_rate"] * len(_norm_words(r["reference"])) for r in eng)
-    n_words = sum(len(_norm_words(r["reference"])) for r in eng)
+    ref_words = sum(len(_norm_words(r["reference"])) for r in eng)
+    errors = sum(round(r["error_rate"] * len(_norm_words(r["reference"]))) for r in eng)
     lines = [
         "# Bonus — speech input (STT) evaluation", "",
-        f"Session `{session}`, {datetime.now():%Y-%m-%d}. One human speaker (the project author), "
-        f"laptop microphone, push-to-talk recorder from `dialogue/speech_input.py`. "
-        f"STT: faster-whisper `{speech_input.WHISPER_MODEL}` (local, "
-        f"{getattr(speech_input.get_transcriber(), 'device', '?')}); parser: "
-        f"`{config.LLM_SERVICE}` with the current prompt. Each transcript is scored with the same "
-        "checker as the typed Task 3 eval (`eval/task3_eval.py`). Recordings are kept locally in "
-        f"`eval/results/stt/{session}/` (git-ignored); per-utterance rows are in "
+        f"Session `{session}`. **One speaker** (the project author), the laptop's built-in microphone, "
+        "room noise about −41 dBFS, push-to-talk recorder from `dialogue/speech_input.py`. "
+        f"STT: faster-whisper `{speech_input.WHISPER_MODEL}`, local on the GPU (CUDA float16); parser: "
+        f"`{config.LLM_SERVICE}` with the current prompt, no history. Every transcript is scored with the "
+        "same checker as the typed Task 3 eval (`eval/task3_eval.py`). The recordings stay local in "
+        f"`eval/results/stt/{session}/` (git-ignored); per-utterance metrics are in "
         f"`eval/results/stt/{session}.jsonl`.", "",
+        "Scoring: English rows pass if the parsed command passes the typed-eval checker; X1 "
+        "(\"fly to the roof\") passes if it is transcribed and then rejected by the parser. "
+        "Non-English rows (X2 French, X3 Mandarin) are scored only as *rejected as non-English: "
+        "yes/no* and are left out of the WER.", "",
         "## Summary", "",
-        f"- English commands parsed correctly: **{sum(r['parse_ok'] for r in eng)}/{len(eng)}**",
-        f"- Non-English rejected: **{sum(r['parse_ok'] for r in non)}/{len(non)}**",
-        f"- English word error rate (pooled): **{100 * wer_words / max(n_words, 1):.1f}%** "
-        f"({n_words} reference words)",
-        f"- Latency, median: STT **{med(stt):.2f} s**; STT + LLM **{med(llm):.2f} s** "
-        "(from end of recording to parsed command; excludes the ~1 s silence the recorder waits for)",
+        f"- English utterances handled correctly: **{sum(_row_ok(r) for r in eng)}/{len(eng)}**",
+        f"- Non-English rejected as non-English: **{sum(_row_ok(r) for r in non)}/{len(non)}**",
+        f"- English word error rate (pooled over {len(eng)} utterances): **{100 * errors / max(ref_words, 1):.1f}%** "
+        f"({errors} word errors / {ref_words} reference words; digits are normalised, so "
+        "\"3 seconds\" = \"three seconds\")",
+        f"- English utterances identified as English: **{sum(r['lang'] == 'en' for r in eng)}/{len(eng)}**, "
+        f"p = {min(r['lang_prob'] for r in eng):.2f}–{max(r['lang_prob'] for r in eng):.2f}",
+        f"- Latency, median: STT **{med(stt):.2f} s**; STT + LLM **{med(llm):.2f} s** (over the "
+        f"{len(llm)} utterances that reached the LLM). Measured from the end of recording, so it "
+        "excludes the 1 s of silence the recorder waits for.",
         "", "## Per utterance", "",
-        "| Id | Said (reference) | Transcript | lang (p) | WER/CER | Parsed | OK | STT s | STT+LLM s |",
-        "|---|---|---|---|---|---|---|---|---|"]
+        "| Id | Reference | Transcript | lang / p | WER | Parsed OK | STT s | STT+LLM s |",
+        "|---|---|---|---|---|---|---|---|"]
     for r in rows:
-        got = (f"rejected: {r['actions']['reason']}" if "rejected" in r["actions"]
-               else ", ".join(a["action"] for a in r["actions"]["actions"]))
-        lines.append(
-            f"| {r['id']} | {r['reference']} | {r['transcript'] or '—'} | {r['lang']} ({r['lang_prob']:.2f}) | "
-            f"{r['metric']} {100 * r['error_rate']:.0f}% | {got} | {'✅' if r['parse_ok'] else '❌ ' + r['why']} | "
-            f"{r['stt_s']:.2f} | {r['stt_llm_s']:.2f} |")
+        if r["id"] in NON_ENGLISH:
+            how = ("language ID" if not r["llm_called"] else "LLM")
+            ok = (f"rejected as non-English: {'yes' if _row_ok(r) else 'no'}"
+                  + (f" (by {how})" if _row_ok(r) else f" ({r['reject_reason'] or 'accepted'})"))
+            wer = "n/a"
+            ref = f"{r['reference']} ({NON_ENGLISH[r['id']]})"
+        else:
+            got = (f"rejected: {r['actions']['reason']}" if "rejected" in r["actions"]
+                   else ", ".join(a["action"] for a in r["actions"]["actions"]))
+            ok = f"{'✅' if _row_ok(r) else '❌'} {got}"
+            wer = f"{100 * r['error_rate']:.0f}%"
+            ref = r["reference"]
+        stt_llm = f"{r['stt_llm_s']:.2f}" if r["llm_called"] else f"{r['stt_llm_s']:.2f} (no LLM)"
+        lines.append(f"| {r['id']} | {ref} | {r['transcript'] or '—'} | {r['lang']} / {r['lang_prob']:.2f} | "
+                     f"{wer} | {ok} | {r['stt_s']:.2f} | {stt_llm} |")
+    if analysis:
+        lines += ["", "## Failure analysis", "", analysis.strip()]
     REPORT.write_text("\n".join(lines) + "\n")
-    print(f"\nwrote {REPORT}")
+    print(f"wrote {REPORT}")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cases", nargs="+", default=DEFAULT_IDS)
     ap.add_argument("--rescore", type=Path, help="re-score the WAVs in this session folder")
+    ap.add_argument("--report", type=Path, metavar="SESSION_JSONL",
+                    help="rebuild eval/stt_eval.md from a results file (no mic, no API calls)")
+    ap.add_argument("--analysis", type=Path, help="markdown file with the failure analysis")
     args = ap.parse_args()
+    analysis = args.analysis.read_text() if args.analysis else ""
+    if args.report:
+        rows = [json.loads(l) for l in args.report.open()]
+        write_report(rows, args.report.stem, analysis)
+        return
     cases = {c[0]: c for c in CASES}
     transcriber = speech_input.get_transcriber()
     transcriber.transcribe(np.zeros(16000, np.float32))   # load + warm up before timing
@@ -189,7 +226,7 @@ def main():
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"wrote {out}")
-    write_report(rows, session)
+    write_report(rows, session, analysis)
 
 
 if __name__ == "__main__":
