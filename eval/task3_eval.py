@@ -169,8 +169,11 @@ CASES = [
     ("F1", "follow-up", ["walk forward for two seconds"], "do that again, but slower",
      cmds(move((0.05, 0.6), duration=2))),
     ("F2", "follow-up", ["turn left 90 degrees"], "now the other way", cmds(turn(-90))),
+    ("F3", "follow-up", ["go to the chair"], "the green one", cmds(goto("chair", "green"))),
     # --- chat ---
     ("C1", "chat", [], "what can you do?", cmds(chat())),
+    # no colour given: navigation needs one, so the robot must ask which chair
+    ("C2", "chat", [], "go to the chair", cmds(chat())),
     # --- invalid / out of scope ---
     ("X1", "invalid", [], "fly to the roof", rejected()),
     ("X2", "invalid", [], "avancez tout droit", rejected()),
@@ -360,7 +363,8 @@ def _got(r):
 
 
 def report(services, prompts=("v1", "v2", "v3")) -> str:
-    out = [f"Test set: {len(CASES)} utterances. Accuracy excludes API errors "
+    out = [f"Test set: {len(CASES)} utterances; each prompt is scored on the cases it was run on "
+           "(C2 and F3 were added with v3, so v1 and v2 cover 31). Accuracy excludes API errors "
            "(calls that still failed after back-off), which are counted separately.", ""]
     for prompt in prompts:
         out += [f"### Prompt {prompt}", "",
@@ -407,6 +411,8 @@ def report(services, prompts=("v1", "v2", "v3")) -> str:
                 continue
             na, nb = len({r["run"] for r in a}), len({r["run"] for r in b})
             for cid, _, _, text, _ in CASES:
+                if not any(r["id"] == cid for r in a) or not any(r["id"] == cid for r in b):
+                    continue   # case not run under both prompts
                 pa = sum(1 for r in a if r["id"] == cid and r["ok"])
                 pb = sum(1 for r in b if r["id"] == cid and r["ok"])
                 if pa / na != pb / nb:

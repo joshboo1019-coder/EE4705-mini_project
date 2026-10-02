@@ -1,4 +1,4 @@
-Test set: 31 utterances. Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
+Test set: 33 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, so v1 and v2 cover 31). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
 
 ### Prompt v1
 
@@ -63,9 +63,9 @@ Failures (v2):
 
 | Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
 |---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 0.37 / 0.55 | 1202 / 30 | 0.072 |
-| gemini-3.8-flash | 100.0% (31/31) | – | – | **100.0% (31/31)** | 0 | 1.96 / 2.27 | 1240 / 31 | 1.046 |
-| gpt-5-nano | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 1.08 / 1.38 | 1188 / 40 | 0.075 |
+| qwen-flash | 100.0% (33/33) | 100.0% (33/33) | 100.0% (33/33) | **100.0% (99/99)** | 0 | 0.35 / 0.55 | 1203 / 30 | 0.072 |
+| gemini-3.8-flash | 100.0% (33/33) | – | – | **100.0% (33/33)** | 0 | 1.96 / 2.27 | 1240 / 31 | 1.045 |
+| gpt-5-nano | 100.0% (33/33) | 100.0% (33/33) | 100.0% (33/33) | **100.0% (99/99)** | 0 | 1.09 / 1.38 | 1189 / 39 | 0.075 |
 
 | Service | basic | multi-step | paraphrase | lateral | follow-up | chat | invalid |
 |---|---|---|---|---|---|---|---|
@@ -101,9 +101,9 @@ Failures (v3):
 ### Logged spend this evaluation (scored calls + follow-up setup turns)
 
 - qwen-flash v2: $0.0065
-- qwen-flash v3: $0.0067
+- qwen-flash v3: $0.0073
 - gemini-3.8-flash v1: $0.0813
 - gemini-3.8-flash v2: $0.0945
-- gemini-3.8-flash v3: $0.0324
+- gemini-3.8-flash v3: $0.0355
 - gpt-5-nano v2: $0.0068
-- gpt-5-nano v3: $0.0070
+- gpt-5-nano v3: $0.0077

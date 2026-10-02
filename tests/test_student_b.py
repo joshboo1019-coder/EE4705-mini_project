@@ -11,6 +11,8 @@ Student A's MuJoCo sim or Student C's YOLO to exist yet.
 """
 
 import json
+import threading
+import time
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -74,6 +76,33 @@ def test_goto_object_normalised(fake_llm):
         {"action": "goto_object", "class": " Chair ", "color": "GREEN"}))
     r = llm_parser.parse_command("go to the green chair", [])
     assert r.commands == [GotoObjectCommand("chair", "green")]
+
+
+def test_goto_object_without_colour_asks_which_one(fake_llm):
+    fake_llm.replies.append(_actions(
+        {"action": "goto_object", "class": "chair", "color": ""}))
+    r = llm_parser.parse_command("go to the chair", [])
+    assert r.accepted
+    assert r.commands == [ChatCommand("Which chair do you mean? Please tell me its colour.")]
+
+
+def test_colour_follow_up_sees_the_clarifying_question(fake_llm):
+    history, queue = [], CommandQueue()
+    fake_llm.replies += [
+        _actions({"action": "goto_object", "class": "chair", "color": ""}),
+        _actions({"action": "goto_object", "class": "chair", "color": "green"}),
+    ]
+    chat_interface.handle_utterance("go to the chair", history, queue)
+    chat_interface.handle_utterance("the green one", history, queue)
+
+    text, seen = fake_llm.calls[1]
+    assert text == "the green one"
+    assert seen[0] == {"role": "user", "content": "go to the chair"}
+    assert json.loads(seen[1]["content"]) == {"actions": [
+        {"action": "chat", "reply": "Which chair do you mean? Please tell me its colour."}]}
+    assert queue.pop(timeout=0) == ChatCommand(
+        "Which chair do you mean? Please tell me its colour.")
+    assert queue.pop(timeout=0) == GotoObjectCommand("chair", "green")
 
 
 def test_model_rejection_is_passed_through(fake_llm, capsys):
@@ -239,6 +268,68 @@ def test_chat_history_supports_follow_ups(fake_llm, monkeypatch):
     # Only the two accepted moves were queued.
     assert [queue.pop(timeout=0).vx for _ in range(2)] == [0.8, 0.4]
     assert queue.empty()
+
+
+class _FailingMoveSkills(MockSkills):
+    """move() always raises; records stop() and turn() calls."""
+
+    def __init__(self):
+        super().__init__()
+        self.stops, self.turns = 0, []
+        self.turned = threading.Event()
+
+    def move(self, vx, vy, wz, duration):
+        raise RuntimeError("joint limit exceeded")
+
+    def turn(self, angle_deg):
+        self.turns.append(angle_deg)
+        self.turned.set()
+
+    def stop(self):
+        self.stops += 1
+
+
+def _run_executor_in_background(executor):
+    threading.Thread(target=executor.run_forever, kwargs={"poll_timeout": 0.01},
+                     daemon=True).start()
+
+
+def test_failing_skill_skips_the_batch_and_the_loop_keeps_going(capsys):
+    skills, queue = _FailingMoveSkills(), CommandQueue()
+    executor = CommandExecutor(skills, MockPerception(), queue)
+    queue.push_many([MoveCommand(0.8, 0.0, 0.0, 3.0), TurnCommand(180.0)])
+    _run_executor_in_background(executor)
+    time.sleep(0.2)
+    queue.push_many([TurnCommand(-90.0)])            # a later batch
+
+    assert skills.turned.wait(timeout=2.0)
+    assert skills.turns == [-90.0]                   # 2/2 of the failed batch was skipped
+    assert skills.stops == 1
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/2 failed reason=RuntimeError: joint limit exceeded" in out
+    assert "[DONE] actions=0" in out
+    assert "[EXEC] action=1/1 turn angle=-90.0 deg" in out
+
+
+def test_goto_object_error_does_not_kill_the_loop(capsys):
+    def goto_boom(object_class, color, skills, perception):
+        raise KeyError(f"{color}_{object_class}")
+
+    skills, queue = _FailingMoveSkills(), CommandQueue()
+    executor = CommandExecutor(skills, MockPerception(), queue, goto_object_fn=goto_boom)
+    queue.push_many([TurnCommand(90.0), GotoObjectCommand("chair", "purple"), TurnCommand(45.0)])
+    _run_executor_in_background(executor)
+    time.sleep(0.2)
+    queue.push_many([TurnCommand(-90.0)])
+
+    deadline = time.time() + 2.0
+    while len(skills.turns) < 2 and time.time() < deadline:
+        time.sleep(0.01)
+    assert skills.turns == [90.0, -90.0]
+    assert skills.stops == 1
+    out = capsys.readouterr().out
+    assert "[EXEC] action=2/3 failed reason=KeyError: 'purple_chair'" in out
+    assert "[DONE] actions=1" in out
 
 
 def test_end_to_end_on_mocks(fake_llm, capsys):

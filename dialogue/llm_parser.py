@@ -414,6 +414,10 @@ def _to_command(a):
         color = _string(a, "color", allow_empty=True).strip().lower()
         if cls not in COCO_CLASSES:
             raise _Invalid(f"unknown_class:{cls}")
+        if not color:
+            # navigation needs an exact colour match, so ask instead of
+            # sending the robot on a search that can't succeed.
+            return ChatCommand(f"Which {cls} do you mean? Please tell me its colour.")
         return GotoObjectCommand(cls, color)
     if kind == "stop":
         return StopCommand()

@@ -18,7 +18,7 @@ ROS's `PYTHONPATH` breaks the project venv, so unset it for every command:
 
 ```bash
 env -u PYTHONPATH .venv/bin/python -m pip install -r requirements.txt
-env -u PYTHONPATH .venv/bin/python -m pytest -q tests/test_student_b.py      # offline, 38 tests
+env -u PYTHONPATH .venv/bin/python -m pytest -q tests/test_student_b.py      # offline, 42 tests
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --ping                 # one call per service
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --services qwen-flash gpt-5-nano --prompt v1 v2 --runs 3
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --services gemini-3.8-flash --prompt v1 v2 --runs 3 --budget 2
@@ -60,7 +60,7 @@ confirmed the paid tier (HTTP 200, no free-tier quota error), and all 6 Gemini r
 0 API errors: one connection error was retried successfully. **Gemini spend this round was
 US$0.18 (186 calls)**, against a US$2 budget guard.
 
-## Test set (31 utterances, 3 runs per service and prompt)
+## Test set (31 utterances for v1/v2, 33 for v3; 3 runs per service and prompt)
 
 | Category | n | Cases |
 |---|---|---|
@@ -68,8 +68,8 @@ US$0.18 (186 calls)**, against a US$2 budget guard.
 | multi-step | 4 | walk 3 s then turn back; turn left, walk 2 s, then stop; back up 2 s then turn right; turn around and walk to the red ball |
 | paraphrase | 8 | go straight ahead 3 s; "could you walk forwards a bit"; do a U-turn; head over to the green seat; move ahead slowly 4 s; rotate counter-clockwise by a quarter turn; halt!; shuffle sideways to your left 2 s (P8) |
 | lateral (new) | 3 | **L1** sidestep to your left for two seconds; **L2** shuffle right for one second; **L3** slide over to the right a little. None copies a v2 few-shot example. |
-| follow-up | 2 | "walk forward for two seconds" → "do that again, but slower"; "turn left 90 degrees" → "now the other way". The first turn goes into the history exactly as `chat_interface` builds it; only the second turn is scored. |
-| chat | 1 | what can you do? |
+| follow-up | 2 | "walk forward for two seconds" → "do that again, but slower"; "turn left 90 degrees" → "now the other way". The first turn goes into the history exactly as `chat_interface` builds it; only the second turn is scored. **F3** (v3 only): "go to the chair" → "the green one", expecting `goto_object(chair, green)`. |
+| chat | 1 (+1) | what can you do?; **C2** (v3 only): "go to the chair", expecting a clarifying chat, because no colour was given. |
 | invalid | 8 | fly to the roof; French; Chinese; whitespace; run forward for ten minutes; charge at a person; pick up a bottle; keyboard mash |
 
 A case passes only if the whole `ParseResult` is right: the correct number and order of actions, the
@@ -112,11 +112,29 @@ Gemini was run once on v3, as a regression check only. The full console output o
 
 | Service | Run 1 | Run 2 | Run 3 | **Average** | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls |
 |---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100% | 100% | 100% | **100%** (93/93) | 0 | 0.37 / 0.55 | 1202 / 30 | $0.072 |
-| gpt-5-nano | 100% | 100% | 100% | **100%** (93/93) | 0 | 1.08 / 1.38 | 1188 / 40 | $0.075 |
-| gemini-3.8-flash | 100% | – | – | **100%** (31/31) | 0 | 1.96 / 2.27 | 1240 / 31 | $1.046 |
+| qwen-flash | 100% | 100% | 100% | **100%** (99/99) | 0 | 0.35 / 0.55 | 1203 / 30 | $0.072 |
+| gpt-5-nano | 100% | 100% | 100% | **100%** (99/99) | 0 | 1.09 / 1.38 | 1189 / 39 | $0.075 |
+| gemini-3.8-flash | 100% | – | – | **100%** (33/33) | 0 | 1.96 / 2.27 | 1240 / 31 | $1.045 |
 
-v3 adds about 38 prompt tokens per call over v2 (+3% cost).
+v3 adds about 38 prompt tokens per call over v2 (+3% cost). v3 is scored on 33 cases: the 31 above,
+plus C2 and F3, which were added after the goto-without-colour fix. Those two were run on their own
+with `--cases C2 F3` and merged into the same runs.
+
+#### Goto without a colour (C2, F3; v3 prompt, code-side fix)
+
+`navigation.goto_object` only matches an exact colour, so "go to the chair" used to parse to
+`color=""` and end in a 360° search that couldn't succeed. Now `_to_command` turns a `goto_object` with
+an empty colour into a chat: "Which chair do you mean? Please tell me its colour." The prompt is
+unchanged.
+
+| Service | C2 "go to the chair" → chat | F3 "the green one" (after C2) → goto(chair, green) |
+|---|---|---|
+| qwen-flash | 3/3 | 3/3 |
+| gpt-5-nano | 3/3 | 3/3 |
+| gemini-3.8-flash | 1/1 | 1/1 |
+
+In every C2 call, all three models returned `goto_object(chair, color="")`. The question comes from
+the parser, not the model. In F3, the model sees that question in the history and fills in the colour.
 
 ### Accuracy per category
 
@@ -194,9 +212,9 @@ confirms the fix, but it isn't evidence of generalisation.
 
 ## Recommendation: `config.LLM_SERVICE = "qwen-flash"` (unchanged)
 
-On v3, all three services score 100% (qwen-flash and gpt-5-nano 93/93, Gemini 31/31 in one run), so
-accuracy no longer separates them. On the tie-break by latency, qwen-flash wins clearly: 0.37 s
-median / 0.55 s p90, against gpt-5-nano's 1.08 s / 1.38 s and Gemini's 1.96 s / 2.27 s. It is also the
+On v3, all three services score 100% (qwen-flash and gpt-5-nano 99/99, Gemini 33/33 in one run), so
+accuracy no longer separates them. On the tie-break by latency, qwen-flash wins clearly: 0.35 s
+median / 0.55 s p90, against gpt-5-nano's 1.09 s / 1.38 s and Gemini's 1.96 s / 2.27 s. It is also the
 cheapest ($0.072 per 1k calls, vs $0.075 and $1.05).
 `core/config.py` already has `LLM_SERVICE = "qwen-flash"`.
 
@@ -221,6 +239,17 @@ the `[EXEC]` lines. That's expected: input never blocks execution.
 | 6 | rejected command | `fly to the roof` | `[CMD] rejected reason=impossible:fly` (no `[EXEC]`; robot stays put) |
 | 7 | non-English command | `avancez tout droit` | `[CMD] rejected reason=non-English` (rejected by the LLM, since the text is ASCII French) |
 
+**Optional: clarification (better in Video_Task4, since the robot then walks to the chair).** Type it
+after #7. On mocks, captured with qwen-flash and v3:
+
+| # | Type exactly | Expected terminal lines |
+|---|---|---|
+| 8a | `go to the chair` | `[CMD] actions=chat n=1`<br>`Robot: Which chair do you mean? Please tell me its colour.`<br>`[DONE] actions=1 t=… s` |
+| 8b | `the green one` | `[CMD] actions=goto_object(class=chair, color=green) n=1`<br>`[EXEC] action=1/1 goto_object class=chair color=green`<br>… navigation output … `[DONE] actions=1 t=… s` |
+
+On mocks, 8b starts as shown, but navigation then keeps re-centring (`[DETECT]` / `[TURN] target=5.0 deg`),
+because the mock bbox is fixed and off-centre. It doesn't reach `[DONE]` within a minute, so show 8b on the real sim only.
+
 Optional extra: `向前走三秒` is rejected by the local precheck before any LLM call, with the same
 `reason=non-English`.
 
@@ -229,4 +258,4 @@ Notes for recording:
 - **Don't demo a mid-move stop.** The executor runs each move to completion (`skills.move()` blocks),
   so a "stop" typed during a move is only queued. It runs after the move has already finished, so on
   camera it looks like stop did nothing. "stop" on its own is parsed correctly (P7 / M2 in the eval).
-- **No `goto_object` in this video.** Object search and approach belong in Video_Task4.
+- **No `goto_object` in this video**, apart from the optional step 8. Object search and approach belong in Video_Task4.
