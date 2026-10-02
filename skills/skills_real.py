@@ -569,11 +569,11 @@ class RealSkills(SkillsAPI):
         print(f"[HEIGHT] target={height_cmd:.2f} m trunk_z_before={z_before:.2f} m "
               f"trunk_z_after={z_after:.2f} m")
 
-    def crouch(self) -> None:
+    def crouch(self, settle_s: float = 3.0) -> None:
         """Command the lower end of self._height_range -- see the class
         comment above set_height() for why this is the guessed "crouch"
         direction and how to flip it if a real run shows otherwise."""
-        self.set_height(self._height_range[0])
+        self.set_height(self._height_range[0], settle_s=settle_s)
 
     def stand(self) -> None:
         """Command the upper end of self._height_range -- see the class
