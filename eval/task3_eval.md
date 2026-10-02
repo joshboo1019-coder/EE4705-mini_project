@@ -206,7 +206,7 @@ Run the real sim with `main.py` (A/C's flags are already True), or rehearse on m
 `env -u PYTHONPATH .venv/bin/python eval/mock_main.py`. Keep the terminal visible throughout. Type
 each line after the previous `[DONE]` or `[CMD] rejected` line.
 
-The expected lines below were captured on mocks with qwen-flash and prompt v2. With the real
+The expected lines below were captured on mocks with qwen-flash and prompt v3 (2026-10-02). With the real
 `RealSkills`, `[DONE] t=` shows the real execution time and the `[MOCK …]` lines are replaced by the
 sim's own output. Because the chat thread runs in parallel, the next `User:` prompt can appear before
 the `[EXEC]` lines. That's expected: input never blocks execution.
@@ -214,11 +214,19 @@ the `[EXEC]` lines. That's expected: input never blocks execution.
 | # | What it shows | Type exactly | Expected terminal lines |
 |---|---|---|---|
 | 1 | single-step | `walk forward for three seconds` | `[CMD] actions=move(vx=0.8, 3.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.8 vy=0.0 wz=0.0 t=3.0 s`<br>`[DONE] actions=1 t=… s` |
-| 2 | multi-step with a turn | `walk forward for two seconds, then turn right 90 degrees` | `[CMD] actions=move(vx=0.8, 2.0 s), turn(-90 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=2.0 s`<br>`[EXEC] action=2/2 turn angle=-90.0 deg`<br>`[DONE] actions=2 t=… s` |
-| 3 | lateral move | `sidestep to your left for two seconds` | `[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.0 vy=0.8 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=… s` (robot moves to its **left**) |
-| 4 | follow-up (uses history) | `do that again, but slower` | `[CMD] actions=move(vx=0, vy=0.3, 2.0 s) n=1` (same direction, lower speed)<br>`[EXEC] action=1/1 move vx=0.0 vy=0.3 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=… s` |
-| 5 | rejected command | `fly to the roof` | `[CMD] rejected reason=impossible:fly` (no `[EXEC]`; robot stays put) |
-| 6 | non-English command | `avancez tout droit` | `[CMD] rejected reason=non-English` (rejected by the LLM, since the text is ASCII French) |
+| 2 | multi-step: the handout's reference command | `walk forward for three seconds, then turn back` | `[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=3.0 s`<br>`[EXEC] action=2/2 turn angle=180.0 deg`<br>`[DONE] actions=2 t=… s` |
+| 3 | second multi-step, with a right turn | `walk forward for two seconds, then turn right 90 degrees` | `[CMD] actions=move(vx=0.8, 2.0 s), turn(-90 deg) n=2`<br>`[EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=2.0 s`<br>`[EXEC] action=2/2 turn angle=-90.0 deg`<br>`[DONE] actions=2 t=… s` |
+| 4 | lateral move | `sidestep to your left for two seconds` | `[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1`<br>`[EXEC] action=1/1 move vx=0.0 vy=0.8 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=… s` (robot moves to its **left**) |
+| 5 | follow-up (uses history; type it right after #4) | `do that again, but slower` | `[CMD] actions=move(vx=0, vy=0.3, 2.0 s) n=1` (same direction, lower speed)<br>`[EXEC] action=1/1 move vx=0.0 vy=0.3 wz=0.0 t=2.0 s`<br>`[DONE] actions=1 t=… s` |
+| 6 | rejected command | `fly to the roof` | `[CMD] rejected reason=impossible:fly` (no `[EXEC]`; robot stays put) |
+| 7 | non-English command | `avancez tout droit` | `[CMD] rejected reason=non-English` (rejected by the LLM, since the text is ASCII French) |
 
 Optional extra: `向前走三秒` is rejected by the local precheck before any LLM call, with the same
 `reason=non-English`.
+
+Notes for recording:
+
+- **Don't demo a mid-move stop.** The executor runs each move to completion (`skills.move()` blocks),
+  so a "stop" typed during a move is only queued. It runs after the move has already finished, so on
+  camera it looks like stop did nothing. "stop" on its own is parsed correctly (P7 / M2 in the eval).
+- **No `goto_object` in this video.** Object search and approach belong in Video_Task4.
