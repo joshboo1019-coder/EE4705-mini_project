@@ -135,6 +135,16 @@ def test_markdown_fences_are_tolerated(fake_llm):
     assert llm_parser.parse_command("stop", []).commands == [StopCommand()]
 
 
+@pytest.mark.parametrize("raw,want", [
+    ('{"action": "stop"}', [StopCommand()]),
+    (json.dumps(MOVE_3S), [MoveCommand(0.8, 0.0, 0.0, 3.0)]),
+])
+def test_bare_action_object_is_a_one_element_list(fake_llm, raw, want):
+    fake_llm.replies.append(raw)
+    r = llm_parser.parse_command("halt!", [])
+    assert r.accepted and r.commands == want
+
+
 def test_llm_failure_becomes_rejection(monkeypatch):
     def boom(user_text, history):
         raise TimeoutError("slow")

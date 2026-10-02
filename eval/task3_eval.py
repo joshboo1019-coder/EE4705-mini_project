@@ -7,8 +7,8 @@ eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
     python eval/task3_eval.py --services qwen-flash --prompt v1 --cases L1 L2 L3     # add cases to old runs
     python eval/task3_eval.py --report      # rebuild eval/results/summary.md from the logs
 
---prompt v1 is the frozen prompt in eval/prompt_v1.py; v2 is the current
-llm_parser.SYSTEM_PROMPT.
+--prompt v1 / v2 are the frozen prompts in eval/prompt_v1.py / prompt_v2.py;
+v3 is the current llm_parser.SYSTEM_PROMPT.
 
 (If ROS's PYTHONPATH is set in your shell: `env -u PYTHONPATH .venv/bin/python ...`.)
 
@@ -37,6 +37,7 @@ from core.schema import (  # noqa: E402
 )
 from dialogue import llm_parser  # noqa: E402
 from eval.prompt_v1 import SYSTEM_PROMPT_V1  # noqa: E402
+from eval.prompt_v2 import SYSTEM_PROMPT_V2  # noqa: E402
 
 PING_SERVICES = ["qwen-flash", "gemini-3.8-flash", "gpt-5-nano"]
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -186,7 +187,7 @@ CASES = [
 # Running
 # ---------------------------------------------------------------------------
 
-PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": llm_parser.SYSTEM_PROMPT}
+PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": llm_parser.SYSTEM_PROMPT}
 
 
 class QuotaExhausted(Exception):
@@ -358,7 +359,7 @@ def _got(r):
             ", ".join(json.dumps(x) for x in a["actions"]))
 
 
-def report(services, prompts=("v1", "v2")) -> str:
+def report(services, prompts=("v1", "v2", "v3")) -> str:
     out = [f"Test set: {len(CASES)} utterances. Accuracy excludes API errors "
            "(calls that still failed after back-off), which are counted separately.", ""]
     for prompt in prompts:
@@ -397,18 +398,20 @@ def report(services, prompts=("v1", "v2")) -> str:
                     out.append(f"| {s} | {r['run']} | {r['id']} | {r['text']} | `{_got(r)}` | {r['why']} |")
         out.append("")
 
-    out += ["### Items that flipped between v1 and v2 (passes out of 3 runs)", "",
-            "| Service | Case | Utterance | v1 | v2 |", "|---|---|---|---|---|"]
-    for s in services:
-        a, b = load("v1", s), load("v2", s)
-        if not a or not b:
-            continue
-        for cid, _, _, text, _ in CASES:
-            pa = sum(1 for r in a if r["id"] == cid and r["ok"])
-            pb = sum(1 for r in b if r["id"] == cid and r["ok"])
-            if pa != pb:
-                out.append(f"| {s} | {cid} | {text} | {pa}/3 | {pb}/3 |")
-    out.append("")
+    for old, new in zip(prompts, prompts[1:]):
+        out += [f"### Items that flipped between {old} and {new} (passes / runs)", "",
+                f"| Service | Case | Utterance | {old} | {new} |", "|---|---|---|---|---|"]
+        for s in services:
+            a, b = load(old, s), load(new, s)
+            if not a or not b:
+                continue
+            na, nb = len({r["run"] for r in a}), len({r["run"] for r in b})
+            for cid, _, _, text, _ in CASES:
+                pa = sum(1 for r in a if r["id"] == cid and r["ok"])
+                pb = sum(1 for r in b if r["id"] == cid and r["ok"])
+                if pa / na != pb / nb:
+                    out.append(f"| {s} | {cid} | {text} | {pa}/{na} | {pb}/{nb} |")
+        out.append("")
 
     out += ["### Logged spend this evaluation (scored calls + follow-up setup turns)", ""]
     for s in services:
@@ -453,7 +456,7 @@ def main():
     ap.add_argument("--ping", nargs="*", metavar="SERVICE",
                     help="connectivity check (default: all three services)")
     ap.add_argument("--services", nargs="+", default=[])
-    ap.add_argument("--prompt", nargs="+", choices=sorted(PROMPTS), default=["v2"])
+    ap.add_argument("--prompt", nargs="+", choices=sorted(PROMPTS), default=["v3"])
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--cases", nargs="+", default=[], help="only these case ids")
     ap.add_argument("--budget", type=float, default=None,

@@ -149,6 +149,8 @@ Conventions:
   "a bit"/"a little"/"a few steps" = 1.5 s. No duration given = 2 s.
 - If a distance is given, assume speed in m/s ~= vx (e.g. 2 m at vx=0.8 -> 2.5 s).
 - "turn back"/"turn around" = 180; "turn left" = 90; "turn right" = -90.
+- "stop", "halt", "freeze", "stop now" and similar all map to
+  {"actions": [{"action": "stop"}]}; never reject them as empty.
 - Multi-step instructions become an ordered list, in the order spoken.
 - Follow-ups ("do that again", "now slower", "the other way") refer to the
   previous accepted actions in the conversation; reuse and modify them.
@@ -374,6 +376,8 @@ def _to_parse_result(raw_json: str) -> ParseResult:
             actions = data
         elif isinstance(data, dict) and "actions" in data:
             actions = data["actions"]
+        elif isinstance(data, dict) and "action" in data:
+            actions = [data]   # one bare action object, e.g. {"action": "stop"}
         else:
             raise _Invalid("invalid_field:actions")
         if not isinstance(actions, list):
