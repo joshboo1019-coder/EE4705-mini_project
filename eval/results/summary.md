@@ -59,7 +59,26 @@ Failures (v2):
 | gpt-5-nano | 2 | P7 | halt! | `rejected: empty` | rejected (empty) |
 | gpt-5-nano | 3 | P7 | halt! | `rejected: invalid_field:actions` | rejected (invalid_field:actions) |
 
-### Items that flipped between v1 and v2 (passes out of 3 runs)
+### Prompt v3
+
+| Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
+|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 0.37 / 0.55 | 1202 / 30 | 0.072 |
+| gemini-3.8-flash | 100.0% (31/31) | – | – | **100.0% (31/31)** | 0 | 1.96 / 2.27 | 1240 / 31 | 1.046 |
+| gpt-5-nano | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 1.08 / 1.38 | 1188 / 40 | 0.075 |
+
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | invalid |
+|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+
+Failures (v3):
+
+| Service | Run | Case | Utterance | Got | Why |
+|---|---|---|---|---|---|
+
+### Items that flipped between v1 and v2 (passes / runs)
 
 | Service | Case | Utterance | v1 | v2 |
 |---|---|---|---|---|
@@ -73,9 +92,18 @@ Failures (v2):
 | gpt-5-nano | L2 | shuffle right for one second | 1/3 | 3/3 |
 | gpt-5-nano | L3 | slide over to the right a little | 2/3 | 3/3 |
 
+### Items that flipped between v2 and v3 (passes / runs)
+
+| Service | Case | Utterance | v2 | v3 |
+|---|---|---|---|---|
+| gpt-5-nano | P7 | halt! | 1/3 | 3/3 |
+
 ### Logged spend this evaluation (scored calls + follow-up setup turns)
 
 - qwen-flash v2: $0.0065
+- qwen-flash v3: $0.0067
 - gemini-3.8-flash v1: $0.0813
 - gemini-3.8-flash v2: $0.0945
+- gemini-3.8-flash v3: $0.0324
 - gpt-5-nano v2: $0.0068
+- gpt-5-nano v3: $0.0070

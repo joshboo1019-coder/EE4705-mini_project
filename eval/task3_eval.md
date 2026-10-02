@@ -1,9 +1,12 @@
 # Task 3.iv — LLM command parser evaluation
 
-Run on 2026-10-01 from branch `task_3_llm`. The two system prompts compared are:
+v1 and v2 were run on 2026-10-01 and v3 on 2026-10-02, all from branch `task_3_llm`. The three system prompts compared are:
 
 - **v1:** the original prompt, frozen in `eval/prompt_v1.py` (identical to `llm_parser.SYSTEM_PROMPT` at commit `3c2abc9`).
-- **v2:** the current `llm_parser.SYSTEM_PROMPT`. It adds a sign-convention block (vx + forward, **vy + LEFT**, wz + CCW, angle + left) and three few-shot examples: "turn right 90 degrees" → −90, "move left for two seconds" → vy +0.8, and "strafe right a bit" → vy −0.8.
+- **v2:** frozen in `eval/prompt_v2.py` (identical to `llm_parser.SYSTEM_PROMPT` at commit `8d07c45`). It adds a sign-convention block (vx + forward, **vy + LEFT**, wz + CCW, angle + left) and three few-shot examples: "turn right 90 degrees" → −90, "move left for two seconds" → vy +0.8, and "strafe right a bit" → vy −0.8.
+- **v3:** the current `llm_parser.SYSTEM_PROMPT`. It is v2 plus one rule line: "stop", "halt", "freeze", "stop now" and
+  similar all map to `{"actions": [{"action": "stop"}]}` and are never rejected as empty. Alongside it, the parser
+  now accepts a single bare action object (e.g. `{"action": "stop"}`) as a one-element list.
 
 There is no keyword-based post-fix in code; the direction must come from the LLM.
 
@@ -15,10 +18,12 @@ ROS's `PYTHONPATH` breaks the project venv, so unset it for every command:
 
 ```bash
 env -u PYTHONPATH .venv/bin/python -m pip install -r requirements.txt
-env -u PYTHONPATH .venv/bin/python -m pytest -q tests/test_student_b.py      # offline, 36 tests
+env -u PYTHONPATH .venv/bin/python -m pytest -q tests/test_student_b.py      # offline, 38 tests
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --ping                 # one call per service
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --services qwen-flash gpt-5-nano --prompt v1 v2 --runs 3
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --services gemini-3.8-flash --prompt v1 v2 --runs 3 --budget 2
+env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --services qwen-flash gpt-5-nano --prompt v3 --runs 3
+env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --services gemini-3.8-flash --prompt v3 --runs 1 --budget 2
 env -u PYTHONPATH .venv/bin/python eval/task3_eval.py --report               # rebuild summary.md
 env -u PYTHONPATH .venv/bin/python eval/mock_main.py                         # full main.py loop on mocks
 ```
@@ -100,6 +105,19 @@ Gemini ran both prompts in full today.
 
 v2 adds about 185 prompt tokens per call (+15% cost) and doesn't change latency noticeably.
 
+### Prompt v3
+
+Gemini was run once on v3, as a regression check only. The full console output of the v3 runs is in
+`eval/results/v3/eval.log`.
+
+| Service | Run 1 | Run 2 | Run 3 | **Average** | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls |
+|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100% | 100% | 100% | **100%** (93/93) | 0 | 0.37 / 0.55 | 1202 / 30 | $0.072 |
+| gpt-5-nano | 100% | 100% | 100% | **100%** (93/93) | 0 | 1.08 / 1.38 | 1188 / 40 | $0.075 |
+| gemini-3.8-flash | 100% | – | – | **100%** (31/31) | 0 | 1.96 / 2.27 | 1240 / 31 | $1.046 |
+
+v3 adds about 38 prompt tokens per call over v2 (+3% cost).
+
 ### Accuracy per category
 
 | Service | Prompt | basic | multi-step | paraphrase | lateral | follow-up | chat | invalid |
@@ -110,6 +128,9 @@ v2 adds about 185 prompt tokens per call (+15% cost) and doesn't change latency 
 | gpt-5-nano | v2 | 100% | 100% | 91.7% | 100% | 100% | 100% | 100% |
 | gemini-3.8-flash | v1 | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
 | gemini-3.8-flash | v2 | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| qwen-flash | v3 | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| gpt-5-nano | v3 | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| gemini-3.8-flash | v3 (1 run) | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
 
 ### Items that flipped between v1 and v2 (passes out of 3 runs)
 
@@ -126,6 +147,18 @@ v2 adds about 185 prompt tokens per call (+15% cost) and doesn't change latency 
 | gpt-5-nano | P7 | halt! | 3/3 | **1/3** (regression) |
 
 Gemini didn't flip on anything: 31/31 in every run under both prompts.
+
+### Items that flipped between v2 and v3
+
+| Service | Case | Utterance | v2 | v3 |
+|---|---|---|---|---|
+| gpt-5-nano | P7 | halt! | 1/3 | **3/3** |
+
+Only the "halt!" regression flipped: gpt-5-nano now returns a stop on every run. Nothing regressed.
+qwen-flash stays at 93/93 and Gemini at 31/31. Every v3 P7 result was a wrapped stop. The log keeps
+the raw text only for failures, so it doesn't show whether any of them needed the new bare-object path.
+Caveat: the v3 rule names "halt" outright, so P7 is no longer a held-out case. v3's 100% on P7
+confirms the fix, but it isn't evidence of generalisation.
 
 ## Failure analysis
 
@@ -149,8 +182,8 @@ Gemini didn't flip on anything: 31/31 in every run under both prompts.
      command matters.
    - Neither failure is in v1. The extra examples probably shifted gpt-5-nano's behaviour on very short
      inputs.
-   - Possible fixes, not applied so as not to tune on the test set: a "stop"/"halt" example, or
-     accepting a single bare action object as a one-element list.
+   - **Fixed in v3** with both remedies: a stop/halt/freeze rule line in the prompt, and accepting a
+     single bare action object as a one-element list. Result: 3/3 on v3 (see the flip table above).
 3. **Reject reasons aren't a closed vocabulary.** All invalid inputs were rejected by every service
    in every run (100%), but the reason text varies between models. For the keyboard mash, Qwen gave
    `non-English` and OpenAI gave `empty`; OpenAI also coined `out_of_range:ten_minutes`. Acceptance
@@ -161,9 +194,10 @@ Gemini didn't flip on anything: 31/31 in every run under both prompts.
 
 ## Recommendation: `config.LLM_SERVICE = "qwen-flash"` (unchanged)
 
-On v2, qwen-flash and gemini-3.8-flash are tied for first on accuracy (100%, 93/93), ahead of
-gpt-5-nano (97.8%). On the tie-break by latency, qwen-flash wins clearly: 0.35 s median / 0.52 s p90,
-against Gemini's 2.03 s / 2.34 s. It is also the cheapest ($0.07 per 1k calls vs $1.02).
+On v3, all three services score 100% (qwen-flash and gpt-5-nano 93/93, Gemini 31/31 in one run), so
+accuracy no longer separates them. On the tie-break by latency, qwen-flash wins clearly: 0.37 s
+median / 0.55 s p90, against gpt-5-nano's 1.08 s / 1.38 s and Gemini's 1.96 s / 2.27 s. It is also the
+cheapest ($0.072 per 1k calls, vs $0.075 and $1.05).
 `core/config.py` already has `LLM_SERVICE = "qwen-flash"`.
 
 ## Video_Task3 demo script
