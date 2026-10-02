@@ -48,7 +48,7 @@ def main():
     args = ap.parse_args()
 
     print("Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...")
-    skills = RealSkills(gui=not args.native, native_viewer=args.native)
+    skills = RealSkills(gui=not args.native, native_viewer=args.native, default_camera="dog_front_camera")
     # Wrapped in try/finally, not just a KeyboardInterrupt handler: with
     # --native, RealSkills opens a real GLFW window and starts a daemon
     # thread that keeps calling into it. ANY unhandled exception past
