@@ -143,3 +143,124 @@ def test_chat_loop_routes_v_to_push_to_talk(monkeypatch):
                         lambda text, h, q: seen.append(("typed", text)))
     chat_interface._chat_loop(CommandQueue())
     assert seen == ["voice", ("typed", "walk forward")]
+
+
+# ---------------------------------------------------------------------------
+# Visual QA (look -> VLM)
+# ---------------------------------------------------------------------------
+
+from types import SimpleNamespace
+
+from core import config
+from dialogue import vlm
+from dialogue.commands import LookCommand
+from dialogue.executor import CommandExecutor
+from perception.perception_mock import MockPerception
+from skills.skills_mock import MockSkills
+
+
+def test_look_action_is_parsed(fake_llm, capsys):
+    fake_llm.replies.append(json.dumps(
+        {"actions": [{"action": "look", "question": " what can you see? "}]}))
+    r = llm_parser.parse_command("what can you see?", [])
+    assert r.accepted and r.commands == [LookCommand("what can you see?")]
+    assert '[CMD] actions=look("what can you see?") n=1' in capsys.readouterr().out
+    # it round-trips through the history like the other actions
+    assert llm_parser._to_parse_result(llm_parser.history_entry(r)).commands == r.commands
+
+
+@pytest.mark.parametrize("action,reason", [
+    ({"action": "look"}, "invalid_field:question"),
+    ({"action": "look", "question": "   "}, "invalid_field:question"),
+    ({"action": "look", "question": 42}, "invalid_field:question"),
+    ({"action": "look", "question": "x" * 301}, "invalid_field:question"),
+])
+def test_bad_look_is_rejected(fake_llm, action, reason):
+    fake_llm.replies.append(json.dumps({"actions": [action]}))
+    r = llm_parser.parse_command("what can you see?", [])
+    assert not r.accepted and r.reject_reason == reason
+
+
+class FakeVLMClient:
+    """Stands in for the OpenAI-compatible client; records the request."""
+
+    def __init__(self, answer="I see a red stop sign.", fail=None):
+        self.requests, self.answer, self.fail = [], answer, fail
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+
+    def _create(self, **kw):
+        self.requests.append(kw)
+        if self.fail:
+            raise self.fail
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.answer))],
+            usage=SimpleNamespace(prompt_tokens=400, completion_tokens=9))
+
+
+def test_vlm_sends_the_frame_and_question(monkeypatch):
+    monkeypatch.setattr(config, "VLM_SERVICE", "qwen3-vl-flash")
+    client = FakeVLMClient()
+    frame = np.zeros((480, 640, 3), np.uint8)
+    ans = vlm.ask(frame, "what can you see?", client=client)
+
+    req = client.requests[0]
+    assert req["model"] == "qwen3-vl-flash"
+    assert req["messages"][0] == {"role": "system", "content": vlm.SYSTEM_PROMPT}
+    text, image = req["messages"][1]["content"]
+    assert text == {"type": "text", "text": "what can you see?"}
+    assert image["image_url"]["url"].startswith("data:image/png;base64,")
+    assert (ans.answer, ans.model, ans.tokens_in, ans.tokens_out) == (
+        "I see a red stop sign.", "qwen3-vl-flash", 400, 9)
+
+
+def test_vlm_empty_answer_is_an_error():
+    with pytest.raises(ValueError):
+        vlm.ask(np.zeros((4, 4, 3), np.uint8), "what can you see?",
+                service="qwen3-vl-flash", client=FakeVLMClient(answer="  "))
+
+
+def _look_executor(tmp_path, vlm_fn):
+    saved = []
+
+    def save(frame):
+        saved.append(frame.shape)
+        return tmp_path / "frame.png"
+
+    queue = CommandQueue()
+    ex = CommandExecutor(MockSkills(), MockPerception(misses_before_found=0), queue,
+                         vlm_fn=vlm_fn, save_frame_fn=save)
+    return ex, saved
+
+
+def test_look_runs_yolo_and_the_vlm_on_the_same_frame(tmp_path, capsys):
+    seen = []
+
+    def fake_vlm(frame, question):
+        seen.append((frame.shape, question))
+        return vlm.VLMAnswer("A green chair is ahead.", "qwen3-vl-flash", 0.61, 401, 7)
+
+    ex, saved = _look_executor(tmp_path, fake_vlm)
+    ex._run_batch_starting_with(LookCommand("what can you see?"))
+    out = capsys.readouterr().out
+    assert saved == [seen[0][0]] and seen[0][1] == "what can you see?"
+    lines = [l for l in out.splitlines() if l.startswith(("[EXEC]", "[DETECT]", "[VLM]", "Robot:", "[DONE]"))]
+    assert lines[0] == '[EXEC] action=1/1 look question="what can you see?"'
+    assert lines[1].startswith("[DETECT] class=")            # YOLO (mock) on that frame
+    assert lines[2] == f"[VLM] model=qwen3-vl-flash t=0.61 s tokens=401/7 frame={tmp_path / 'frame.png'}"
+    assert lines[3] == "Robot: A green chair is ahead."
+    assert lines[4].startswith("[DONE] actions=1")
+
+
+def test_vlm_error_is_caught_and_the_loop_goes_on(tmp_path, capsys):
+    import openai
+
+    def boom(frame, question):
+        raise openai.APITimeoutError(request=None)
+
+    ex, _ = _look_executor(tmp_path, boom)
+    ex._run_batch_starting_with(LookCommand("what can you see?"))
+    ex._run_batch_starting_with(TurnCommand(90.0))           # a later batch still runs
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/1 failed reason=APITimeoutError" in out
+    assert "[DONE] actions=0" in out
+    assert "[EXEC] action=1/1 turn angle=90.0 deg" in out and "[DONE] actions=1" in out

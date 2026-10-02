@@ -17,16 +17,22 @@ from core.schema import (
     StopCommand, ChatCommand,
 )
 from perception import navigation
+from dialogue import vlm
+from dialogue.commands import LookCommand
 
 
 class CommandExecutor:
     def __init__(self, skills: SkillsAPI, perception: PerceptionAPI,
                  queue: CommandQueue,
-                 goto_object_fn: Callable = navigation.goto_object):
+                 goto_object_fn: Callable = navigation.goto_object,
+                 vlm_fn: Callable = vlm.ask,
+                 save_frame_fn: Callable = vlm.save_frame):
         self.skills = skills
         self.perception = perception
         self.queue = queue
         self.goto_object_fn = goto_object_fn
+        self.vlm_fn = vlm_fn
+        self.save_frame_fn = save_frame_fn
 
     def run_forever(self, poll_timeout: float = 0.2) -> None:
         """Call this from the main thread's loop (not the chat thread) so
@@ -62,6 +68,21 @@ class CommandExecutor:
         elapsed = time.time() - t0
         print(f"[DONE] actions={done} t={elapsed:.1f} s")
 
+    def _look(self, question: str) -> None:
+        """Visual QA on ONE frame: YOLO's [DETECT] lines and the VLM answer
+        come from the same image, so they can be compared."""
+        frame = self.skills.get_camera_frame()
+        path = self.save_frame_fn(frame)
+        try:
+            if not self.perception.detect(frame):    # detect() prints [DETECT] lines
+                print("[DETECT] none")
+        except Exception as e:   # YOLO trouble shouldn't stop the VLM answer
+            print(f"[DETECT] failed reason={_short_error(e)}")
+        ans = self.vlm_fn(frame, question)
+        print(f"[VLM] model={ans.model} t={ans.latency_s:.2f} s "
+              f"tokens={ans.tokens_in}/{ans.tokens_out} frame={path}")
+        print(f"Robot: {ans.answer}")
+
     def _safe_stop(self) -> None:
         try:
             self.skills.stop()
@@ -87,6 +108,9 @@ class CommandExecutor:
             self.queue.clear()
         elif isinstance(cmd, ChatCommand):
             print(f"Robot: {cmd.reply}")
+        elif isinstance(cmd, LookCommand):
+            print(f'[EXEC] action={i}/{n} look question="{cmd.question}"')
+            self._look(cmd.question)
         else:
             print(f"[EXEC] action={i}/{n} unknown command skipped: {cmd}")
 

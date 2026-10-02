@@ -1,12 +1,14 @@
 # Task 3.iv — LLM command parser evaluation
 
-v1 and v2 were run on 2026-10-01 and v3 on 2026-10-02, all from branch `task_3_llm`. The three system prompts compared are:
+v1 and v2 were run on 2026-10-01 and v3 on 2026-10-02, all from branch `task_3_llm`; v4 (bonus, visual QA) on branch `bonus_b`. The system prompts compared are:
 
 - **v1:** the original prompt, frozen in `eval/prompt_v1.py` (identical to `llm_parser.SYSTEM_PROMPT` at commit `3c2abc9`).
 - **v2:** frozen in `eval/prompt_v2.py` (identical to `llm_parser.SYSTEM_PROMPT` at commit `8d07c45`). It adds a sign-convention block (vx + forward, **vy + LEFT**, wz + CCW, angle + left) and three few-shot examples: "turn right 90 degrees" → −90, "move left for two seconds" → vy +0.8, and "strafe right a bit" → vy −0.8.
-- **v3:** the current `llm_parser.SYSTEM_PROMPT`. It is v2 plus one rule line: "stop", "halt", "freeze", "stop now" and
+- **v3:** frozen in `eval/prompt_v3.py`. It is v2 plus one rule line: "stop", "halt", "freeze", "stop now" and
   similar all map to `{"actions": [{"action": "stop"}]}` and are never rejected as empty. Alongside it, the parser
   now accepts a single bare action object (e.g. `{"action": "stop"}`) as a one-element list.
+- **v4 (bonus):** the current `llm_parser.SYSTEM_PROMPT`: v3 plus a `look` action for questions about what the
+  robot sees, two look few-shot examples, and two rules added after the v4 draft (see "Prompt v4" below).
 
 There is no keyword-based post-fix in code; the direction must come from the LLM.
 
@@ -177,6 +179,75 @@ qwen-flash stays at 93/93 and Gemini at 31/31. Every v3 P7 result was a wrapped 
 the raw text only for failures, so it doesn't show whether any of them needed the new bare-object path.
 Caveat: the v3 rule names "halt" outright, so P7 is no longer a held-out case. v3's 100% on P7
 confirms the fix, but it isn't evidence of generalisation.
+
+## Prompt v4 / look (bonus: visual QA)
+
+v4 adds `{"action": "look", "question": string}` for questions about what the robot can see right now. The
+executor grabs one front-camera frame, runs the existing YOLO perception on it (`[DETECT]` lines), and sends the
+same frame plus the question to a vision-language model (`dialogue/vlm.py`). It prints
+`[VLM] model=… t=… tokens=in/out frame=…` and then `Robot: <answer>`. The VLM is told to answer only from the
+image, in one or two sentences, and to say when it can't tell. Few-shot examples (deliberately not the eval
+phrasings): "what's in front of you?" → look; "turn right and tell me if you see anything red" →
+turn(−90), look.
+
+New cases (category `look`): **V1** what can you see?, **V2** is there a chair in front of you?, **V3** what
+colour is the ball ahead?, **V4** describe your surroundings → a look action; **V5** "look out!" → anything
+*except* a look action. The v4 set is 38 cases (the 33 v3 cases + V1–V5), 1 run per service.
+
+**v4 draft → v4.** The first v4 draft (prompt text and logs in `eval/results/v4_draft/`) scored qwen-flash
+38/38, Gemini 38/38 and gpt-5-nano 36/38. gpt-5-nano's two failures were **V5** "look out!" → look (5/5 in
+offline retries; v3 gave chat) and a real regression, **X2** "avancez tout droit" **accepted** as a forward
+move (2 of 5 retries; 0 of 5 with v3). Two general rules fixed most of this:
+- "Decide the language first: an instruction that is not in English is rejected as "non-English" even if you
+  understand it." → X2 rejected 5/5 again.
+- In the look description: only an actual question about what is visible is a look; "an exclamation or warning
+  that happens to contain 'look' (like 'careful!') is not a look action; treat a warning as stop." → gpt-5-nano
+  V5 3/5 non-look in retries; qwen-flash maps "look out!" to stop. The example is "careful!", so V5 stays
+  held out, but the rule was still written *because* of V5.
+
+| Service | v4 (38 cases) | the 33 v3 cases | look (V1–V5) | Latency median / p90 (s) | Tokens in / out | Cost per 1k calls |
+|---|---|---|---|---|---|---|
+| qwen-flash | **100%** (38/38) | 33/33 | 5/5 | 0.29 / 0.49 | 1415 / 28 | $0.082 |
+| gpt-5-nano | **97.4%** (37/38) | 33/33 | 4/5 (V5 → look) | 1.12 / 1.45 | 1397 / 38 | $0.085 |
+| gemini-3.8-flash | **100%** (38/38) | 33/33 | 5/5 | 2.15 / 2.74 | 1462 / 29 | $1.204 |
+
+**No regressions against v3:** every one of the 33 v3 cases passes on v4 for all three services (the v3 → v4 flip
+table in `eval/results/summary.md` is empty). The longer prompt adds about 210 input tokens per call (+17%).
+
+### VLM choice: `config.VLM_SERVICE = "qwen3-vl-flash"`
+
+Four candidates, the same system prompt, the same two sim frames
+(`eval/results/vlm/probe_frame_turned_around.png`, `probe_frame_spawn.png`), 4 questions each (raw answers in
+`eval/results/vlm/probe_candidates.jsonl`). Ground truth for the turned-around frame: a red stop sign close and
+centred, green and yellow stop signs further away, a small orange ball half-hidden behind the pole, and the
+edges of the red chair (left) and green chair (right). The spawn frame shows a blue chair on the stairs.
+
+| Model | "what can you see?" | "is there a chair in front of you?" | "is there a ball anywhere?" | blue chair | Latency | Tokens in |
+|---|---|---|---|---|---|---|
+| **qwen3-vl-flash** | ✅ everything, incl. the chair edges | ✅ "red chair-like object to the left" | ✅ orange, behind the pole | ✅ | **0.4–1.4 s** | ~395 |
+| gemini-3.8-flash | ✅ but calls the signs "markers" | ❌ "no chair" | ✅ | ✅ | 2.5–3.3 s | ~1150 |
+| gpt-5-nano | ok | ❌ "no chair" | hedges ("not clearly a ball") | ✅ | 1.3–2.3 s | ~540 |
+| qwen-vl-plus | misses the ball | ❌ can't confirm | ❌ "yellow ball" | ✅ | 0.3–0.7 s | ~395 |
+
+qwen3-vl-flash was the most accurate (the only one to spot the half-visible chair) and the fastest of the
+accurate models. It uses the same Alibaba endpoint and key as the parser.
+
+### Real-sim check (main.py --gui, real skills + YOLO + qwen3-vl-flash, one fresh launch)
+
+Typed: `turn around`, `what can you see?`, `turn right 45 degrees`, `is there a chair in front of you?`,
+`turn left 135 degrees`, `what colour is the ball ahead?`. Poses come from the dry-run wrapper; full terminal
+output is in `eval/results/vlm/real_sim_check.log`. The robot didn't move during a look, and nothing fell or
+collided.
+
+| Pose (x, y, yaw) | Frame | Question | VLM answer (qwen3-vl-flash, t) | YOLO `[DETECT]` on the same frame | Correct? |
+|---|---|---|---|---|---|
+| −0.09, 0.01, −176° (facing the red stop sign) | `eval/results/vlm/20261002-232010-231387.png` | what can you see? | "I see a red chair on the left, a large red square sign on a gray pole in the center, a green rectangular sign on a pole to the left of center, and a yellow rectangular sign on a pole to the right of center. The floor is a blue and dark-blue checkered grid…" (0.96 s) | `chair color=blue conf=0.50` (the red chair, wrong colour); no stop signs, no ball | VLM ✅ (misses the half-hidden ball and the green chair sliver); YOLO partly (wrong colour, misses 3 signs) |
+| −0.08, 0.03, 144° (green-chair area) | `eval/results/vlm/20261002-232018-702459.png` | is there a chair in front of you? | "Yes, there is a green chair in front of you, positioned toward the center-right of the view." (0.60 s) | `sports ball color=orange conf=0.73` only | VLM ✅; YOLO ❌ (misses the green chair) |
+| −0.09, −0.02, −82° (open floor, terrain blocks on the left) | `eval/results/vlm/20261002-232027-560433.png` | what colour is the ball ahead? | "There is no ball visible ahead in the image." (0.46 s) | none | ✅ both |
+
+On identical frames the VLM was right 3/3, while YOLO missed or mislabelled an object in 2 of 3. That's the
+expected trade-off: YOLO is local and gives boxes for navigation; the VLM gives a reliable
+open-vocabulary answer but needs a network call (~0.5–1 s) and no geometry.
 
 ## Failure analysis
 

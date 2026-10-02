@@ -7,8 +7,8 @@ eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
     python eval/task3_eval.py --services qwen-flash --prompt v1 --cases L1 L2 L3     # add cases to old runs
     python eval/task3_eval.py --report      # rebuild eval/results/summary.md from the logs
 
---prompt v1 / v2 are the frozen prompts in eval/prompt_v1.py / prompt_v2.py;
-v3 is the current llm_parser.SYSTEM_PROMPT.
+--prompt v1 / v2 / v3 are the frozen prompts in eval/prompt_v1.py ... prompt_v3.py;
+v4 is the current llm_parser.SYSTEM_PROMPT.
 
 (If ROS's PYTHONPATH is set in your shell: `env -u PYTHONPATH .venv/bin/python ...`.)
 
@@ -38,6 +38,8 @@ from core.schema import (  # noqa: E402
 from dialogue import llm_parser  # noqa: E402
 from eval.prompt_v1 import SYSTEM_PROMPT_V1  # noqa: E402
 from eval.prompt_v2 import SYSTEM_PROMPT_V2  # noqa: E402
+from eval.prompt_v3 import SYSTEM_PROMPT_V3  # noqa: E402
+from dialogue.commands import LookCommand  # noqa: E402
 
 PING_SERVICES = ["qwen-flash", "gemini-3.8-flash", "gpt-5-nano"]
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -116,6 +118,19 @@ def chat():
     return lambda c: isinstance(c, ChatCommand)
 
 
+def look():
+    return lambda c: isinstance(c, LookCommand) and bool(c.question.strip())
+
+
+def no_look():
+    """Anything (accepted or rejected) as long as no look action is produced."""
+    def check(r):
+        if any(isinstance(c, LookCommand) for c in r.commands):
+            return False, "produced a look action"
+        return True, ""
+    return check
+
+
 def rejected(*prefixes, allow_clarify=False):
     """Rejected (reason category not graded, only logged), or — if
     allow_clarify — a single chat action asking for clarification."""
@@ -174,6 +189,12 @@ CASES = [
     ("C1", "chat", [], "what can you do?", cmds(chat())),
     # no colour given: navigation needs one, so the robot must ask which chair
     ("C2", "chat", [], "go to the chair", cmds(chat())),
+    # --- look / visual QA (added with prompt v4; none copies a v4 few-shot example) ---
+    ("V1", "look", [], "what can you see?", cmds(look())),
+    ("V2", "look", [], "is there a chair in front of you?", cmds(look())),
+    ("V3", "look", [], "what colour is the ball ahead?", cmds(look())),
+    ("V4", "look", [], "describe your surroundings", cmds(look())),
+    ("V5", "look", [], "look out!", no_look()),          # a warning, not a question
     # --- invalid / out of scope ---
     ("X1", "invalid", [], "fly to the roof", rejected()),
     ("X2", "invalid", [], "avancez tout droit", rejected()),
@@ -190,7 +211,8 @@ CASES = [
 # Running
 # ---------------------------------------------------------------------------
 
-PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": llm_parser.SYSTEM_PROMPT}
+PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": SYSTEM_PROMPT_V3,
+           "v4": llm_parser.SYSTEM_PROMPT}
 
 
 class QuotaExhausted(Exception):
@@ -362,9 +384,9 @@ def _got(r):
             ", ".join(json.dumps(x) for x in a["actions"]))
 
 
-def report(services, prompts=("v1", "v2", "v3")) -> str:
+def report(services, prompts=("v1", "v2", "v3", "v4")) -> str:
     out = [f"Test set: {len(CASES)} utterances; each prompt is scored on the cases it was run on "
-           "(C2 and F3 were added with v3, so v1 and v2 cover 31). Accuracy excludes API errors "
+           "(C2 and F3 were added with v3, V1-V5 with v4; v1/v2 cover 31, v3 33). Accuracy excludes API errors "
            "(calls that still failed after back-off), which are counted separately.", ""]
     for prompt in prompts:
         out += [f"### Prompt {prompt}", "",
@@ -462,7 +484,7 @@ def main():
     ap.add_argument("--ping", nargs="*", metavar="SERVICE",
                     help="connectivity check (default: all three services)")
     ap.add_argument("--services", nargs="+", default=[])
-    ap.add_argument("--prompt", nargs="+", choices=sorted(PROMPTS), default=["v3"])
+    ap.add_argument("--prompt", nargs="+", choices=sorted(PROMPTS), default=["v4"])
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--cases", nargs="+", default=[], help="only these case ids")
     ap.add_argument("--budget", type=float, default=None,
