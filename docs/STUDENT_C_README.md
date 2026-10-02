@@ -54,7 +54,8 @@ here is real-time on a laptop; no GPU needed.
    - visible → steer so the bbox center moves toward the image center
      (`_steer_to_center` — proportional control on `wz`), then step
      forward; if forward progress stays below 25% of commanded travel
-     across 5 seconds of approach commands, back up one approach step,
+     across a 4-second deadline (including target recentering), back up
+     one approach step,
      use the existing reacquisition strafe, and scan/approach again
    - "found" only when **all** of: (C1) detected in the live frame at
      the moment of stopping, (C2) planar distance to object ≤ 0.80 m
