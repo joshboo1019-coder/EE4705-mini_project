@@ -41,6 +41,8 @@ def goto_object(object_class: str, color: str,
     target_position = None
     reacquire_misses = 0
     reacquire_attempts = 0
+    forward_attempt_start: RobotPose | None = None
+    forward_attempt_duration = 0.0
     clear_target_history = getattr(perception, "clear_target_history", None)
     if callable(clear_target_history):
         clear_target_history()
@@ -69,11 +71,15 @@ def goto_object(object_class: str, color: str,
                     reacquire_misses = 0
                     reacquire_attempts = 0
                     consecutive_misses = 0
+                    forward_attempt_start = None
+                    forward_attempt_duration = 0.0
                     continue
 
                 _reacquire_sweep(skills, reacquire_attempts, target_position)
                 reacquire_attempts += 1
                 reacquire_misses = 0
+                forward_attempt_start = None
+                forward_attempt_duration = 0.0
                 continue
 
             recover_target = getattr(perception, "recover_target", None)
@@ -102,6 +108,8 @@ def goto_object(object_class: str, color: str,
 
         if not _steer_to_center(target, skills, frame.shape[1]):
             # not centered yet — small turn step and re-detect next loop
+            forward_attempt_start = None
+            forward_attempt_duration = 0.0
             continue
 
         if not initial_center_scan_complete:
@@ -142,7 +150,38 @@ def goto_object(object_class: str, color: str,
             skills.stop()
             return False
 
-        _approach_step(skills, distance)
+        step_duration = _approach_step(skills, distance)
+        if step_duration > 0.0:
+            if forward_attempt_start is None:
+                forward_attempt_start = pose
+            forward_attempt_duration += step_duration
+
+            if forward_attempt_duration >= config.APPROACH_STUCK_TIMEOUT_S:
+                pose_after_step = skills.get_robot_pose()
+                heading = math.radians(forward_attempt_start.yaw_deg)
+                forward_progress = (
+                    (pose_after_step.x - forward_attempt_start.x)
+                    * math.cos(heading)
+                    + (pose_after_step.y - forward_attempt_start.y)
+                    * math.sin(heading)
+                )
+                commanded_distance = (
+                    abs(config.APPROACH_VX) * forward_attempt_duration
+                )
+                if (forward_progress
+                        < commanded_distance
+                        * config.APPROACH_STUCK_PROGRESS_FRACTION):
+                    print("[APPROACH] forward progress blocked for "
+                          f"{forward_attempt_duration:.1f} s; backing up "
+                          "and strafing to retry")
+                    skills.move(
+                        vx=-abs(config.APPROACH_VX), vy=0.0, wz=0.0,
+                        duration=config.APPROACH_STEP_S,
+                    )
+                    _reacquire_sweep(skills, 0, target_position)
+
+                forward_attempt_start = None
+                forward_attempt_duration = 0.0
 
     print("[MISSION] status=FAIL reason=timeout")
     skills.stop()
@@ -193,10 +232,10 @@ def _reacquire_sweep(skills: SkillsAPI, attempt: int, target_position) -> None:
             skills.turn(err)
         time.sleep(0.3)
 
-def _approach_step(skills: SkillsAPI, distance: float) -> None:
+def _approach_step(skills: SkillsAPI, distance: float) -> float:
     if distance <= config.FOUND_DISTANCE_M:
         skills.stop()
-        return
+        return 0.0
 
     approach_vx = abs(config.APPROACH_VX)
     normal_step_distance = approach_vx * config.APPROACH_STEP_S
@@ -208,6 +247,7 @@ def _approach_step(skills: SkillsAPI, distance: float) -> None:
     step_duration = step_distance / approach_vx
     skills.move(vx=approach_vx, vy=0.0, wz=0.0,
                 duration=step_duration)
+    return step_duration
 
 
 def _camera_height_above_ground(skills: SkillsAPI) -> float:
