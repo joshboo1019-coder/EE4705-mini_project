@@ -172,5 +172,6 @@ USE_REAL_PERCEPTION = True
       same-class disambiguation
 
 ```bash
-python -m perception.task4_cli --debug-frames /tmp/debug_frame    #use this to run Task 4 using typed command
+python -m perception.task4_cli    #use this to run Task 4 using chosen scenario and typed command
+MUJOCO_GL=egl python -m perception.task4_cli    #or use this to run Task 4 similarly using browser
 ```
