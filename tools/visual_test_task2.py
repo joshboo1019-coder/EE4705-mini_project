@@ -62,7 +62,7 @@ def main():
         time.sleep(1.0)  # let the first frame/pose settle before moving
 
         steps = [
-            ("Walk forward",       lambda: skills.move(vx=0.6, vy=0.0, wz=0.0, duration=3.0)),
+            ("Walk forward",       lambda: skills.move(vx=0.6, vy=0.0, wz=0.0, duration=2.0)),
             ("Strafe left",        lambda: skills.move(vx=0.0, vy=0.4, wz=0.0, duration=2.0)),
             ("Turn left 90 deg",   lambda: skills.turn(90.0)),
             ("Walk forward",       lambda: skills.move(vx=0.6, vy=0.0, wz=0.0, duration=2.0)),
@@ -73,7 +73,6 @@ def main():
             ("Turn right 90 deg",  lambda: skills.turn(-90)),
             ("Crouch",             lambda: skills.crouch()),
             ("Turn left 180 deg",  lambda: skills.turn(180)),
-            ("Stand",              lambda: skills.stand()),
             ("Stop",               lambda: skills.stop()),
         ]
 
