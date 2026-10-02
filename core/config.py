@@ -26,8 +26,8 @@ LLM_SERVICE = "qwen-flash"   # swap to compare >=2 services, e.g. "gpt-5-nano"
 LLM_TIMEOUT_S = 15
 
 # --- Task 4 (Student C) -----------------------------------------------------
-YOLO_MODEL = "yolo11n.pt"
-YOLO_CONF_THRESHOLD = 0.2
+YOLO_MODEL = "yolo11s.pt"
+YOLO_CONF_THRESHOLD = 0.1
 FOUND_DETECTION_CONF_THRESHOLD = 0.1
 FOUND_DISTANCE_M = 0.8
 APPROACH_TIMEOUT_S = 120.0
