@@ -69,6 +69,25 @@ def test_reacquire_sweep_triggers_after_three_detector_misses_even_if_recovered(
     assert sweeps == [(0, (1.0, 0.0))]
 
 
+def test_steer_to_center_accepts_target_within_wider_tolerance():
+    class _TurningSkills:
+        def __init__(self):
+            self.turns = []
+
+        def turn(self, angle):
+            self.turns.append(angle)
+
+    skills = _TurningSkills()
+    within_tolerance = Detection("sports ball", "orange", 0.9, (185, 0, 195, 10))
+    outside_tolerance = Detection("sports ball", "orange", 0.9, (186, 0, 196, 10))
+
+    assert navigation._steer_to_center(within_tolerance, skills) is True
+    assert skills.turns == []
+
+    assert navigation._steer_to_center(outside_tolerance, skills) is False
+    assert skills.turns == [-5.0]
+
+
 def test_target_projection_does_not_add_fixed_range_bias():
     detection = Detection("sports ball", "orange", 0.9, (310, 200, 330, 300))
     pose = RobotPose(1.0, -2.0, 0.0)
