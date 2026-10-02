@@ -86,7 +86,8 @@ class RealPerception(PerceptionAPI):
                 detections.append(detection)
                 print(
                     f"[DETECT] class={detection.class_name} color={detection.color} "
-                    f"conf={detection.conf:.2f} bbox={list(detection.bbox)}"
+                    f"conf={detection.conf:.2f} "
+                    f"bbox=[{', '.join(f'{coord:.2f}' for coord in detection.bbox)}]"
                 )
         return detections
 

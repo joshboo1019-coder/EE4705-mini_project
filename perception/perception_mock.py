@@ -30,5 +30,6 @@ class MockPerception(PerceptionAPI):
             bbox=(150, 120, 260, 340),
         )
         print(f"[DETECT] class={det.class_name} color={det.color} "
-              f"conf={det.conf:.2f} bbox={list(det.bbox)}")
+              f"conf={det.conf:.2f} "
+              f"bbox=[{', '.join(f'{coord:.2f}' for coord in det.bbox)}]")
         return [det]

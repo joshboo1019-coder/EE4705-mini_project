@@ -29,7 +29,8 @@ here is real-time on a laptop; no GPU needed.
    camera frame, then determines each detection's color from the pixels
    inside its bounding box (e.g. median hue in HSV via `cv2.cvtColor`).
    Do **not** expect YOLO to know colors — that's on you. Print
-   `[DETECT] class=... color=... conf=... bbox=...` for each detection.
+   `[DETECT] class=... color=... conf=... bbox=...` for each detection,
+   with bbox coordinates printed to two decimal places.
    Design your test scene's objects (with Student A) around classes
    YOLO's 80 COCO classes can actually detect — untextured boxes will
    not register as "chair".
