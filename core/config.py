@@ -42,4 +42,4 @@ APPROACH_STUCK_PROGRESS_FRACTION = 0.25
 REACQUIRE_MISSES = 3        # consecutive misses before starting a sweep
 REACQUIRE_MAX_ATTEMPTS = 4  # sweeps before falling back to full rotation search
 REACQUIRE_STRAFE_VY = 0.4   # m/s sideways
-REACQUIRE_STRAFE_S = 1.0    # base sweep duration, grows with each attempt
+REACQUIRE_STRAFE_S = 1.5    # base sweep duration, grows with each attempt
