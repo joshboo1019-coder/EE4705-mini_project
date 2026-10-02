@@ -131,6 +131,9 @@ NUM_ONE_STEP_OBS = 46
 HISTORY_LEN = 6
 NUM_ACTIONS = 12
 
+CAMERA_HEIGHT_PX = 480
+CAMERA_WIDTH_PX = 640
+
 # This file lives at <project_root>/skills/skills_real.py, so its own
 # location pins down the project root regardless of the CURRENT WORKING
 # DIRECTORY the interpreter happens to be launched from. That matters
@@ -396,7 +399,8 @@ class RealSkills(SkillsAPI):
         # One background thread does both physics/policy stepping AND
         # camera rendering, since both need the same mj_data and mujoco
         # isn't thread-safe to touch from two threads concurrently.
-        self._renderer = mujoco.Renderer(self._model, height=240, width=320)
+        # before: self._renderer = mujoco.Renderer(self._model, height=240, width=320)
+        self._renderer = mujoco.Renderer(self._model, height=CAMERA_HEIGHT_PX, width=CAMERA_WIDTH_PX)
         self._render_period = 1.0 / config.CAMERA_HZ
         self._next_render_time = 0.0
         self._last_render_error_log = 0.0
@@ -1338,7 +1342,7 @@ class RealSkills(SkillsAPI):
     def get_camera_frame(self) -> np.ndarray:
         with self._frame_lock:
             if self._latest_frame is None:
-                return np.zeros((240, 320, 3), dtype=np.uint8)
+                return np.zeros((CAMERA_HEIGHT_PX, CAMERA_WIDTH_PX, 3), dtype=np.uint8)
             return self._latest_frame.copy()
 
     def get_robot_pose(self) -> RobotPose:
@@ -1438,7 +1442,7 @@ class RealSkills(SkillsAPI):
                     self._renderer.close()
                 except Exception:
                     pass  # best-effort; a context already in a bad state may not close cleanly
-                self._renderer = mujoco.Renderer(self._model, height=240, width=320)
+                self._renderer = mujoco.Renderer(self._model, height=CAMERA_HEIGHT_PX, width=CAMERA_WIDTH_PX)
                 self._renderer.update_scene(self._data, camera="dog_front_camera")
                 frame = self._renderer.render()
             except Exception:
