@@ -1,0 +1,4 @@
+timestamp,scenario,name,target,success,final_d_m,elapsed_s,start_visible_expected,same_class_distractor,target_in_scene
+2026-10-02 19:31:52,1,baseline_facing,red_stop sign,0,1.35,40.2,1,1,1
+2026-10-02 19:34:10,1,baseline_facing,orange_sports ball,1,0.97,48.3,1,0,1
+2026-10-02 19:35:47,1,baseline_facing,green_chair,1,0.97,64.1,1,1,1

@@ -1,9 +1,12 @@
-"""Interactive Task 4 entry point with a pre-start object-search prompt.
+"""Interactive Task 4 entry point with scenario and object-search prompts.
 
 Run with ``python -m perception.task4_cli`` from the project root.
+Or with ``MUJOCO_GL=egl python -m perception.task4_cli`` for browser view.
 
-Scenario mode (10 predefined layouts / robot start poses):
+Choose one of the ten predefined layouts / robot start poses interactively,
+or pass a scenario directly:
     python -m perception.task4_cli --list-scenarios
+    python -m perception.task4_cli
     python -m perception.task4_cli --scenario 3
     python -m perception.task4_cli --scenario chairs_three_colors --debug-frames /tmp/dbg
 """
@@ -18,20 +21,45 @@ from core import config
 from perception import scenarios
 
 
+_SEARCH_ACTIONS = (
+    r"go\s+(?:to|towards?)",
+    r"move\s+(?:(?:over|closer)\s+)?(?:to|towards?|up\s+to)",
+    r"approach",
+    r"head\s+(?:over\s+)?(?:to|towards?)",
+    r"navigate\s+(?:to|towards?)",
+    r"travel\s+(?:to|towards?)",
+    r"drive\s+(?:to|towards?)",
+    r"walk\s+(?:to|towards?|up\s+to)",
+    r"get\s+(?:to|towards?)",
+    r"(?:go\s+and\s+)?find(?:\s+me)?",
+    r"locate",
+    r"search(?:\s+for)?",
+    r"look\s+for",
+)
+
+
 def parse_search_command(text: str) -> Optional[dict[str, str]]:
-    """Parse supported English object-search commands into Task 4 JSON."""
+    """Parse English search/approach phrasing into the Task 4 target JSON."""
     if not text.isascii():
         return None
 
-    command = " ".join(text.strip().lower().rstrip(".!?").split())
+    command = " ".join(text.strip().lower().split())
+    command = re.sub(r"[.!?]+$", "", command).strip()
     if not command:
         return None
+
+    actions = "|".join(sorted(_SEARCH_ACTIONS, key=len, reverse=True))
+    request_prefix = (
+        r"(?:(?:please|kindly)\s+|"
+        r"(?:(?:can|could|would|will)\s+you\s+(?:please\s+)?)|"
+        r"(?:i want you to\s+|i'd like you to\s+))?"
+    )
 
     for target_key in config.OBJECT_POSITIONS:
         color, object_class = target_key.split("_", 1)
         target = rf"{re.escape(color)}\s+{re.escape(object_class)}"
         pattern = (
-            rf"(?:go to|find|locate|search for)\s+"
+            rf"{request_prefix}(?:{actions})\s+"
             rf"(?:(?:the|a|an)\s+)?{target}"
         )
         if re.fullmatch(pattern, command):
@@ -39,14 +67,30 @@ def parse_search_command(text: str) -> Optional[dict[str, str]]:
     return None
 
 
+def _read_scenario() -> scenarios.Scenario:
+    scenarios.print_scenarios()
+    while True:
+        token = input("Choose a scenario (1-10 or name): ").strip().casefold()
+        for scenario in scenarios.SCENARIOS:
+            if token in (str(scenario.idx), scenario.name.casefold()):
+                return scenario
+        print("Invalid scenario. Enter a number from 1 to 10 or a scenario name.")
+
+
 def _read_search_command() -> dict[str, str]:
     while True:
-        text = input("Task 4 object search in English (e.g. go to the red stop sign): ")
+        text = input(
+            "Task 4 object search in English "
+            "(e.g. go to, approach, or move to the red stop sign): "
+        )
         command = parse_search_command(text)
         if command is not None:
             print(json.dumps(command))
             return command
-        print("Command refused. Enter an English search for a configured colored object.")
+        print(
+            "Command refused. Enter a search/approach command for a configured "
+            "colored object."
+        )
 
 
 def main() -> None:
@@ -68,15 +112,15 @@ def main() -> None:
         scenarios.print_scenarios()
         return
 
-    scenario = None
-    scene_path = None
-    if args.scenario is not None:
-        scenario = scenarios.get_scenario(args.scenario)
-        scene_path = scenarios.build_scene_xml(scenario)
-        scenarios.apply_to_config(scenario)  # must happen BEFORE the command prompt
-        scenarios.print_scenario(scenario)
-        print(f"[SCENARIO] scene written to {scene_path}")
-
+    scenario = (
+        scenarios.get_scenario(args.scenario)
+        if args.scenario is not None
+        else _read_scenario()
+    )
+    scene_path = scenarios.build_scene_xml(scenario)
+    scenarios.apply_to_config(scenario)  # must happen BEFORE parsing the command
+    scenarios.print_scenario(scenario)
+    print(f"[SCENARIO] scene written to {scene_path}")
     command = _read_search_command()
 
     # Keep robot/simulation imports below the validated command gate.
@@ -88,14 +132,12 @@ def main() -> None:
         gui=not args.native,
         default_camera=args.camera,
         native_viewer=args.native,
+        scene_path=str(scene_path),
     )
-    if scene_path is not None:
-        skills_kwargs["scene_path"] = str(scene_path)
     skills = RealSkills(**skills_kwargs)
     try:
         time.sleep(1.0)
-        if scenario is not None:
-            scenarios.place_robot(skills, *scenario.robot)
+        scenarios.place_robot(skills, *scenario.robot)
 
         if args.mock_perception:
             from perception.perception_mock import MockPerception
@@ -113,7 +155,7 @@ def main() -> None:
         print(f"\ngoto_object returned success={success}")
         print("Robot final pose:", pose)
 
-        if scenario is not None and not args.no_log:
+        if not args.no_log:
             scenarios.log_trial(scenario, command["class"], command["color"],
                                 success, pose, elapsed)
         print("Ctrl+C to exit.")
