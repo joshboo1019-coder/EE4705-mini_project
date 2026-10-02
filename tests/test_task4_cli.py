@@ -32,3 +32,10 @@ def test_read_scenario_accepts_number_or_case_insensitive_name(monkeypatch):
     scenario = _read_scenario()
 
     assert scenario is scenarios.SCENARIOS[2]
+
+
+def test_build_scene_xml_writes_to_the_requested_temporary_directory(tmp_path):
+    scene_path = scenarios.build_scene_xml(scenarios.SCENARIOS[0], tmp_path)
+
+    assert scene_path.parent == tmp_path
+    assert scene_path.is_file()

@@ -4,7 +4,7 @@ its own object layout and robot start pose.
 
 Used by perception/task4_cli.py via `--scenario N`. For a chosen scenario it:
   1. generates a scene XML (custom_scene.xml terrain + THIS scenario's
-     objects) into assets/scenes/generated/,
+     objects) in the caller-provided output directory,
   2. overwrites core.config.OBJECT_POSITIONS in memory (so the CLI parser and
      the [FOUND] distance log use this scenario's objects -- the file on
      disk is never touched; ground truth is still logging-only),
@@ -29,7 +29,6 @@ from core import config
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BASE_SCENE = PROJECT_ROOT / "assets" / "scenes" / "custom_scene.xml"
-GENERATED_DIR = PROJECT_ROOT / "assets" / "scenes" / "generated"
 RESULTS_CSV = PROJECT_ROOT / "docs" / "test_result" / "task4_trials.csv"
 
 # Placement limits (see module docstring).
@@ -156,8 +155,8 @@ def validate(s: Scenario) -> None:
                 f"scenario {s.idx}: {a.key} and {b.key} overlap"
 
 
-def build_scene_xml(s: Scenario) -> Path:
-    """custom_scene.xml terrain + this scenario's objects -> generated XML."""
+def build_scene_xml(s: Scenario, output_dir: Path) -> Path:
+    """Write the scenario scene XML to the caller-provided output directory."""
     validate(s)
     tree = ET.parse(BASE_SCENE)   # ElementTree drops comments, which is fine
     root = tree.getroot()
@@ -193,8 +192,8 @@ def build_scene_xml(s: Scenario) -> Path:
             b = ET.SubElement(world, "body", name=name, pos=f"{o.x} {o.y} 0.11")
             geom(b, "sphere", "0.11", "0 0 0", mat)
 
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    out = GENERATED_DIR / f"scenario_{s.idx:02d}_{s.name}.xml"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out = output_dir / f"scenario_{s.idx:02d}_{s.name}.xml"
     ET.indent(root)
     tree.write(out, encoding="utf-8")
     return out

@@ -14,7 +14,9 @@ or pass a scenario directly:
 import argparse
 import json
 import re
+import tempfile
 import time
+from pathlib import Path
 from typing import Optional
 
 from core import config
@@ -117,54 +119,63 @@ def main() -> None:
         if args.scenario is not None
         else _read_scenario()
     )
-    scene_path = scenarios.build_scene_xml(scenario)
     scenarios.apply_to_config(scenario)  # must happen BEFORE parsing the command
     scenarios.print_scenario(scenario)
-    print(f"[SCENARIO] scene written to {scene_path}")
     command = _read_search_command()
 
     # Keep robot/simulation imports below the validated command gate.
     from perception import navigation
     from skills.skills_real import RealSkills
 
-    print("Booting RealSkills...")
-    skills_kwargs = dict(
-        gui=not args.native,
-        default_camera=args.camera,
-        native_viewer=args.native,
-        scene_path=str(scene_path),
-    )
-    skills = RealSkills(**skills_kwargs)
-    try:
-        time.sleep(1.0)
-        scenarios.place_robot(skills, *scenario.robot)
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    if temp_root == scenarios.PROJECT_ROOT or scenarios.PROJECT_ROOT in temp_root.parents:
+        temp_root = scenarios.PROJECT_ROOT.parent
 
-        if args.mock_perception:
-            from perception.perception_mock import MockPerception
-            perception = MockPerception()
-        else:
-            from perception.perception_real import RealPerception
-            perception = RealPerception(debug_dir=args.debug_frames)
-
-        t0 = time.time()
-        success = navigation.goto_object(
-            command["class"], command["color"], skills, perception
+    with tempfile.TemporaryDirectory(
+        prefix="task4_scenario_", dir=temp_root
+    ) as temporary_directory:
+        scene_path = scenarios.build_scene_xml(
+            scenario, Path(temporary_directory)
         )
-        elapsed = time.time() - t0
-        pose = skills.get_robot_pose()
-        print(f"\ngoto_object returned success={success}")
-        print("Robot final pose:", pose)
+        print(f"[SCENARIO] temporary scene written to {scene_path}")
 
-        if not args.no_log:
-            scenarios.log_trial(scenario, command["class"], command["color"],
-                                success, pose, elapsed)
-        print("Ctrl+C to exit.")
-        while True:
+        print("Booting RealSkills...")
+        skills = RealSkills(
+            gui=not args.native,
+            default_camera=args.camera,
+            native_viewer=args.native,
+            scene_path=str(scene_path),
+        )
+        try:
             time.sleep(1.0)
-    except KeyboardInterrupt:
-        print("\nShutting down...")
-    finally:
-        skills.shutdown()
+            scenarios.place_robot(skills, *scenario.robot)
+
+            if args.mock_perception:
+                from perception.perception_mock import MockPerception
+                perception = MockPerception()
+            else:
+                from perception.perception_real import RealPerception
+                perception = RealPerception(debug_dir=args.debug_frames)
+
+            t0 = time.time()
+            success = navigation.goto_object(
+                command["class"], command["color"], skills, perception
+            )
+            elapsed = time.time() - t0
+            pose = skills.get_robot_pose()
+            print(f"\ngoto_object returned success={success}")
+            print("Robot final pose:", pose)
+
+            if not args.no_log:
+                scenarios.log_trial(scenario, command["class"], command["color"],
+                                    success, pose, elapsed)
+            print("Ctrl+C to exit.")
+            while True:
+                time.sleep(1.0)
+        except KeyboardInterrupt:
+            print("\nShutting down...")
+        finally:
+            skills.shutdown()
 
 
 if __name__ == "__main__":
