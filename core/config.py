@@ -26,20 +26,18 @@ LLM_SERVICE = "qwen-flash"   # swap to compare >=2 services, e.g. "gpt-5-nano"
 LLM_TIMEOUT_S = 15
 
 # --- Task 4 (Student C) -----------------------------------------------------
-YOLO_MODEL = "yolo11s.pt"
-YOLO_CONF_THRESHOLD = 0.15
+YOLO_MODEL = "yolo11n.pt"
+YOLO_CONF_THRESHOLD = 0.2
+YOLO_IMGSZ = 960  # inference size for 640x480 camera frames
 FOUND_DETECTION_CONF_THRESHOLD = 0.1
 FOUND_DISTANCE_M = 0.8
-APPROACH_TIMEOUT_S = 120.0
+APPROACH_TIMEOUT_S = 90.0
 SEARCH_TURN_DEG = 30.0
-MAX_MISSES_BEFORE_LOST = 2
-CENTER_TOLERANCE_PX = 40
+MAX_MISSES_BEFORE_LOST = 5
+CENTER_TOLERANCE_PX = 20
 APPROACH_VX = 0.3
 APPROACH_STEP_S = 0.5
 REACQUIRE_MISSES = 3        # consecutive misses before starting a sweep
 REACQUIRE_MAX_ATTEMPTS = 4  # sweeps before falling back to full rotation search
-REACQUIRE_STRAFE_VY = 0.4   # m/s sideways
-REACQUIRE_STRAFE_S = 1.0    # base sweep duration, grows with each attempt
-YOLO_IMGSZ = 1088              # inference size (frames are now 640x480)
-ZOOM_FACTOR = 2.0
-ZOOM_CONF_THRESHOLD = 0.15
+REACQUIRE_STRAFE_VY = 0.6   # m/s sideways
+REACQUIRE_STRAFE_S = 2.0    # base sweep duration, grows with each attempt
