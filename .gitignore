@@ -14,3 +14,6 @@ runs/
 quadruped_mujoco/
 *.onnx
 *.pt
+
+# bonus: voice recordings from eval/stt_eval.py stay local
+eval/results/stt/**/*.wav
