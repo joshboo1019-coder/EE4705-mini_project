@@ -110,7 +110,7 @@ make without a measurement at every angle.
 
 ## Final summary across all angles (n=6 per angle, 24 trials total)
 
-| Angle | Closed-loop mean error (deg) | Open-loop mean achieved rotation (deg) | Open-loop mean error (deg) | Fraction of target achieved (open-loop) |
+| Angle | Closed-loop mean error (deg) | Open-loop mean achieved rotation (deg) (how much the robot actual turn)| Open-loop mean error (deg) | Fraction of target achieved (open-loop) |
 |---|---|---|---|---|
 | 45° | 1.52 | 12.65 | 32.35 | 28.1% |
 | 90° (original, corrected) | 1.81 | 24.79 | 65.21 | 27.5% |
