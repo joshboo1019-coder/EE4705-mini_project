@@ -23,7 +23,7 @@ from core.interfaces import PerceptionAPI
 from core.schema import Detection
 from core import config
 
-_TARGET_HISTORY_LIMIT = 5
+_TARGET_HISTORY_LIMIT = 8
 
 
 class RealPerception(PerceptionAPI):
