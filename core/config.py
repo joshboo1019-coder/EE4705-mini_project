@@ -5,7 +5,7 @@ on units/keys as a group before changing anything below.
 """
 
 # --- Task 2 (Student A) ----------------------------------------------------
-SCENE_PATH = "assets/scenes/custom_scene_meshes.xml"
+SCENE_PATH = "assets/scenes/custom_scene.xml"
 CAMERA_HZ = 15  # perception rate; render every N physics steps accordingly
 
 # Ground-truth object positions in world (x, y) meters, keyed "<color>_<class>".
@@ -26,8 +26,8 @@ LLM_SERVICE = "qwen-flash"   # swap to compare >=2 services, e.g. "gpt-5-nano"
 LLM_TIMEOUT_S = 15
 
 # --- Task 4 (Student C) -----------------------------------------------------
-YOLO_MODEL = "yolo11n.pt"
-YOLO_CONF_THRESHOLD = 0.2
+YOLO_MODEL = "yolo11s.pt"
+YOLO_CONF_THRESHOLD = 0.15
 FOUND_DETECTION_CONF_THRESHOLD = 0.1
 FOUND_DISTANCE_M = 0.8
 APPROACH_TIMEOUT_S = 120.0
@@ -40,6 +40,6 @@ REACQUIRE_MISSES = 3        # consecutive misses before starting a sweep
 REACQUIRE_MAX_ATTEMPTS = 4  # sweeps before falling back to full rotation search
 REACQUIRE_STRAFE_VY = 0.4   # m/s sideways
 REACQUIRE_STRAFE_S = 1.0    # base sweep duration, grows with each attempt
-YOLO_IMGSZ = 960              # inference size (frames are now 640x480)
+YOLO_IMGSZ = 1088              # inference size (frames are now 640x480)
 ZOOM_FACTOR = 2.0
 ZOOM_CONF_THRESHOLD = 0.15
