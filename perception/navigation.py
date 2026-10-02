@@ -49,6 +49,10 @@ def goto_object(object_class: str, color: str,
         frame = skills.get_camera_frame()
         detections = perception.detect(frame)
         target = _pick_target(detections, object_class, color)
+        if target is None:
+            detect_zoomed = getattr(perception, "detect_zoomed", None)
+            if callable(detect_zoomed):
+                target = _pick_target(detect_zoomed(frame), object_class, color)
         remember_target = getattr(perception, "remember_target", None)
         if target is not None:
             if callable(remember_target):
@@ -79,8 +83,6 @@ def goto_object(object_class: str, color: str,
                 reacquire_attempts += 1
                 reacquire_misses = 0
                 continue
-
-            consecutive_misses += 1
 
             consecutive_misses += 1
             if consecutive_misses >= config.MAX_MISSES_BEFORE_LOST:

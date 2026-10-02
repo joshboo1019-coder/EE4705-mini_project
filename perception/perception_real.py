@@ -49,6 +49,7 @@ class RealPerception(PerceptionAPI):
             frame,
             conf=(self.conf_threshold if conf_threshold is None
                   else conf_threshold),
+            imgsz=config.YOLO_IMGSZ,
             verbose=False,
         )
         detections = []
@@ -84,6 +85,50 @@ class RealPerception(PerceptionAPI):
                     f"[DETECT] class={detection.class_name} color={detection.color} "
                     f"conf={detection.conf:.2f} bbox={list(detection.bbox)}"
                 )
+        return detections
+
+    def detect_zoomed(self, frame: np.ndarray,
+                      conf_threshold: Optional[float] = None,
+                      zoom: float = config.ZOOM_FACTOR) -> List[Detection]:
+        """Slow pass for small/far objects: upscale overlapping crops of
+        the band where distant objects appear and run YOLO on each."""
+        conf = (config.ZOOM_CONF_THRESHOLD if conf_threshold is None
+                else conf_threshold)
+        h, w = frame.shape[:2]
+        y1c, y2c = int(h * 0.10), int(h * 0.70)   # horizon band, skip the floor
+        crops = [(0, y1c, int(w * 0.55), y2c),
+                 (int(w * 0.225), y1c, int(w * 0.775), y2c),
+                 (int(w * 0.45), y1c, w, y2c)]
+
+        boxes, scores, ids = [], [], []
+        for (cx1, cy1, cx2, cy2) in crops:
+            crop = np.ascontiguousarray(frame[cy1:cy2, cx1:cx2])
+            big = cv2.resize(crop, None, fx=zoom, fy=zoom,
+                             interpolation=cv2.INTER_CUBIC)
+            for result in self.model.predict(
+                    big, conf=conf, imgsz=config.YOLO_IMGSZ, verbose=False):
+                for b in result.boxes:
+                    x1, y1, x2, y2 = (v / zoom for v in b.xyxy[0].tolist())
+                    boxes.append([x1 + cx1, y1 + cy1, x2 + cx1, y2 + cy1])
+                    scores.append(float(b.conf[0]))
+                    ids.append(int(b.cls[0]))
+
+        detections = []
+        for cid in set(ids):                      # merge overlap duplicates per class
+            idx = [i for i, c in enumerate(ids) if c == cid]
+            xywh = [[boxes[i][0], boxes[i][1],
+                     boxes[i][2] - boxes[i][0], boxes[i][3] - boxes[i][1]]
+                    for i in idx]
+            keep = cv2.dnn.NMSBoxes(xywh, [scores[i] for i in idx], conf, 0.5)
+            for k in np.array(keep).flatten():
+                i = idx[int(k)]
+                bbox = tuple(boxes[i])
+                det = Detection(self.model.names[cid],
+                                self._grounded_color(frame, bbox),
+                                scores[i], bbox)
+                detections.append(det)
+                print(f"[DETECT] class={det.class_name} color={det.color} "
+                      f"conf={det.conf:.2f} bbox={[round(v, 1) for v in det.bbox]} (zoom)")
         return detections
 
     def clear_target_history(self) -> None:
@@ -314,13 +359,17 @@ if __name__ == "__main__":
         description="Run YOLO and color grounding on a saved image."
     )
     parser.add_argument("--image", required=True, type=Path, help="input image path")
+    parser.add_argument("--zoom", action="store_true",
+                        help="use the zoomed small-object pass")
     args = parser.parse_args()
     if not args.image.is_file():
         parser.error(f"image file not found: {args.image}")
 
     image = Image.open(args.image).convert("RGB")
     frame = np.asarray(image)
-    detections = RealPerception().detect(frame)
+    perception = RealPerception()
+    detections = (perception.detect_zoomed(frame) if args.zoom
+                  else perception.detect(frame))
 
     output_stem = args.image.with_name(f"{args.image.stem}_detections")
     image_path = output_stem.with_suffix(".jpg")
