@@ -48,27 +48,19 @@ def goto_object(object_class: str, color: str,
     while time.time() - t0 < config.APPROACH_TIMEOUT_S:
         frame = skills.get_camera_frame()
         detections = perception.detect(frame)
-        target = _pick_target(detections, object_class, color)
-        if target is None:
-            detect_zoomed = getattr(perception, "detect_zoomed", None)
-            if callable(detect_zoomed):
-                target = _pick_target(detect_zoomed(frame), object_class, color)
+        detected_target = _pick_target(detections, object_class, color)
+        target = detected_target
         remember_target = getattr(perception, "remember_target", None)
-        if target is not None:
+        if detected_target is not None:
+            target_acquired = True
+            consecutive_misses = 0
+            reacquire_misses = 0
+            reacquire_attempts = 0
             if callable(remember_target):
-                remember_target(frame, target)
+                remember_target(frame, detected_target)
         elif target_acquired:
-            recover_target = getattr(perception, "recover_target", None)
-            if callable(recover_target):
-                target = recover_target(frame, object_class, color)
-
-        if target is None:
-            if target_acquired:
-                reacquire_misses += 1
-                if reacquire_misses < config.REACQUIRE_MISSES:
-                    time.sleep(0.1)  # frames update at ~15 Hz; don't spin on the same one
-                    continue
-
+            reacquire_misses += 1
+            if reacquire_misses >= config.REACQUIRE_MISSES:
                 if reacquire_attempts >= config.REACQUIRE_MAX_ATTEMPTS:
                     print("[SEARCH] re-acquire failed, falling back to rotating search")
                     target_acquired = False
@@ -82,6 +74,15 @@ def goto_object(object_class: str, color: str,
                 _reacquire_sweep(skills, reacquire_attempts, target_position)
                 reacquire_attempts += 1
                 reacquire_misses = 0
+                continue
+
+            recover_target = getattr(perception, "recover_target", None)
+            if callable(recover_target):
+                target = recover_target(frame, object_class, color)
+
+        if target is None:
+            if target_acquired:
+                time.sleep(0.1)  # frames update at ~15 Hz; don't spin on the same one
                 continue
 
             consecutive_misses += 1
@@ -98,8 +99,6 @@ def goto_object(object_class: str, color: str,
 
         target_acquired = True
         consecutive_misses = 0
-        reacquire_misses = 0
-        reacquire_attempts = 0
 
         if not _steer_to_center(target, skills, frame.shape[1]):
             # not centered yet — small turn step and re-detect next loop
