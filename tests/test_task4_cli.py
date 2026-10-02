@@ -1,5 +1,9 @@
 from perception import scenarios
-from perception.task4_cli import _read_scenario, parse_search_command
+from perception.task4_cli import (
+    _read_scenario,
+    _read_search_command,
+    parse_search_command,
+)
 
 
 def test_parse_search_command_accepts_common_action_phrases():
@@ -23,6 +27,18 @@ def test_parse_search_command_requires_a_configured_colored_target():
     assert parse_search_command("approach the stop sign") is None
     assert parse_search_command("approach the purple stop sign") is None
     assert parse_search_command("turn left") is None
+
+
+def test_read_search_command_returns_typed_phrase_without_printing_cmd(
+        monkeypatch, capsys):
+    phrase = "Could you please find the green chair?"
+    monkeypatch.setattr("builtins.input", lambda _: phrase)
+
+    command, command_text = _read_search_command()
+
+    assert command == {"class": "chair", "color": "green"}
+    assert command_text == phrase
+    assert "[CMD]" not in capsys.readouterr().out
 
 
 def test_read_scenario_accepts_number_or_case_insensitive_name(monkeypatch):

@@ -90,6 +90,28 @@ def test_reacquire_sweep_triggers_after_three_detector_misses_even_if_recovered(
     assert sweeps == [(0, (1.0, 0.0))]
 
 
+def test_goto_object_prints_typed_command_before_first_detection(capsys):
+    class _DetectionStarted(Exception):
+        pass
+
+    class _TrackingPerception:
+        def clear_target_history(self):
+            pass
+
+        def detect(self, frame):
+            assert capsys.readouterr().out == (
+                '[CMD] input="approach the green chair" '
+                "action=goto_object(class=chair, color=green)\n"
+            )
+            raise _DetectionStarted
+
+    with pytest.raises(_DetectionStarted):
+        navigation.goto_object(
+            "chair", "green", _Skills(), _TrackingPerception(),
+            command_text="approach the green chair",
+        )
+
+
 def test_steer_to_center_accepts_target_within_wider_tolerance():
     class _TurningSkills:
         def __init__(self):

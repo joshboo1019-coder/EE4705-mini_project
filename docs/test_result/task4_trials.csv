@@ -1,0 +1,2 @@
+timestamp,scenario,name,target,success,final_d_m,elapsed_s,start_visible_expected,same_class_distractor,target_in_scene
+2026-10-02 20:56:30,1,baseline_facing,green_chair,0,0.81,127.4,1,1,1

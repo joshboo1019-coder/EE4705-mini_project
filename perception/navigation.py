@@ -14,6 +14,7 @@ the [FOUND] distance log. Navigation and the found decision use a calibrated
 range estimate from the live detection bounding box.
 """
 
+import json
 import math
 import time
 from core.interfaces import SkillsAPI, PerceptionAPI
@@ -24,14 +25,23 @@ _CAMERA_VERTICAL_FOV_DEG = 80.0
 _CAMERA_DOWN_PITCH_DEG = 14.0
 _CAMERA_HEIGHT_ABOVE_TRUNK_M = 0.16
 _DEFAULT_TRUNK_HEIGHT_M = 0.45
-_CAMERA_FORWARD_OFFSET_M = 0.5
+_CAMERA_FORWARD_OFFSET_M = 0.58
 
 
 def goto_object(object_class: str, color: str,
-                 skills: SkillsAPI, perception: PerceptionAPI) -> bool:
+                 skills: SkillsAPI, perception: PerceptionAPI,
+                 command_text: str | None = None) -> bool:
     """Runs the full search -> steer -> approach -> stop behavior.
     Returns True iff the target is visible when stopped within the estimated
     found distance."""
+    if command_text is not None:
+        print(
+            f"[CMD] input={json.dumps(command_text)} "
+            f"action=goto_object(class={object_class}, color={color})"
+        )
+    else:
+        print(f"[CMD] action=goto_object(class={object_class}, color={color})")
+
     t0 = time.time()
     consecutive_misses = 0
     scan_degrees = 0.0

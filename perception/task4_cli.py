@@ -12,7 +12,6 @@ or pass a scenario directly:
 """
 
 import argparse
-import json
 import re
 import tempfile
 import time
@@ -79,7 +78,7 @@ def _read_scenario() -> scenarios.Scenario:
         print("Invalid scenario. Enter a number from 1 to 10 or a scenario name.")
 
 
-def _read_search_command() -> dict[str, str]:
+def _read_search_command() -> tuple[dict[str, str], str]:
     while True:
         text = input(
             "Task 4 object search in English "
@@ -87,8 +86,7 @@ def _read_search_command() -> dict[str, str]:
         )
         command = parse_search_command(text)
         if command is not None:
-            print(json.dumps(command))
-            return command
+            return command, text.strip()
         print(
             "Command refused. Enter a search/approach command for a configured "
             "colored object."
@@ -121,7 +119,7 @@ def main() -> None:
     )
     scenarios.apply_to_config(scenario)  # must happen BEFORE parsing the command
     scenarios.print_scenario(scenario)
-    command = _read_search_command()
+    command, command_text = _read_search_command()
 
     # Keep robot/simulation imports below the validated command gate.
     from perception import navigation
@@ -159,7 +157,8 @@ def main() -> None:
 
             t0 = time.time()
             success = navigation.goto_object(
-                command["class"], command["color"], skills, perception
+                command["class"], command["color"], skills, perception,
+                command_text=command_text,
             )
             elapsed = time.time() - t0
             pose = skills.get_robot_pose()
