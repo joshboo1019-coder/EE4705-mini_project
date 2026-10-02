@@ -69,6 +69,64 @@ def test_reacquire_sweep_triggers_after_three_detector_misses_even_if_recovered(
     assert sweeps == [(0, (1.0, 0.0))]
 
 
+def test_reacquire_strafe_refreshes_target_position_for_range(monkeypatch):
+    detection = Detection("sports ball", "orange", 0.9, (300, 200, 340, 240))
+    updated_position = (2.0, 1.0)
+    estimated_positions = []
+    distances = []
+
+    class _FreshPositionUsed(Exception):
+        pass
+
+    class _Perception:
+        def __init__(self):
+            self.calls = 0
+
+        def clear_target_history(self):
+            pass
+
+        def detect(self, frame):
+            self.calls += 1
+            if self.calls in (3, 4, 5):
+                return []
+            return [detection]
+
+        def remember_target(self, frame, target):
+            pass
+
+    def estimate_target_position(*args):
+        position = (1.0, 0.0) if not estimated_positions else updated_position
+        estimated_positions.append(position)
+        return position
+
+    def calculate_distance(pose, target, frame_shape, camera_height,
+                           target_position):
+        distances.append(target_position)
+        if target_position == updated_position:
+            raise _FreshPositionUsed
+        return 2.0
+
+    monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
+    monkeypatch.setattr(navigation, "_steer_to_center", lambda *args: True)
+    monkeypatch.setattr(navigation, "_camera_height_above_ground", lambda _: 0.6)
+    monkeypatch.setattr(
+        navigation, "_estimated_target_position", estimate_target_position
+    )
+    monkeypatch.setattr(navigation, "_estimated_planar_distance", calculate_distance)
+    monkeypatch.setattr(navigation, "_ground_truth_distance", lambda *args: 2.0)
+    monkeypatch.setattr(navigation, "_approach_step", lambda *args: 0.0)
+    monkeypatch.setattr(navigation, "_reacquire_sweep", lambda *args: None)
+    monkeypatch.setattr(navigation.config, "REACQUIRE_MISSES", 3)
+
+    with pytest.raises(_FreshPositionUsed):
+        navigation.goto_object(
+            "sports ball", "orange", _Skills(), _Perception()
+        )
+
+    assert estimated_positions == [(1.0, 0.0), updated_position]
+    assert distances == [(1.0, 0.0), updated_position]
+
+
 def test_obstructed_approach_backs_up_strafes_and_retries_scan(monkeypatch):
     detection = Detection("sports ball", "orange", 0.9, (300, 200, 340, 240))
 

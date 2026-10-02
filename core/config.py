@@ -28,7 +28,7 @@ LLM_TIMEOUT_S = 15
 # --- Task 4 (Student C) -----------------------------------------------------
 YOLO_MODEL = "yolo11n.pt"
 YOLO_CONF_THRESHOLD = 0.2
-YOLO_IMGSZ = 960  # inference size for 640x480 camera frames
+YOLO_IMGSZ = 736  # inference size for 640x480 camera frames
 FOUND_DETECTION_CONF_THRESHOLD = 0.1
 FOUND_DISTANCE_M = 0.8
 APPROACH_TIMEOUT_S = 180.0

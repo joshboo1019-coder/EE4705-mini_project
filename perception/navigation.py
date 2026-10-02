@@ -45,6 +45,11 @@ def goto_object(object_class: str, color: str,
     forward_attempt_started_at: float | None = None
     forward_attempt_duration = 0.0
 
+    def reacquire_sweep(attempt: int) -> None:
+        nonlocal target_position
+        _reacquire_sweep(skills, attempt, target_position)
+        target_position = None
+
     def recover_if_stuck() -> bool:
         nonlocal forward_attempt_start
         nonlocal forward_attempt_started_at
@@ -70,12 +75,13 @@ def goto_object(object_class: str, color: str,
         )
         if blocked:
             print("[APPROACH] forward progress blocked for "
-                  f"{elapsed:.1f} s; backing up and strafing to retry")
+                  f"{config.APPROACH_STUCK_TIMEOUT_S:.0f} s; backing up "
+                  "and strafing to retry")
             skills.move(
                 vx=-abs(config.APPROACH_VX), vy=0.0, wz=0.0,
                 duration=config.APPROACH_STEP_S,
             )
-            _reacquire_sweep(skills, 0, target_position)
+            reacquire_sweep(0)
 
         forward_attempt_start = None
         forward_attempt_started_at = None
@@ -115,7 +121,7 @@ def goto_object(object_class: str, color: str,
                     forward_attempt_duration = 0.0
                     continue
 
-                _reacquire_sweep(skills, reacquire_attempts, target_position)
+                reacquire_sweep(reacquire_attempts)
                 reacquire_attempts += 1
                 reacquire_misses = 0
                 forward_attempt_start = None
