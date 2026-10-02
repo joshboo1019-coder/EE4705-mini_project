@@ -18,6 +18,7 @@ OBJECT_POSITIONS = {
     "red_stop sign": (-1.3, 0.0),
     "yellow_stop sign": (-4.5, 2.0),
     "green_stop sign": (-4.5, -2.0),
+    "blue_chair": (3.45, 2.0),
 }
 
 # --- Task 3 (Student B) -----------------------------------------------------
