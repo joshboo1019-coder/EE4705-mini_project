@@ -1,6 +1,6 @@
 <!-- 
     ============================================================
-    MESH VARIANT - NOT YET THE ACTIVE SCENE. Read before using.
+    MESH VARIANT - Current ACTIVE SCENE. Read before using.
     ============================================================
     This is custom_scene.xml with the 6 flat-color primitive chair/sign
     geoms replaced by real <geom type="mesh"> objects, to satisfy the
@@ -162,8 +162,8 @@
 <material name="sign_red_mat" rgba="0.80 0.05 0.05 1" specular="0.2" shininess="0.2"/>
 <material name="sign_yellow_mat" rgba="0.95 0.80 0.05 1" specular="0.2" shininess="0.2"/>
 <material name="sign_green_mat" rgba="0.10 0.60 0.20 1" specular="0.2" shininess="0.2"/>
-<mesh name="chair_mesh" file="chair.obj" scale="1 1 1"/>
-<mesh name="stop_sign_mesh" file="stop_sign.obj" scale="1 1 1"/>
+<mesh name="chair_mesh" file="chair.obj" scale="0.0211 0.0211 0.0211"/>
+<mesh name="stop_sign_mesh" file="stop_sign.obj" scale="0.1179 0.1179 0.1179"/>
 </asset>
 <worldbody>
 <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
