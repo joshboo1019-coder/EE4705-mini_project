@@ -39,6 +39,8 @@ def goto_object(object_class: str, color: str,
     target_acquired = False
     initial_center_scan_complete = False
     target_position = None
+    reacquire_misses = 0
+    reacquire_attempts = 0
     clear_target_history = getattr(perception, "clear_target_history", None)
     if callable(clear_target_history):
         clear_target_history()
@@ -58,9 +60,27 @@ def goto_object(object_class: str, color: str,
 
         if target is None:
             if target_acquired:
-                # Keep checking live frames; recover_target() above consults
-                # the stored target history before this fallback is reached.
+                reacquire_misses += 1
+                if reacquire_misses < config.REACQUIRE_MISSES:
+                    time.sleep(0.1)  # frames update at ~15 Hz; don't spin on the same one
+                    continue
+
+                if reacquire_attempts >= config.REACQUIRE_MAX_ATTEMPTS:
+                    print("[SEARCH] re-acquire failed, falling back to rotating search")
+                    target_acquired = False
+                    initial_center_scan_complete = False
+                    target_position = None
+                    reacquire_misses = 0
+                    reacquire_attempts = 0
+                    consecutive_misses = 0
+                    continue
+
+                _reacquire_sweep(skills, reacquire_attempts, target_position)
+                reacquire_attempts += 1
+                reacquire_misses = 0
                 continue
+
+            consecutive_misses += 1
 
             consecutive_misses += 1
             if consecutive_misses >= config.MAX_MISSES_BEFORE_LOST:
@@ -76,6 +96,8 @@ def goto_object(object_class: str, color: str,
 
         target_acquired = True
         consecutive_misses = 0
+        reacquire_misses = 0
+        reacquire_attempts = 0
 
         if not _steer_to_center(target, skills, frame.shape[1]):
             # not centered yet — small turn step and re-detect next loop
@@ -148,6 +170,27 @@ def _steer_to_center(detection, skills: SkillsAPI,
     skills.turn(-correction_deg if offset_x > 0 else correction_deg)
     return False
 
+def _reacquire_sweep(skills: SkillsAPI, attempt: int, target_position) -> None:
+    """Strafe to look around an occluder, then re-face the remembered target.
+    Direction alternates and amplitude grows: L 1x, R 2x, L 3x, R 4x
+    (net offset stays within about +/-1 base sweep, so it doesn't wander off)."""
+    side = 1.0 if attempt % 2 == 0 else -1.0  # +vy = left
+    duration = config.REACQUIRE_STRAFE_S * (attempt + 1)
+    print(f"[SEARCH] target lost, strafing {'left' if side > 0 else 'right'} "
+          f"{duration:.1f} s (attempt {attempt + 1}/{config.REACQUIRE_MAX_ATTEMPTS})")
+    skills.move(vx=0.0, vy=side * config.REACQUIRE_STRAFE_VY, wz=0.0,
+                duration=duration)
+    skills.stop()
+    time.sleep(0.4)  # let the gait settle and a fresh frame render
+
+    if target_position is not None:
+        pose = skills.get_robot_pose()
+        bearing = math.degrees(math.atan2(target_position[1] - pose.y,
+                                          target_position[0] - pose.x))
+        err = (bearing - pose.yaw_deg + 180.0) % 360.0 - 180.0
+        if abs(err) > 3.0:
+            skills.turn(err)
+        time.sleep(0.3)
 
 def _approach_step(skills: SkillsAPI, distance: float) -> None:
     if distance <= config.FOUND_DISTANCE_M:

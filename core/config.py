@@ -26,12 +26,16 @@ LLM_TIMEOUT_S = 15
 
 # --- Task 4 (Student C) -----------------------------------------------------
 YOLO_MODEL = "yolo11n.pt"
-YOLO_CONF_THRESHOLD = 0.5
+YOLO_CONF_THRESHOLD = 0.2
 FOUND_DETECTION_CONF_THRESHOLD = 0.1
 FOUND_DISTANCE_M = 0.8
-APPROACH_TIMEOUT_S = 60.0
+APPROACH_TIMEOUT_S = 90.0
 SEARCH_TURN_DEG = 30.0
 MAX_MISSES_BEFORE_LOST = 5
 CENTER_TOLERANCE_PX = 20
 APPROACH_VX = 0.3
 APPROACH_STEP_S = 0.5
+REACQUIRE_MISSES = 3        # consecutive misses before starting a sweep
+REACQUIRE_MAX_ATTEMPTS = 4  # sweeps before falling back to full rotation search
+REACQUIRE_STRAFE_VY = 0.6   # m/s sideways
+REACQUIRE_STRAFE_S = 2.0    # base sweep duration, grows with each attempt
