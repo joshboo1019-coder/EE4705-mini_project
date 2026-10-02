@@ -52,7 +52,7 @@ followed by one open-loop `move(vx=0.0, vy=0.0, wz=0.6, duration=1.5)`
 feedback). Raw absolute yaws as originally recorded, plus the corrected
 open-loop rotation/error recomputed from them.
 
-| Trial | Closed-loop resulting yaw | Closed \|error\| | Open-loop resulting yaw (absolute) | Open-loop rotation (corrected) | Open-loop \|error\| (corrected) |
+| Trial | Closed-loop resulting yaw | Closed-loop error | Open-loop resulting yaw (absolute) | Open-loop rotation (corrected) | Open-loop error (corrected) |
 |---|---|---|---|---|---|
 | 1 | 88.12 | 1.88 | 112.5 | 24.38 | 65.62 |
 | 2 | 88.04 | 1.96 | 112.5 | 24.46 | 65.54 |
@@ -74,7 +74,7 @@ make without a measurement at every angle.
 
 ### 45°
 
-| Trial | Closed-loop \|error\| | Open-loop achieved rotation | Open-loop target | Open-loop \|error\| |
+| Trial | Closed-loop error | Open-loop achieved rotation | Open-loop target | Open-loop error |
 |---|---|---|---|---|
 | 1 | 1.90 | 12.20 | 45.0 | 32.80 |
 | 2 | 1.20 | 13.53 | 45.0 | 31.47 |
@@ -86,7 +86,7 @@ make without a measurement at every angle.
 
 ### 90°
 
-| Trial | Closed-loop \|error\| | Open-loop achieved rotation | Open-loop target | Open-loop \|error\| |
+| Trial | Closed-loop error | Open-loop achieved rotation | Open-loop target | Open-loop error |
 |---|---|---|---|---|
 | 1 | 1.90 | 24.68 | 90.0 | 65.32 |
 | 2 | 1.80 | 23.12 | 90.0 | 66.88 |
@@ -98,7 +98,7 @@ make without a measurement at every angle.
 
 ### 180°
 
-| Trial | Closed-loop \|error\| | Open-loop achieved rotation | Open-loop target | Open-loop \|error\| |
+| Trial | Closed-loop error | Open-loop achieved rotation | Open-loop target | Open-loop error |
 |---|---|---|---|---|
 | 1 | 1.60 | 43.87 | 180.0 | 136.13 |
 | 2 | 2.00 | 45.29 | 180.0 | 134.71 |
