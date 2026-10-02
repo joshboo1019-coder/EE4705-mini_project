@@ -1,41 +1,51 @@
 """
-tools/visual_test_crouch_only.py — isolate whether crouch() can work at all.
+tools/visual_test_crouch_only.py — isolate WHEN crouch() can work.
 
-WHY THIS EXISTS:
-`tools/visual_test_task2.py`'s full choreography does Stand -> Turn ->
-Crouch -> Turn -> Stand, and a real run showed the robot's trunk_z getting
-stuck at ~0.33 m from the first Stand onward -- neither the later Crouch
-(target 0.20 m) nor the second Stand (target 0.35 m) moved trunk_z at all,
-even with skills.set_height()'s per-step ramp (see skills_real.py). That
-result doesn't distinguish two different explanations:
+WHY THIS EXISTS (updated after real runs -- see docs/DECISIONS.md):
+`tools/visual_test_task2.py`'s full choreography does Stand -> Walk ->
+Turn -> Crouch -> Turn -> Stand, and a real run showed trunk_z stuck at
+~0.33 m through the whole sequence -- neither Crouch nor the second Stand
+visibly moved it, even with skills.set_height()'s per-step ramp (see
+skills_real.py). Two earlier runs of THIS script narrowed down why:
 
-  (a) The policy just can't track height_cmd well once the robot has
-      already been displaced away from its default 0.25 m stance (i.e.
-      only the FIRST height change after boot works at all, regardless
-      of which direction it is), possibly compounded by residual
-      tilt/velocity left over from the move()/turn() calls in between; or
-  (b) crouch() (lowering) specifically doesn't work, even as the very
-      first height command straight from the 0.25 m default -- which
-      would point at something direction-specific (e.g. gravity/loading
-      making a downward stance harder for this policy), not just "stuck
-      after one change".
+  Run 1 -- crouch() called with NOTHING before it (straight after boot,
+  no move()/turn()/stand()): trunk_z was already at the ~0.33 m standing
+  equilibrium before the command, and crouch()'s ramp never moved it at
+  all. Conclusion at the time: height_cmd does nothing while idle.
 
-This script calls ONLY skills.crouch() -- no move(), no turn(), no
-stand() first -- immediately after boot, so the very first height
-command the robot ever receives is a downward one from the untouched
-0.25 m default. If trunk_z genuinely descends toward 0.20 m here, that
-rules out (b) and points at (a) instead (something about the sequence,
-not crouch() itself). If it still doesn't move, that's evidence for (b)
-or a more basic policy/height_cmd limitation, independent of any
-prior move()/turn() calls.
+  Run 2 (this version) -- crouch() called right after a 2s move(vx=0.6)
+  + a 1s pause: the FIRST [HEIGHT] step line hit the 0.28 m target
+  exactly, but by the end of the same call's settle_s hold, trunk_z had
+  drifted back UP to 0.33 m on its own -- with height_cmd still
+  commanding 0.28 m the whole time.
+
+  Conclusion: height_cmd is NOT simply ignored. It is tracked
+  transiently, immediately after/during LINEAR motion (vx/vy nonzero),
+  and gets overridden by a separate learned standing-balance behavior
+  as soon as the robot is idle for long enough -- independent of what
+  height_cmd is still asking for. This also explains the stuck-at-0.33
+  task2 result: Crouch there is preceded by "Turn right 90", which is
+  wz-only (vx=vy=0) -- the same "no linear motion" state as Run 1, not
+  the "just walked" state that produced the transient dip here. Turning
+  in place does not appear to trigger the same transient tracking that
+  forward/lateral walking does.
+
+This script now deliberately walks (skills.move(vx=0.6, ...)) right
+before crouch() to reproduce the transient-tracking window, instead of
+calling crouch() cold. Watch for exactly this pattern in the output:
+the first [HEIGHT] step line reaching ~0.28 m, followed by the final
+trunk_z_after line having drifted back up toward ~0.33 m despite no new
+command -- that drift IS the standing-balance override, caught in the
+act within a single crouch() call.
 
 RUN (from the project root):
     python tools/visual_test_crouch_only.py
     python tools/visual_test_crouch_only.py --native
 
 Reads the same [HEIGHT] step lines set_height() already prints -- no new
-logging added here, this script just controls what happens before the
-first height command so those lines are easier to interpret in isolation.
+logging added here beyond one extra trunk_z readout right after the walk
+(see below), so the transient-dip-then-drift-back pattern is visible
+without digging through skills_real.py's internals.
 """
 
 import argparse
@@ -74,30 +84,52 @@ def main():
               f"(height_cmd default is 0.25 m -- compare these)")
 
         pose_before = skills.get_robot_pose()
-        print(f"\n>>> Crouch (first height command since boot, no move()/turn() "
-              f"before it)  (pose before: x={pose_before.x:.2f} "
-              f"y={pose_before.y:.2f} yaw={pose_before.yaw_deg:.1f})")
+        print(f"\n>>> Walking forward first (vx=0.6, 2.0s), THEN Crouch --"
+              f" this is the setup that reproduces transient height_cmd "
+              f"tracking (see module docstring)  (pose before: "
+              f"x={pose_before.x:.2f} y={pose_before.y:.2f} "
+              f"yaw={pose_before.yaw_deg:.1f})")
+
+        skills.move(vx=0.6, vy=0.0, wz=0.0, duration=2.0)
+        time.sleep(1.0)  # real-time pause; sim physics keep stepping in the
+                          # background thread throughout (see move()'s own
+                          # docstring), so this is "idle time after walking",
+                          # not a pause in simulated time.
+
+        z_after_walk = skills.get_trunk_height()
+        print(f"[DIAGNOSTIC] trunk_z right after the walk, still before "
+              f"crouch()'s height command = {z_after_walk:.3f} m -- compare "
+              f"this against crouch()'s own trunk_z_before line below (if "
+              f"they roughly match, the gap already closed during the 1s "
+              f"pause above, before crouch() even started ramping).")
+
         skills.crouch()
         pose_after = skills.get_robot_pose()
         print(f"    pose after:  x={pose_after.x:.2f} y={pose_after.y:.2f} "
               f"yaw={pose_after.yaw_deg:.1f}")
 
         print(
-            f"\nCompare [DIAGNOSTIC] trunk_z={z_at_boot:.3f} m (before ANY "
-            "height command) against the [HEIGHT] step lines above:\n"
-            "  - If trunk_z at boot was already close to what the later "
-            "[HEIGHT] lines show (e.g. ~0.33 m), height_cmd likely isn't "
-            "driving the trunk at all while standing still -- the robot "
-            "just settles there on its own after reset, and crouch()'s "
-            "code is not the problem; this would need to be reported as "
-            "a policy limitation (height_cmd probably only meaningfully "
-            "shapes stance while walking, not standing still), not a bug "
-            "to keep chasing in skills_real.py.\n"
-            "  - If trunk_z at boot was close to 0.25 m and the [HEIGHT] "
-            "lines above genuinely trend down from there toward 0.20 m, "
-            "crouch() does work as the first command, and the earlier "
-            "stuck-at-0.33 result in the full sequence was caused by "
-            "something specific to the Stand->Turn->Crouch ordering."
+            f"\nWhat to look for (see module docstring for the full "
+            f"explanation):\n"
+            f"  [DIAGNOSTIC] trunk_z at boot (idle, no command yet)  "
+            f"= {z_at_boot:.3f} m\n"
+            f"  [DIAGNOSTIC] trunk_z right after the walk (idle again, "
+            f"before crouch's ramp) = {z_after_walk:.3f} m\n"
+            "  - crouch()'s own [HEIGHT] step line, printed above, should "
+            "hit ~0.28 m right as the ramp finishes -- that's height_cmd "
+            "being tracked WHILE the robot still has recent linear-motion "
+            "state (vx was just nonzero). This is the thing Run 1 (no "
+            "move() before crouch()) never showed at all.\n"
+            "  - crouch()'s final trunk_z_after line, also printed above, "
+            "should then have drifted back UP toward ~0.33 m by the end "
+            "of the settle_s hold, even though height_cmd never changed "
+            "from 0.28 m -- that's the standing-balance behavior "
+            "overriding the command once the robot has been idle long "
+            "enough, caught mid-drift in a single call.\n"
+            "  - If instead trunk_z_after also sits near 0.28 m (no "
+            "drift-back), that would mean the override needs more idle "
+            "time than this run gave it -- worth re-testing with a longer "
+            "settle_s before concluding the pattern above doesn't hold."
         )
 
         print("\nDone. Robot final pose:", skills.get_robot_pose())
