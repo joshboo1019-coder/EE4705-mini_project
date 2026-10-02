@@ -1,9 +1,30 @@
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from core.schema import Detection, RobotPose
 from perception import navigation
+from perception.perception_real import RealPerception
+
+
+def test_remember_target_retains_last_twenty_png_bbox_frames():
+    perception = RealPerception.__new__(RealPerception)
+    perception._target_history = []
+    frame = np.zeros((24, 24, 3), dtype=np.uint8)
+
+    for index in range(21):
+        detection = Detection(
+            "sports ball", "orange", 0.9,
+            (index, index + 1, index + 2, index + 3),
+        )
+        perception.remember_target(frame, detection)
+
+    history = perception._target_history
+    assert len(history) == 20
+    assert all(encoded.startswith(b"\x89PNG\r\n\x1a\n") for encoded, *_ in history)
+    assert history[0][1] == (1, 2, 3, 4)
+    assert history[-1][1] == (20, 21, 22, 23)
 
 
 class _Skills:

@@ -23,6 +23,9 @@ from core.interfaces import PerceptionAPI
 from core.schema import Detection
 from core import config
 
+_TARGET_HISTORY_LIMIT = 10
+
+
 class RealPerception(PerceptionAPI):
     def __init__(self, model_path: str = config.YOLO_MODEL,
                  debug_dir: Optional[str] = None):
@@ -102,7 +105,7 @@ class RealPerception(PerceptionAPI):
             encoded.tobytes(), tuple(detection.bbox),
             detection.class_name, detection.color,
         ))
-        del self._target_history[:-5]
+        del self._target_history[:-_TARGET_HISTORY_LIMIT]
 
     def recover_target(self, frame: np.ndarray, object_class: str,
                        color: str,
