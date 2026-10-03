@@ -1,0 +1,27 @@
+# e2e run `20261004-0118_p2b_c2_margin`
+
+Commit: `d553e63` on ``. LLM: qwen-flash (config.LLM_SERVICE). Clips: `~/Videos/e2e/20261004-0118_p2b_c2_margin/` (recorded).
+
+## S3 — Task 4 (C's 10 scenarios, typed utterance)
+
+Success = `[MISSION] status=SUCCESS` and true d ≤ 0.80 m and C1 (scenario 10: the correct `FAIL reason=target_not_found`). True d is ground truth, logged only.
+
+| # | Typed | [CMD] ok | Search | DETECT correct | Mission | Time (s) | Est. d at stop | True d | C1 | C2 est | C2 true | C3 | Success | Clip |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 01 | `go to the red chair` | ✅ | ✅ | 28/28 (target 18) | SUCCESS | 29.3 | 0.55 | 0.69 | ✅ | ✅ | ✅ | ✅ | ✅ | `20261004-0118_p2b_c2_margin/S3_01.mp4` |
+| 02 | `find the orange ball` (paraphrase) | ✅ | ✅ | 95/109 (target 64) | FAIL:timeout | 120.0 | None | 0.33 | ❌ | ❌ | ✅ | ❌ | ❌ | `20261004-0118_p2b_c2_margin/S3_02.mp4` |
+| 03 | `go to the green chair` | ✅ | ❌ | 70/70 (target 31) | SUCCESS | 15.1 | 0.47 | 0.7 | ✅ | ✅ | ✅ | ✅ | ✅ | `20261004-0118_p2b_c2_margin/S3_03.mp4` |
+| 04 | `walk over to the red chair` (paraphrase) | ✅ | ✅ | 60/60 (target 29) | FAIL:target_not_found | 70.9 | None | 0.78 | ❌ | ❌ | ✅ | ❌ | ❌ | `20261004-0118_p2b_c2_margin/S3_04.mp4` |
+| 05 | `go to the yellow stop sign` | ✅ | ✅ | 15/25 (target 0) | FAIL:target_not_found | 11.0 | None | 3.78 | ❌ | ❌ | ❌ | ❌ | ❌ | `20261004-0118_p2b_c2_margin/S3_05.mp4` |
+| 06 | `go to the green stop sign` | ✅ | ✅ | 10/15 (target 0) | FAIL:target_not_found | 10.8 | None | 5.04 | ❌ | ❌ | ❌ | ❌ | ❌ | `20261004-0118_p2b_c2_margin/S3_06.mp4` |
+| 07 | `please head over to the orange ball` (paraphrase) | ✅ | ✅ | 32/38 (target 20) | FAIL:stop_verification | 20.6 | None | 0.41 | ❌ | ❌ | ✅ | ❌ | ❌ | `20261004-0118_p2b_c2_margin/S3_07.mp4` |
+| 08 | `go to the blue chair` | ✅ | ✅ | 31/31 (target 28) | SUCCESS | 20.8 | 0.45 | 0.66 | ✅ | ✅ | ✅ | ✅ | ✅ | `20261004-0118_p2b_c2_margin/S3_08.mp4` |
+| 09 | `go to the red stop sign` | ✅ | ✅ | 15/15 (target 0) | FAIL:target_not_found | 10.9 | None | 1.27 | ❌ | ❌ | ❌ | ❌ | ❌ | `20261004-0118_p2b_c2_margin/S3_09.mp4` |
+| 10 | `go to the blue chair` | ✅ | ✅ | 35/35 (target 0) | FAIL:target_not_found | 10.9 | None | None | ❌ | ❌ | ❌ | ❌ | ✅ | `20261004-0118_p2b_c2_margin/S3_10.mp4` |
+
+**S3 success: 4/10**
+
+## Run notes
+
+- Crashed / never ready: none
+- Clips deleted by the frame check: none
