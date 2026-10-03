@@ -1,4 +1,7 @@
 """
+Change contributed by Student B (assist), pending review by Student C:
+the approach stops at config.APPROACH_STOP_M (docs/task4_c2_margin.md).
+
 navigation.py — STUDENT C OWNS THIS FILE (other half of Task 4, 60% w/ perception).
 
 goto_object() implements the search/steer/approach behavior and is called
@@ -244,7 +247,7 @@ def goto_object(object_class: str, color: str,
         )
         print(f"[RANGE] estimated_planar={distance:.2f} m "
               f"ground_truth={ground_truth_distance:.2f} m phase=approach")
-        if distance <= config.FOUND_DISTANCE_M:
+        if distance <= _approach_stop_m(object_class):
             if _finish_if_found(
                     skills, perception, object_class, color, t0,
                     target_position):
@@ -256,7 +259,8 @@ def goto_object(object_class: str, color: str,
         if forward_attempt_start is None:
             forward_attempt_start = pose
             forward_attempt_started_at = time.monotonic()
-        step_duration = _approach_step(skills, distance)
+        step_duration = _approach_step(skills, distance,
+                                       _approach_stop_m(object_class))
         if step_duration > 0.0:
             forward_attempt_duration += step_duration
             if recover_if_stuck():
@@ -315,8 +319,22 @@ def _reacquire_sweep(skills: SkillsAPI, attempt: int, target_position) -> None:
             skills.turn(err)
         time.sleep(0.3)
 
-def _approach_step(skills: SkillsAPI, distance: float) -> float:
-    if distance <= config.FOUND_DISTANCE_M:
+def _approach_stop_m(object_class: str | None = None) -> float:
+    """Where the approach stops (estimated range), per target class. Below
+    FOUND_DISTANCE_M by a margin for that class's range-estimate error, so
+    the TRUE distance is within FOUND_DISTANCE_M (the evaluation definition,
+    still used by the stop check C2 below); see docs/task4_c2_margin.md."""
+    by_class = getattr(config, "APPROACH_STOP_M_BY_CLASS", {})
+    if object_class in by_class:
+        return by_class[object_class]
+    return getattr(config, "APPROACH_STOP_M", config.FOUND_DISTANCE_M)
+
+
+def _approach_step(skills: SkillsAPI, distance: float,
+                   stop_m: float | None = None) -> float:
+    if stop_m is None:
+        stop_m = _approach_stop_m()
+    if distance <= stop_m:
         skills.stop()
         return 0.0
 
@@ -324,7 +342,7 @@ def _approach_step(skills: SkillsAPI, distance: float) -> float:
     normal_step_distance = approach_vx * config.APPROACH_STEP_S
     step_distance = min(
         normal_step_distance,
-        distance - config.FOUND_DISTANCE_M,
+        distance - stop_m,
     )
 
     step_duration = step_distance / approach_vx
