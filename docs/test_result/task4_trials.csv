@@ -1,0 +1,11 @@
+timestamp,scenario,name,target,success,final_d_m,elapsed_s,start_visible_expected,same_class_distractor,target_in_scene
+2026-10-03 18:00:25,1,baseline_facing,red_chair,1,0.83,36.8,1,1,1
+2026-10-03 18:02:44,1,baseline_facing,green_chair,1,0.91,103.1,1,1,1
+2026-10-03 18:04:29,2,baseline_facing_away,orange_sports ball,1,0.76,72.2,0,0,1
+2026-10-03 18:05:32,2,baseline_facing_away,red_stop sign,0,1.28,38.2,0,1,1
+2026-10-03 18:06:46,3,chairs_three_colors,green_chair,1,0.95,33.1,1,1,1
+2026-10-03 18:08:10,4,chairs_flanking,red_chair,1,0.88,55.6,0,1,1
+2026-10-03 18:09:59,5,far_small_target,yellow_stop sign,0,3.78,37.3,1,1,1
+2026-10-03 18:12:27,6,stop_signs_occlusion,green_stop sign,0,5.03,37.1,1,1,1
+2026-10-03 18:13:54,7,side_start_hidden,orange_sports ball,1,0.73,47.4,0,0,1
+2026-10-03 18:15:28,8,surrounded,blue_chair,1,0.91,44.4,0,1,1
