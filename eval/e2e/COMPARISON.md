@@ -8,7 +8,7 @@ Baseline = merged main (ee9593f) before tonight's changes, with S3 started by th
 |---|---|---|---|---|
 | S1 Task 2 | closed max 1.9°, open mean 79.6°, move 2.24 m | closed max 2.0°, open 79.6°, move 2.28 m | **same** | no Task 2 code changed (evidence branch only) |
 | S2 Task 3 script a–g | 7/7, turns ≤ 2.0°, no contact | 7/7, turns ≤ 1.8°, no contact (+ `[PLAN]`/`Robot:` talk-back) | **same** (better UX) | v5 keeps every v4 `[CMD]` line; one v5 regression (step e) was found by run `20261004-0206_final` and fixed (`e06968e`) before the definitive run |
-| S3 Task 4 (strict: true d ≤ 0.80 m) | **3/10** | **5/10** (6/10 in the P2b v2 run) | **better** | per-class stop margin (`assist/c2-margin`); every typed goto now goes through `main.py --scenario` with the LLM `[CMD]` |
+| S3 Task 4 (strict: true d ≤ 0.80 m) | **3/10** (n=3: **9/30**) | **5/10** (n=3: **16/30**; 6/10 in the P2b v2 run) | **better** | per-class stop margin (`assist/c2-margin`); every typed goto now goes through `main.py --scenario` with the LLM `[CMD]` |
 | S4 bonus | look 3/3; multi-goal 2/2 but red chair at 0.88 m (C2 ✗) | look 3/3; multi-goal 2/2 at 0.69 / 0.58 m (C2 ✓) | **better** | stop margin |
 | S5 B upgrades | n/a | 7/7 (8/8 incl. "spin around twice" in the delta run) | **new** | `b/upgrade` |
 
@@ -23,6 +23,38 @@ in scenario 1), see `docs/task4_stopsign.md`.
 `0128_p2b_c2_margin_v2` (per class) → `0138_stopsign_eval` (not merged) → `0153_s5_dryrun` → `0206_final`
 (**S2 failed: STATE regression**) → `0221_final` (**definitive**) → `0237_final_delta_fixes` (S2 + S5 after the
 walkthrough fixes: 7/7, 8/8) → `S6` hard scene (stretch, see below).
+
+## S3 with n = 3 per scenario (added 03:30)
+
+Two more S3 runs on each side (baseline = merged-main code at 32c6f78 with the scenarios.py driver; final =
+`b/overnight-all` via `main.py --scenario`), fresh launch each: `0101_baseline` + `0311_baseline_rep2` +
+`0324_baseline_rep3` vs `0221_final` + `0304_final_rep2` + `0317_final_rep3` (`eval/e2e/aggregate_s3.py`,
+`eval/e2e/S3_n3.md`).
+
+| # | Target | baseline (merged main) (n=3) | final (b/overnight-all) (n=3) |
+|---|---|---|---|
+| 01 | red chair | 0/3 (true d 0.85, 0.83, 0.83) | 1/3 (true d 1.04, 0.87, 0.77) |
+| 02 | orange sports ball | 3/3 (true d 0.66, 0.65, 0.68) | 3/3 (true d 0.69, 0.63, 0.66) |
+| 03 | green chair | 0/3 (true d 0.94, 0.98, 0.93) | 3/3 (true d 0.69, 0.7, 0.7) |
+| 04 | red chair | 0/3 (true d 0.84, 0.85, 0.88) | 0/3 (true d 0.57, 0.6, 0.6) |
+| 05 | yellow stop sign | 0/3 (true d 3.78, 3.79, 3.78) | 0/3 (true d 3.78, 3.78, 3.78) |
+| 06 | green stop sign | 0/3 (true d 5.04, 5.04, 5.05) | 0/3 (true d 5.05, 5.05, 5.05) |
+| 07 | orange sports ball | 3/3 (true d 0.67, 0.68, 0.64) | 3/3 (true d 0.59, 0.63, 0.64) |
+| 08 | blue chair | 0/3 (true d 0.87, 0.86, 0.99) | 3/3 (true d 0.65, 0.69, 0.71) |
+| 09 | red stop sign | 0/3 (true d 1.27, 1.27, 1.27) | 0/3 (true d 1.27, 1.26, 1.28) |
+| 10 | blue chair | 3/3 (true d None, None, None) | 3/3 (true d None, None, None) |
+| | **all** | **9/30** (30 %) | **16/30** (53 %) |
+
+| Class | baseline (merged main) | final (b/overnight-all) |
+|---|---|---|
+| chair | strict 0/12; SUCCESS 12 (true d mean/max 0.89/0.99, 12 > 0.80 m); stop_verification 0; contact 0 | strict 7/12; SUCCESS 9 (true d mean/max 0.76/1.04, 2 > 0.80 m); stop_verification 3; contact 3 |
+| sports ball | strict 6/6; SUCCESS 6 (true d mean/max 0.66/0.68, 0 > 0.80 m); stop_verification 0; contact 2 | strict 6/6; SUCCESS 6 (true d mean/max 0.64/0.69, 0 > 0.80 m); stop_verification 0; contact 3 |
+| stop sign | strict 0/9; SUCCESS 0 (true d mean/max –, 0 > 0.80 m); stop_verification 0; contact 0 | strict 0/9; SUCCESS 0 (true d mean/max –, 0 > 0.80 m); stop_verification 0; contact 0 |
+
+**Strict S3: 9/30 (30 %) → 16/30 (53 %).** All of the gain is chairs (0/12 → 7/12): the baseline's 12 chair
+"successes" all stopped at a true 0.83–0.99 m. Scenario 4 (red chair approached from the side) now fails
+`stop_verification` 3/3 (overshoot to ~0.6 m, frame-filling chair), scenario 1 is 1/3; balls 6/6 on both sides;
+stop signs 0/9 on both (never detected).
 
 ## Default vs hard scene (stretch, `assist/hard-scene`, not merged)
 

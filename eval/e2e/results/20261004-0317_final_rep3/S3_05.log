@@ -1,0 +1,86 @@
+
+=== Scenario 5: far_small_target ===
+Small ball 5+ m away (zoom pass), signs nearer.
+Robot start: x=-0.2 y=0.0 yaw=180.0 deg | target visible at start (expected): True
+Valid targets: orange sports ball, red stop sign, yellow stop sign
+Example: go to the orange sports ball
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_3x0q0ylx/scenario_05_far_small_target.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_3x0q0ylx/scenario_05_far_small_target.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-0.18 y=0.00 yaw=179.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=stop sign, color=yellow) n=1
+User: [EXEC] action=1/1 goto_object class=stop sign color=yellow
+[CMD] action=goto_object(class=stop sign, color=yellow)
+[DETECT] class=sports ball color=orange conf=0.38 bbox=[340.37, 183.94, 352.12, 196.33]
+[DETECT] class=sports ball color=orange conf=0.36 bbox=[340.31, 184.07, 352.21, 196.33]
+[DETECT] class=sports ball color=orange conf=0.36 bbox=[340.31, 184.07, 352.21, 196.33]
+[DETECT] class=sports ball color=orange conf=0.36 bbox=[340.31, 184.07, 352.21, 196.33]
+[DETECT] class=sports ball color=orange conf=0.36 bbox=[340.31, 184.07, 352.21, 196.33]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=sports ball color=orange conf=0.21 bbox=[506.48, 196.52, 523.69, 212.48]
+[DETECT] class=sports ball color=orange conf=0.21 bbox=[506.48, 196.52, 523.69, 212.48]
+[DETECT] class=sports ball color=orange conf=0.21 bbox=[506.48, 196.52, 523.69, 212.48]
+[DETECT] class=sports ball color=orange conf=0.21 bbox=[506.48, 196.52, 523.69, 212.48]
+[DETECT] class=sports ball color=orange conf=0.21 bbox=[506.48, 196.52, 523.69, 212.48]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=chair color=red conf=0.65 bbox=[591.89, 110.77, 639.76, 236.27]
+[DETECT] class=bench color=unknown conf=0.29 bbox=[0.71, 179.67, 233.61, 261.37]
+[DETECT] class=chair color=red conf=0.36 bbox=[615.29, 113.36, 639.77, 239.09]
+[DETECT] class=bench color=unknown conf=0.23 bbox=[0.90, 182.35, 236.79, 262.59]
+[DETECT] class=chair color=red conf=0.36 bbox=[615.29, 113.36, 639.77, 239.09]
+[DETECT] class=bench color=unknown conf=0.23 bbox=[0.90, 182.35, 236.79, 262.59]
+[DETECT] class=chair color=red conf=0.36 bbox=[615.29, 113.36, 639.77, 239.09]
+[DETECT] class=bench color=unknown conf=0.23 bbox=[0.90, 182.35, 236.79, 262.59]
+[DETECT] class=chair color=red conf=0.36 bbox=[615.29, 113.36, 639.77, 239.09]
+[DETECT] class=bench color=unknown conf=0.23 bbox=[0.90, 182.35, 236.79, 262.59]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.3 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[DETECT] class=chair color=unknown conf=0.24 bbox=[580.10, 168.90, 608.09, 219.70]
+[DETECT] class=chair color=unknown conf=0.24 bbox=[580.10, 168.90, 608.09, 219.70]
+[DETECT] class=chair color=unknown conf=0.24 bbox=[580.10, 168.90, 608.09, 219.70]
+[DETECT] class=chair color=unknown conf=0.24 bbox=[580.10, 168.90, 608.09, 219.70]
+[DETECT] class=chair color=unknown conf=0.24 bbox=[580.10, 168.90, 608.09, 219.70]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.3 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=bench color=unknown conf=0.42 bbox=[346.45, 181.31, 639.22, 312.22]
+[DETECT] class=bench color=unknown conf=0.42 bbox=[346.45, 181.31, 639.22, 312.22]
+[DETECT] class=bench color=unknown conf=0.42 bbox=[346.45, 181.31, 639.22, 312.22]
+[DETECT] class=bench color=unknown conf=0.42 bbox=[346.45, 181.31, 639.22, 312.22]
+[DETECT] class=bench color=unknown conf=0.51 bbox=[356.39, 182.00, 639.49, 323.99]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=airplane color=unknown conf=0.32 bbox=[467.60, 140.84, 639.60, 293.91]
+[DETECT] class=airplane color=unknown conf=0.32 bbox=[467.60, 140.84, 639.60, 293.91]
+[DETECT] class=airplane color=unknown conf=0.32 bbox=[467.60, 140.84, 639.60, 293.91]
+[DETECT] class=airplane color=unknown conf=0.32 bbox=[467.60, 140.84, 639.60, 293.91]
+[DETECT] class=airplane color=unknown conf=0.32 bbox=[467.60, 140.84, 639.60, 293.91]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=sports ball color=orange conf=0.38 bbox=[49.63, 197.20, 71.97, 213.97]
+[DETECT] class=sports ball color=orange conf=0.38 bbox=[49.63, 197.20, 71.97, 213.97]
+[DETECT] class=sports ball color=orange conf=0.32 bbox=[70.15, 197.24, 90.77, 214.12]
+[DETECT] class=sports ball color=orange conf=0.32 bbox=[70.15, 197.24, 90.77, 214.12]
+[DETECT] class=sports ball color=orange conf=0.32 bbox=[70.15, 197.24, 90.77, 214.12]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[MISSION] status=FAIL reason=target_not_found
+[DONE] actions=1 t=10.8 s
+Robot: Done: did not reach the yellow stop sign; net turn 14° right.
