@@ -1003,3 +1003,12 @@ def test_abortable_skills_delegates_everything_else():
         px.turn(10)
     px.stop()                                    # stop always goes through
     assert getattr(px, "no_such_attr", None) is None
+
+
+@pytest.mark.parametrize("given,want", [("ball", "sports ball"), ("Ball", "sports ball"),
+                                        ("sofa", "couch"), ("sports  ball", "sports ball")])
+def test_common_names_map_to_coco_classes(given, want):
+    r = _v({"action": "goto_object", "class": given, "color": "orange"})
+    assert r.commands == [GotoObjectCommand(want, "orange")]
+    r = _v({"action": "until_see", "class": given, "color": "", "do": [TURN_L]})
+    assert r.commands[0].object_class == want

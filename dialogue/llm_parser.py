@@ -164,11 +164,13 @@ Each <action> is one of:
       happens to contain "look" (like "careful!") is not a look action;
       treat a warning as stop.
   {"action": "repeat", "times": int, "actions": [ <action>, ... ]}
-      run the inner actions `times` times in order (1-8).
+      only when the user gives a number of repetitions ("three times",
+      "twice"): run the inner actions `times` times in order (at most 8).
   {"action": "until_see", "class": string, "color": string, "do": [ <action>, ... ], "max_iter": int}
       keep doing "do" until the camera sees that object (COCO class; color
       "" = any color); at most max_iter rounds (1-8). For a search by
       turning, use a 45-degree turn in "do" and max_iter 8 (one full circle).
+      Only for "keep doing X until you see Y".
   {"action": "status", "topic": "last_action" | "home" | "last_reject" | "seen"}
       the user asks about the robot's own record: what it just did, where it
       is relative to its starting point, why it rejected the last request,
@@ -197,9 +199,13 @@ Conventions:
   Something done N times, or "keep doing X until you see Y", is a program
   (repeat / until_see); "..., then go to it" after an until_see adds a
   goto_object for that same object.
+- goto_object searches for its target by itself: "find the X", "search
+  for the X", "go to / visit the X" are a goto_object, never an until_see.
 - Follow-ups ("do that again", "now slower", "the other way") refer to the
-  previous accepted actions in the conversation; reuse and modify them.
-  A correction of what the robot just did may use undo first.
+  previous accepted actions in the conversation; reuse and modify them,
+  written out as plain actions with the change applied (repeat is only for
+  an explicit number of times). A correction of what the robot just did
+  may use undo first.
 - Decide the language first: an instruction that is not in English is
   rejected as "non-English" even if you understand it. This includes an
   instruction that mixes in words or numbers from another language. Give
@@ -262,7 +268,7 @@ User: move 3 metres backwards
 {"actions": [{"action": "move", "vx": -0.8, "vy": 0.0, "wz": 0.0, "distance_m": 3.0}]}
 User: wiggle: turn left 30 degrees and right 30 degrees, three times
 {"actions": [{"action": "repeat", "times": 3, "actions": [{"action": "turn", "angle_deg": 30}, {"action": "turn", "angle_deg": -30}]}]}
-User: rotate until you find a bottle
+User: rotate until a bottle is detected
 {"actions": [{"action": "until_see", "class": "bottle", "color": "", "do": [{"action": "turn", "angle_deg": 45}], "max_iter": 8}]}
 User: STATE: at the start pose | last actions (oldest first): none | camera has seen (first to last): white cup, blue chair
 USER: walk over to the cup you noticed
@@ -305,6 +311,29 @@ COCO_CLASSES = {
     "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
     "scissors", "teddy bear", "hair drier", "toothbrush",
 }
+
+
+# Common names for COCO classes, normalised in code as a fallback for the
+# prompt's synonym rule ("ball" -> "sports ball").
+_CLASS_ALIASES = {
+    "ball": "sports ball", "football": "sports ball", "soccer ball": "sports ball",
+    "seat": "chair", "sofa": "couch", "television": "tv", "plant": "potted plant",
+    "table": "dining table", "phone": "cell phone", "mobile phone": "cell phone",
+    "cellphone": "cell phone", "sign": "stop sign", "stopsign": "stop sign",
+    "teddy": "teddy bear", "hydrant": "fire hydrant", "bike": "bicycle",
+    "motorbike": "motorcycle", "plane": "airplane", "aeroplane": "airplane",
+    "doughnut": "donut", "hotdog": "hot dog", "hair dryer": "hair drier",
+    "wineglass": "wine glass", "people": "person", "human": "person", "man": "person",
+    "woman": "person",
+}
+
+
+def _coco_class(a: Dict) -> str:
+    cls = " ".join(_string(a, "class").strip().lower().split())
+    cls = _CLASS_ALIASES.get(cls, cls)
+    if cls not in COCO_CLASSES:
+        raise _Invalid(f"unknown_class:{cls}")
+    return cls
 
 
 class _NeedColour(Exception):
@@ -617,10 +646,8 @@ def _to_command(a, depth: int = 0):
     if kind == "turn":
         return TurnCommand(_number(a, "angle_deg"))
     if kind == "goto_object":
-        cls = _string(a, "class").strip().lower()
+        cls = _coco_class(a)
         color = _string(a, "color", allow_empty=True).strip().lower()
-        if cls not in COCO_CLASSES:
-            raise _Invalid(f"unknown_class:{cls}")
         if not color:
             # navigation needs an exact colour match, so ask instead of
             # sending the robot on a search that can't succeed.
@@ -694,9 +721,7 @@ def _program(a: Dict, kind: str, depth: int):
     body_key = "actions" if kind == "repeat" else "do"
     count_key = "times" if kind == "repeat" else "max_iter"
     if kind == "until_see":
-        cls = _string(a, "class").strip().lower()
-        if cls not in COCO_CLASSES:
-            raise _Invalid(f"unknown_class:{cls}")
+        cls = _coco_class(a)
         color = a.get("color") or ""
         if not isinstance(color, str):
             raise _Invalid("invalid_field:color")

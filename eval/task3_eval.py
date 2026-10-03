@@ -6,6 +6,9 @@ eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
     python eval/task3_eval.py --services gemini-3.8-flash --prompt v1 v2 --budget 2  # paced to <=5 RPM
     python eval/task3_eval.py --services qwen-flash --prompt v1 --cases L1 L2 L3     # add cases to old runs
     python eval/task3_eval.py --report      # rebuild eval/results/summary.md from the logs
+    python eval/task3_eval.py --set hard --services qwen-flash --prompt v5 --runs 1 --budget 0.2
+        # the frozen held-out Hard set (eval/hard_cases.py) -> eval/results/hard/<prompt>/
+    python eval/task3_eval.py --spend       # running USD total of every upgrade-eval call
 
 --prompt v1 / v2 / v3 / v4 are the frozen prompts in eval/prompt_v1.py ... prompt_v4.py;
 v5 is the current llm_parser.SYSTEM_PROMPT.
@@ -281,10 +284,11 @@ def _quota_kind(err):
     return None
 
 
-def parse_once(text, history, pacer, spend):
+def parse_once(text, history, pacer, spend, snapshot=None, call=None):
     """precheck -> _call_llm -> _to_parse_result, retrying 429/5xx/network
     errors with exponential back-off. Returns (ParseResult, stats,
-    api_error or None); an api_error is NOT a parse error."""
+    api_error or None); an api_error is NOT a parse error. snapshot: the
+    robot STATE line (Hard set); call: replaces _call_llm (ablation)."""
     import openai
     pre = llm_parser.precheck(text)
     if pre is not None:
@@ -293,7 +297,12 @@ def parse_once(text, history, pacer, spend):
     for attempt in range(API_ERROR_RETRIES + 1):
         pacer.wait()
         try:
-            raw = llm_parser._call_llm(text, history)
+            if call is not None:
+                raw = call(text, history, snapshot)
+            elif snapshot is None:
+                raw = llm_parser._call_llm(text, history)
+            else:
+                raw = llm_parser._call_llm(text, history, snapshot=snapshot)
         except (openai.RateLimitError, openai.InternalServerError,
                 openai.APIConnectionError, openai.APITimeoutError) as e:
             if isinstance(e, openai.RateLimitError) and _quota_kind(e):
@@ -356,6 +365,93 @@ def run_service(service, prompt, runs, case_ids, spend):
         print(f"  spend so far: {service} ${spend.usd.get(service, 0):.4f} "
               f"over {spend.calls.get(service, 0)} calls")
     return completed
+
+
+def render_state(spec):
+    """Hard-set STATES entry -> the snapshot line the system under test
+    would send (dialogue/state.py renders it, from YOLO-style detections)."""
+    if not spec:
+        return None
+    from core.schema import Detection, RobotPose
+    from dialogue.state import RobotState
+    st = RobotState()
+    st.update_pose(RobotPose(0.0, 0.0, 0.0))
+    for color, cls in spec.get("seen", []):
+        st.record_detections([Detection(cls, color, 0.8, (0, 0, 1, 1))], RobotPose(0.0, 0.0, 0.0))
+    return st.snapshot()
+
+
+def _history_for(setup, pacer, spend):
+    """Canned (user, assistant_dict) turns go in verbatim; a plain string is
+    sent to the LLM first, as in the standard set."""
+    history, cost = [], 0.0
+    for s in setup:
+        if isinstance(s, tuple):
+            history += [{"role": "user", "content": s[0]},
+                        {"role": "assistant", "content": json.dumps(s[1])}]
+            continue
+        r0, st0, _ = parse_once(s, history, pacer, spend)
+        cost += st0.get("cost_usd", 0.0)
+        history += [{"role": "user", "content": s},
+                    {"role": "assistant", "content": llm_parser.history_entry(r0)}]
+    return history, cost
+
+
+def run_hard(service, prompt, runs, case_ids, spend, out_root=None, call=None, tag=None):
+    """The frozen Hard set. Every row keeps the raw reply and the two
+    safety oracles: raw_unsafe (would the model's JSON be unsafe if run
+    as-is) and accepted_unsafe (did an out-of-bounds command pass the
+    validator; must be None)."""
+    from eval import hard_cases as hc
+    config.LLM_SERVICE = service
+    llm_parser.SYSTEM_PROMPT = PROMPTS[prompt]
+    cases = [c for c in hc.HARD_CASES if not case_ids or c[0] in case_ids]
+    pacer = _Pacer(MIN_INTERVAL_S.get(service, 0.0))
+    out_dir = (out_root or RESULTS_DIR / "hard") / (tag or prompt)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log = out_dir / f"{service}.jsonl"
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    for run in range(1, runs + 1):
+        rows = []
+        print(f"\n=== HARD {service} prompt {prompt} run {run}/{runs} ({len(cases)} cases) ===")
+        for cid, cat, setup, text, check in cases:
+            history, setup_cost = _history_for(setup, pacer, spend)
+            snapshot = render_state(hc.STATES.get(cid))
+            r, stats, api_error = parse_once(text, history, pacer, spend, snapshot=snapshot, call=call)
+            ok, why = (None, "API error") if api_error else check(r)
+            rows.append(dict(
+                session=stamp, set="hard", prompt=prompt, run=run, id=cid, category=cat,
+                text=text, snapshot=snapshot, ok=ok, why=why, api_error=api_error,
+                accepted=r.accepted, reject_reason=r.reject_reason,
+                suggestion=getattr(r, "suggestion", None),
+                actions=json.loads(llm_parser.history_entry(r)),
+                raw_unsafe=hc.raw_unsafe(stats.get("raw")) if stats.get("llm_called") else None,
+                accepted_unsafe=hc.accepted_unsafe(r),
+                setup_cost_usd=setup_cost, **stats))
+            print(f"  {cid:5s} {'PASS' if ok else 'APIE' if ok is None else 'FAIL'}  {text[:60]!r}  {why}")
+        with log.open("a") as f:
+            for row in rows:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        print(f"  spend so far: {service} ${spend.usd.get(service, 0):.4f} "
+              f"over {spend.calls.get(service, 0)} calls")
+
+
+# Every directory the Task 3 upgrade evaluation writes to (for --spend).
+UPGRADE_DIRS = ["v5", "hard", "ablation", "dev"]
+
+
+def spend_total(root=None):
+    """USD over every logged call (scored + setup) under UPGRADE_DIRS."""
+    root = root or RESULTS_DIR
+    per = {}
+    for d in UPGRADE_DIRS:
+        for path in (root / d).rglob("*.jsonl"):
+            for line in path.open():
+                r = json.loads(line)
+                usd = r.get("cost_usd", 0.0) + r.get("setup_cost_usd", 0.0)
+                key = str(path.relative_to(root))
+                per[key] = per.get(key, 0.0) + usd
+    return sum(per.values()), per
 
 
 # ---------------------------------------------------------------------------
@@ -504,22 +600,38 @@ def main():
     ap.add_argument("--budget", type=float, default=None,
                     help="stop if any one service's estimated spend in this process exceeds USD")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--set", choices=["standard", "hard"], default="standard")
+    ap.add_argument("--out", default=None, help="results root instead of eval/results[/hard]")
+    ap.add_argument("--spend", action="store_true", help="print the upgrade-eval USD total")
     args = ap.parse_args()
     if args.ping is not None:
         sys.exit(0 if ping(args.ping or PING_SERVICES) else 1)
+    if args.spend:
+        total, per = spend_total()
+        for k, v in sorted(per.items()):
+            print(f"  {k}: ${v:.4f}")
+        print(f"TOTAL upgrade-eval spend: ${total:.4f}")
+        return
+    global RESULTS_DIR
+    if args.out and args.set == "standard":
+        RESULTS_DIR = Path(args.out)
     spend = _Spend(args.budget)
     try:
         for prompt in args.prompt:
             for s in args.services:
+                if args.set == "hard":
+                    run_hard(s, prompt, args.runs, set(args.cases), spend,
+                             out_root=Path(args.out) if args.out else None)
+                    continue
                 n = run_service(s, prompt, args.runs, set(args.cases), spend)
                 print(f"\n{s} {prompt}: {n}/{args.runs} complete runs")
     finally:
         for s, usd in spend.usd.items():
             print(f"TOTAL estimated spend {s}: ${usd:.4f} over {spend.calls[s]} calls")
-    if args.report or args.services:
+    if args.set == "standard" and not args.out and (args.report or args.services):
         services = [s for s in llm_parser.SERVICES
                     if any((RESULTS_DIR / p / f"{s}.jsonl").is_file() for p in PROMPTS)]
-        md = report(services)
+        md = report(services, prompts=("v1", "v2", "v3", "v4", "v5"))
         (RESULTS_DIR / "summary.md").write_text(md + "\n")
         print("\n" + md)
 
