@@ -189,3 +189,21 @@ python tools/check_stopsign_bodies.py                  # target-body lookup, def
 ```
 
 (Use `eval/run_env.sh` for the platform paths. The runs above used `CUDA_VISIBLE_DEVICES=`, which puts YOLO on the CPU.)
+
+## End-to-end check (added 2026-10-04 01:50 by Student B)
+
+S3 (C's 10 scenarios typed through `main.py --scenario`, fresh launch each) on `b/overnight-all` (which has the
+per-class C2 stop margin) **with this branch merged**, against the same code without it
+(`eval/e2e/results/20261004-0138_stopsign_eval` vs `20261004-0128_p2b_c2_margin_v2` on `b/overnight-all`):
+
+| | without (square plates) | with octagon STOP signs |
+|---|---|---|
+| strict success (SUCCESS and true d ≤ 0.80 m and C1) | **6/10** | **5/10** |
+| stop-sign targets (5, 6, 9) | 0/3 detected | 2/3 detected; 5 → `SUCCESS` but true d **0.93 m** (elevated target: estimate 0.54 m), 9 → timeout at 1.24 m, 6 not found |
+| chairs (1, 3, 4, 8) | 3/4 | 2/4 — scenario 1: red chair lost at ~1 m while signs were also detected, re-acquire strafes walked **into the chair** (true d 0.24 m, ~74 s in contact) |
+| balls (2, 7) | 2/2 | 2/2 |
+
+So detection improves but the end-to-end result gets worse: the chair-detection drop seen offline also shows up on
+the robot, and elevated signs would need their own range calibration (the stop margin was fitted on ground-level
+objects only). **Not merged into `b/overnight-all`.** Options for the group: keep the old signs; or adopt the octagon
+and (a) calibrate the stop-sign range estimate, (b) re-check the chair drop with the text-free octagon variant.
