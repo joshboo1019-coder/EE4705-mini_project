@@ -167,6 +167,8 @@ S5_STEPS = [
     ("estop", None, 60),
     ("non_english", ["gira a la izquierda noventa grados", "turn left 90 degrees"], 60),
     ("out_of_range", ["walk forward for a hundred meters", "why did you reject that?"], 60),
+    # turns > 180 deg are split into <= 120 deg chunks (RealSkills.turn goes the short way)
+    ("spin", ["spin around twice"], 90),
 ]
 
 
@@ -428,6 +430,14 @@ def _eval_s5(rec: dict, lines: List[str], ev: dict) -> dict:
         checks = {"rejected_non_english": has(r"^\[CMD\] rejected reason=non-English"),
                   "suggestion": any("Did you mean" in l for l in robot),
                   "redirect_turned": has(r"^\[TURN\] target=90\.0 deg")}
+    elif name == "spin":
+        yaws = [r["yaw"] for r in tr]
+        total = 0.0
+        for a, b in zip(yaws, yaws[1:]):
+            total += (b - a + 180.0) % 360.0 - 180.0
+        ev["total_rotation_deg"] = round(total, 1)
+        turns = [l for l in clean if l.startswith("[TURN]")]
+        checks = {"chunked_turns": len(turns) >= 6, "rotated_~720": abs(abs(total) - 720.0) <= 30.0}
     elif name == "out_of_range":
         checks = {"rejected_out_of_range": has(r"^\[CMD\] rejected reason=out_of_range"),
                   "suggestion": len(robot) >= 1, "why_answer": len(robot) >= 2}
@@ -575,6 +585,8 @@ def write_summary(run: Run, records: List[dict]) -> Path:
             chk = ", ".join(f"{k} {_yn(v)}" for k, v in (e.get("checks") or {}).items())
             if e.get("estop_latency_ms") is not None:
                 chk += f", latency {e['estop_latency_ms']} ms"
+            if e.get("total_rotation_deg") is not None:
+                chk += f", rotated {e['total_rotation_deg']}°"
             out.append(f"| {r['scenario']} | {chk} | {_yn(e.get('pass'))} | "
                        f"{_yn(not e.get('fall'))} fall, {len(e.get('contacts', []))} contacts | {_clip(r)} |")
         out.append("")
