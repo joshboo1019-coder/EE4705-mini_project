@@ -14,7 +14,7 @@ Updated at least hourly on `b/overnight-all`. Times are SGT.
 | v5 noise fix (agent) | ~0.081 | eval/noise_fix.md |
 | all e2e runs + demo takes since 02:10 (~250 parser calls, ~25 VLM) | ~0.04 | estimate |
 | **Total so far** | **~0.55** | updated 03:05 (cap 1.80) |
-| Extra: S3 repetitions ×4 (n=3 per side) | in progress | |
+| Extra: S3 repetitions ×4 (n=3 per side) | done 03:30 | strict 9/30 → 16/30; ~US$0.006 |
 
 ## Items
 

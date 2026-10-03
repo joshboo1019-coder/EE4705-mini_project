@@ -107,8 +107,8 @@ How to read the clip names: `~/Videos/e2e/<run>/<suite>_<scenario>.mp4` (not in 
   baseline **3/10** strict (chairs at true 0.84–0.96 m).
 - **Fix.** `assist/c2-margin` (merged in `b/overnight-all`): per-class `APPROACH_STOP_M_BY_CLASS`
   (chair 0.56, ball 0.78, default 0.57) from the measured error distribution; `FOUND_DISTANCE_M = 0.80` kept as the
-  C2 check (which now has hysteresis). S3 **6/10** strict, 0 contacts
-  (`eval/e2e/results/20261004-0128_p2b_c2_margin_v2`). A single 0.57 m for all classes was tried first and broke
+  C2 check (which now has hysteresis). S3 strict over 3 runs per side: **9/30 → 16/30**, chairs **0/12 → 7/12**
+  (`eval/e2e/S3_n3.md`). A single 0.57 m for all classes was tried first and broke
   the ball (it reads long). **Time:** 20 min review; longer-term fix the class-dependent bias in
   `_estimated_planar_distance`.
 
