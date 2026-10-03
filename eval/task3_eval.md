@@ -366,7 +366,7 @@ Optional extra: `向前走三秒` is rejected by the local precheck before any L
 
 Notes for recording:
 
-- **Don't demo a mid-move stop.** The executor runs each move to completion (`skills.move()` blocks),
+- **(Video_Task3 only — superseded on b/upgrade by the stop fast path, `[ESTOP]`, see eval/upgrade_eval.md.)** **Don't demo a mid-move stop.** The executor runs each move to completion (`skills.move()` blocks),
   so a "stop" typed during a move is only queued. It runs after the move has already finished, so on
   camera it looks like stop did nothing. "stop" on its own is parsed correctly (P7 / M2 in the eval).
 - **No `goto_object` in this video**, apart from the optional step 8. Object search and approach belong in Video_Task4.

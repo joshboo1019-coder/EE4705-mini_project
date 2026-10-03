@@ -5,7 +5,7 @@ Pops commands off schema.CommandQueue and runs them in order via the
 SkillsAPI (Student A) and navigation.goto_object (Student C). This is the
 one place where all three tasks meet — but note it only ever calls the
 *interfaces*, so it can be fully tested with skills_mock + perception_mock
-before Task 2/4 are finished (tests/test_parser_with_mock.py does this).
+before Task 2/4 are finished (tests/test_student_b.py and tests/test_upgrade_b.py do this).
 
 Upgrade (Task 3 programs): the executor is also the INTERPRETER for the
 programs the parser accepted (repeat, until_see, closed-loop distance
@@ -68,10 +68,18 @@ class _AbortableSkills:
             raise ExecutionAborted()
         return self._inner.move(vx, vy, wz, duration)
 
+    # RealSkills.turn() aims at wrap(start + angle), so a turn of more than
+    # 180 deg goes the short way (turn(360) does nothing, turn(270) turns
+    # right 90). Larger turns are split into equal chunks of at most this.
+    MAX_TURN_CHUNK_DEG = 120.0
+
     def turn(self, angle_deg: float) -> None:
-        if self._aborted():
-            raise ExecutionAborted()
-        return self._inner.turn(angle_deg)
+        n = max(1, math.ceil(abs(angle_deg) / self.MAX_TURN_CHUNK_DEG - 1e-9)) \
+            if abs(angle_deg) > 180.0 else 1
+        for _ in range(n):
+            if self._aborted():
+                raise ExecutionAborted()
+            self._inner.turn(angle_deg / n)
 
     def __getattr__(self, name):
         return getattr(self._inner, name)
