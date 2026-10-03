@@ -1,3 +1,4 @@
+# Change contributed by Student B (assist), pending review by the group
 """
 main.py — ALL. The only file that wires the real (or mock) implementations
 together. Nobody develops against this file day-to-day; you only touch it
@@ -7,6 +8,9 @@ the deadline.
 """
 
 import argparse
+import tempfile
+import time
+from pathlib import Path
 from core.schema import CommandQueue
 from dialogue.executor import CommandExecutor
 from dialogue import chat_interface
@@ -17,9 +21,11 @@ USE_REAL_SKILLS = True
 USE_REAL_PERCEPTION = True
 
 
-def build_skills(gui: bool = False, native: bool = False):
+def build_skills(gui: bool = False, native: bool = False, scene_path=None):
     if USE_REAL_SKILLS:
         from skills.skills_real import RealSkills
+        if scene_path is not None:
+            return RealSkills(gui=gui, native_viewer=native, scene_path=str(scene_path))
         return RealSkills(gui=gui, native_viewer=native)
     from skills.skills_mock import MockSkills
     return MockSkills()
@@ -33,15 +39,39 @@ def build_perception():
     return MockPerception()
 
 
+def load_scenario(token: str):
+    """`--scenario N|NAME`: one of Student C's Task 4 layouts
+    (perception/scenarios.py). Applies its object positions to config
+    (ground truth stays logging-only) and writes its scene XML; returns
+    (scenario, scene_path). The robot is placed after the sim boots."""
+    from perception import scenarios
+    scenario = scenarios.get_scenario(token)
+    scenarios.apply_to_config(scenario)
+    scenarios.print_scenario(scenario)
+    if not USE_REAL_SKILLS:
+        return scenario, None
+    out = Path(tempfile.mkdtemp(prefix="minilab_scenario_"))
+    scene_path = scenarios.build_scene_xml(scenario, out)
+    print(f"[SCENARIO] temporary scene written to {scene_path}")
+    return scenario, scene_path
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gui", action="store_true",
                         help="browser control panel at http://localhost:8765 (real skills only)")
     parser.add_argument("--native", action="store_true",
                         help="native MuJoCo window (real skills only)")
+    parser.add_argument("--scenario", default=None, metavar="N|NAME", help="Task 4 layout + start pose from perception/scenarios.py (1-10 or name)")
     args = parser.parse_args()
 
-    skills = build_skills(gui=args.gui, native=args.native)
+    scenario, scene_path = (load_scenario(args.scenario)
+                            if args.scenario is not None else (None, None))
+    skills = build_skills(gui=args.gui, native=args.native, scene_path=scene_path)
+    if scenario is not None and USE_REAL_SKILLS:
+        from perception import scenarios
+        time.sleep(1.0)          # let the sim thread start stepping
+        scenarios.place_robot(skills, *scenario.robot)
     perception = build_perception()
     queue = CommandQueue()
 
