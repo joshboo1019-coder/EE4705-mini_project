@@ -112,6 +112,14 @@ How to read the clip names: `~/Videos/e2e/<run>/<suite>_<scenario>.mp4` (not in 
   the ball (it reads long). **Time:** 20 min review; longer-term fix the class-dependent bias in
   `_estimated_planar_distance`.
 
+### C1b. A remembered target position can be off by ~0.5 m
+- Definitive final run, S3 scenario 1 (red chair): `[RANGE] estimated_planar=0.56 m ground_truth=1.04 m` for five
+  consecutive lines, then `[FOUND] … d=1.04 m` / `[MISSION] status=SUCCESS` — a +0.48 m error, three times the
+  chairs' usual +0.16 m, after a search and a re-acquire (`eval/e2e/results/20261004-0221_final/S3_01.log`).
+  Likely cause (not verified): `goto_object` computes `target_position` once from an early detection and ranges
+  against that fixed point afterwards; a poor first estimate then persists. No stop margin can absorb this.
+  **Proposal:** re-estimate `target_position` from the live bbox when the target is re-acquired / close.
+
 ### C2. Ground truth in the control path
 - `navigation._camera_height_above_ground → _target_center_world_height` reads the target body's live world
   height from the simulator (`data.xpos[body_id][2]`, found via its material colour) and feeds it into
