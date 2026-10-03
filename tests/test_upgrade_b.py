@@ -668,7 +668,8 @@ def test_snapshot_is_compact_and_complete():
     snap = st.snapshot()
     assert snap == (
         "STATE: 2.2 m from start (+2.0 m ahead, +1.0 m left), heading +90 deg vs start | "
-        "last actions (oldest first): turn left 90°; go to the green chair (reached); turn right 45° | "
+        "last command: walk forward 3 s at 0.8, then turn left 90°, then go to the green chair (reached), "
+        "then turn right 45° | "
         "camera has seen (first to last): red chair, green chair, orange sports ball, red stop sign, "
         "green stop sign, yellow stop sign, ... | last rejected: \"fly to the roof\" (impossible:fly)")
     assert len(snap) / 4 < 120                       # ~4 chars per token
@@ -677,7 +678,7 @@ def test_snapshot_is_compact_and_complete():
 def test_empty_snapshot():
     st = RobotState()
     st.update_pose(RobotPose(1, 1, 30))
-    assert st.snapshot() == ("STATE: at the start pose | last actions (oldest first): none | "
+    assert st.snapshot() == ("STATE: at the start pose | last command: none | "
                              "camera has seen (first to last): nothing yet")
 
 
@@ -1120,3 +1121,29 @@ def test_seen_lists_clearly_coloured_objects_and_counts_the_rest():
     only_junk.record_detections([_det("bench", "unknown")], RobotPose(0, 0, 0))
     assert only_junk.answer("seen") == ("I haven't seen any object clearly yet, plus 1 other "
                                         "detection without a clear colour (bench).")
+
+
+def test_snapshot_separates_the_last_command_from_earlier_ones():
+    """Regression (e2e S2, 2026-10-04): with a flat list of the last 3 actions
+    across commands, "do that again, but slower" after a sidestep came back as
+    walk + turn + sidestep. The snapshot now names the last command alone."""
+    st = RobotState()
+    st.update_pose(RobotPose(0, 0, 0))
+    from dialogue.state import ActionRecord
+    for batch, cmds in [(1, [MoveCommand(0.8, 0, 0, 2.0), TurnCommand(-90)]),
+                        (2, [MoveCommand(0.0, 0.8, 0, 2.0)])]:
+        for c in cmds:
+            st.record_action(ActionRecord(batch, c, RobotPose(0, 0, 0), RobotPose(0, 0, 0), True))
+    snap = st.snapshot()
+    assert "| last command: sidestep left 2 s at 0.8 | earlier: walk forward 2 s at 0.8; turn right 90° |" in snap
+
+
+def test_snapshot_caps_a_long_last_command():
+    st = RobotState()
+    st.update_pose(RobotPose(0, 0, 0))
+    from dialogue.state import ActionRecord
+    for k in range(8):
+        c = MoveCommand(0.8, 0, 0, 1.0) if k % 2 == 0 else TurnCommand(90)
+        st.record_action(ActionRecord(1, c, RobotPose(0, 0, 0), RobotPose(0, 0, 0), True))
+    snap = st.snapshot()
+    assert "(+4 more steps)" in snap and len(snap) / 4 < 120

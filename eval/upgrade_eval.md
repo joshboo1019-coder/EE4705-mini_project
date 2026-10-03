@@ -412,3 +412,19 @@ check the `[PLAN]` line before the robot moves (it starts at once — there is n
 | 7 | e-stop mid-program | `walk forward 2 meters and back 2 meters, three times`, then type `stop` while it walks |
 | 8 | until_see + goto, sightings | `keep turning until you see the orange ball, then go to it`, then `what have you seen?` |
 | 9 | return home | `go back to where you started`, then `how far are you from the start?` |
+
+## Real-sim regression found by the e2e harness, and its fix (2026-10-04 02:20, Student B)
+
+The final e2e run (`eval/e2e/results/20261004-0206_final`, suite S2 = the Video_Task3 script typed into
+`main.py --gui`) failed step e: after "sidestep to your left for two seconds", **"do that again, but slower"** came
+back as `move(vx=0.3, 2.0 s), turn(-90 deg), move(vx=0, vy=0.3, 2.0 s)` — the last three *actions* from the STATE
+line, which listed them flat across commands ("last actions (oldest first): walk forward 2 s; turn right 90°;
+sidestep left 2 s"). The Standard set didn't catch it because it runs without a STATE line. Reproduced 2/2 on mocks
+with the real LLM.
+
+**Fix (code only, `dialogue/state.py`):** the snapshot names the most recent *command* on its own —
+`last command: sidestep left 2 s at 0.8 | earlier: walk forward 2 s at 0.8; turn right 90°` (a long last command is
+capped at 4 steps + "(+N more steps)"); the one STATE example in the prompt was updated to the new wording. No
+prompt rule changed. After: the same sequence gives `move(vx=0, vy=0.3, 2.0 s) n=1` 3/3 on mocks; Standard set
+qwen-flash 45/45 (unchanged), Hard set qwen-flash 61/71 with the identical failing cases
+(`eval/results/snapfix/`, US$0.018). Two regression tests added.

@@ -194,16 +194,30 @@ class RobotState:
                     f"heading {head:+.0f} deg vs start")
         with self._lock:
             recent = [r for r in self.actions if r.kind != "estop"][-self.SNAPSHOT_ACTIONS:]
-            last = "; ".join(r.words() for r in recent) or "none"
+            # Group by command (batch): the most recent command is what a
+            # follow-up ("do that again, but slower") refers to. A flat list
+            # of the last actions across commands made the LLM repeat all of
+            # them (e2e S2, 2026-10-04: "do that again, but slower" after a
+            # sidestep came back as walk + turn + sidestep).
+            last_b = self.actions[-1].batch if self.actions else None
+            cmd_recs = [r for r in self.actions if r.batch == last_b and r.kind != "estop"]
+            last_cmd = ", then ".join(r.words() for r in cmd_recs[:4])
+            if len(cmd_recs) > 4:
+                last_cmd += f" (+{len(cmd_recs) - 4} more steps)"
+            earlier = "; ".join(r.words() for r in recent if r.batch != last_b)
             sightings = self.sightings()
             reject = self.last_reject
+        if last_cmd:
+            last = f"last command: {last_cmd}" + (f" | earlier: {earlier}" if earlier else "")
+        else:
+            last = "last command: none"
         seen = [s.name() for s in sightings if s.clear]
         unclear = sum(1 for s in sightings if not s.clear)
         seen_txt = (", ".join(seen[:self.SNAPSHOT_SEEN]) + (", ..." if len(seen) > self.SNAPSHOT_SEEN else "")
                     if seen else "nothing yet")
         if unclear:
             seen_txt += f" (+{unclear} detection{'s' if unclear > 1 else ''} without a clear colour)"
-        out = (f"STATE: {pose} | last actions (oldest first): {last} | "
+        out = (f"STATE: {pose} | {last} | "
                f"camera has seen (first to last): {seen_txt}")
         if reject:
             out += f" | last rejected: \"{reject[0][:40]}\" ({reject[1]})"

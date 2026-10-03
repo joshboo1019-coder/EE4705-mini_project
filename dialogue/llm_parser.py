@@ -270,7 +270,7 @@ User: wiggle: turn left 30 degrees and right 30 degrees, three times
 {"actions": [{"action": "repeat", "times": 3, "actions": [{"action": "turn", "angle_deg": 30}, {"action": "turn", "angle_deg": -30}]}]}
 User: rotate until a bottle is detected
 {"actions": [{"action": "until_see", "class": "bottle", "color": "", "do": [{"action": "turn", "angle_deg": 45}], "max_iter": 8}]}
-User: STATE: at the start pose | last actions (oldest first): none | camera has seen (first to last): white cup, blue chair
+User: STATE: at the start pose | last command: none | camera has seen (first to last): white cup, blue chair
 USER: walk over to the cup you noticed
 {"actions": [{"action": "goto_object", "class": "cup", "color": "white"}]}
 User: what have you done so far?
