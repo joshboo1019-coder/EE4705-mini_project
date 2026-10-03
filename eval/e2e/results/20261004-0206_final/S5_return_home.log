@@ -1,0 +1,26 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=turn(90 deg), move(vx=0.8, 2.0 s) n=2
+[PLAN] turn left 90°, then walk forward 2 s at 0.8
+User: [EXEC] action=1/2 turn angle=90.0 deg
+[TURN] target=90.0 deg final_error=1.7 deg
+[EXEC] action=2/2 move vx=0.8 vy=0.0 wz=0.0 t=2.0 s
+[DONE] actions=2 t=4.5 s
+Robot: Done: moved 1.4 m, net turn 91° left.
+[CMD] actions=return_home n=1
+User: [EXEC] action=1/1 return_home
+[PLAN] return home: turn right 178.4°, then walk forward 1.57 m at 0.8, then turn left 86.5°
+[TURN] target=-178.4 deg final_error=-2.0 deg
+[MOVE] target=1.57 m final_error=0.00 m
+[TURN] target=83.3 deg final_error=1.6 deg
+[DONE] actions=1 t=8.4 s
+Robot: Done: moved 1.8 m, net turn 93° right.
+[CMD] actions=status(home) n=1
+User: [EXEC] action=1/1 status topic=home
+Robot: I'm 0.3 m from where I started (0.2 m ahead, 0.2 m to the right), facing the way I started.
+[DONE] actions=1 t=0.0 s

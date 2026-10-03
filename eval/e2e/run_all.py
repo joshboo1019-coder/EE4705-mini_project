@@ -371,7 +371,10 @@ def evaluate(rec: dict) -> dict:
         return _eval_s3(rec, lines, ev)
     if suite == "S4":
         if rec["scenario"] == "look":
-            answers = [l.split("Robot: ", 1)[1] for l in lines if "Robot: " in l]
+            # the VLM answer is the Robot: line right after each [VLM] line
+            # (b/upgrade also prints talk-back "Robot: Done: ..." after turns)
+            answers = [lines[i + 1].split("Robot: ", 1)[1] for i, l in enumerate(lines[:-1])
+                       if "[VLM]" in l and "Robot: " in lines[i + 1]]
             frames = [m.group(1) for l in lines if (m := re.search(r"\[VLM\].* frame=(\S+)", l))]
             ev.update(answers=answers, frames=frames, n_answers=len(answers))
             ev["pass"] = len(answers) == 3          # correctness judged by hand in summary.md
