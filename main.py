@@ -1,7 +1,8 @@
 """
 Change contributed by Student B (assist), pending review by the group:
---mock (chore/cli-tests), --scenario (assist/task4-via-main), and the
-E2E_TRACE_FILE hook (eval/e2e harness only).
+--mock (chore/cli-tests), --scenario (assist/task4-via-main), the
+E2E_TRACE_FILE hook (eval/e2e harness only), and --scene hard /
+--gt-instance (assist/hard-scene, optional stress-test scene).
 
 main.py — ALL. The only file that wires the real (or mock) implementations
 together. Nobody develops against this file day-to-day; you only touch it
@@ -67,6 +68,20 @@ def load_scenario(token: str):
     return scenario, scene_path
 
 
+def load_hard_scene(gt_instance=None):
+    """`--scene hard`: the optional stress-test scene (perception/hard_scene.py,
+    docs/hard_scene.md). Swaps config.OBJECT_POSITIONS for the hard scene's
+    ground truth (logging only; "green_chair" -> green chair #1 unless
+    --gt-instance picks #2) and returns the scene path (None with --mock).
+    Dimmer lighting is applied after the sim boots (apply_lighting)."""
+    from perception import hard_scene
+    used = hard_scene.apply_to_config(gt_instance)
+    hard_scene.print_layout(used)
+    if not USE_REAL_SKILLS:
+        return None
+    return hard_scene.scene_path()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gui", action="store_true",
@@ -75,13 +90,30 @@ def main():
                         help="native MuJoCo window (real skills only)")
     parser.add_argument("--mock", action="store_true", help="MockSkills + MockPerception (no sim, no YOLO)")
     parser.add_argument("--scenario", default=None, metavar="N|NAME", help="Task 4 layout + start pose from perception/scenarios.py (1-10 or name)")
+    parser.add_argument("--scene", choices=("default", "hard"), default="default",
+                        help="'hard': optional stress-test scene (assets/scenes/custom_scene_hard.xml: "
+                             "2nd green chair, occluding walls, colour distractors, dim light); "
+                             "mutually exclusive with --scenario")
+    parser.add_argument("--gt-instance", default=None, metavar="KEY#N",
+                        help="--scene hard only, logging only: which instance the [FOUND] d= / "
+                             "[RANGE] ground_truth= logs measure to, e.g. 'green_chair#2'")
     args = parser.parse_args()
+    if args.scene == "hard" and args.scenario is not None:
+        parser.error("--scene hard and --scenario are mutually exclusive "
+                     "(a scenario builds its own scene from the default one)")
+    if args.gt_instance is not None and args.scene != "hard":
+        parser.error("--gt-instance needs --scene hard")
     if args.mock:
         use_mocks()
 
     scenario, scene_path = (load_scenario(args.scenario)
                             if args.scenario is not None else (None, None))
+    if args.scene == "hard":
+        scene_path = load_hard_scene(args.gt_instance)
     skills = build_skills(gui=args.gui, native=args.native, scene_path=scene_path)
+    if args.scene == "hard" and USE_REAL_SKILLS:
+        from perception import hard_scene
+        hard_scene.apply_lighting(skills)
     # e2e harness only (eval/e2e/trace.py): logs pose/tilt/contacts to a file
     # for evaluation when E2E_TRACE_FILE is set. Prints nothing, controls nothing.
     if os.environ.get("E2E_TRACE_FILE"):

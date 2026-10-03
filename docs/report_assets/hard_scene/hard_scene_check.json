@@ -1,0 +1,1308 @@
+{
+ "layout": [
+  "wall_north: x=-4.00, y in [+1.45, +3.05], height 1.2 m",
+  "wall_south: x=-4.00, y in [-3.05, -1.45], height 1.2 m",
+  "from the spawn: green_chair#1        visible",
+  "from the spawn: green_chair#2        visible",
+  "from the spawn: red_chair            visible",
+  "from the spawn: orange_sports ball   visible",
+  "from the spawn: red_stop sign        visible",
+  "from the spawn: yellow_stop sign     hidden",
+  "from the spawn: green_stop sign      hidden",
+  "from the spawn: blue_chair           visible"
+ ],
+ "body_lookup": {
+  "hard": {
+   "green_chair": [
+    -2.0,
+    2.0
+   ],
+   "red_chair": [
+    -2.0,
+    -2.0
+   ],
+   "orange_sports ball": [
+    -3.5,
+    0.0
+   ],
+   "red_stop sign": [
+    -1.3,
+    0.0
+   ],
+   "yellow_stop sign": [
+    -4.5,
+    2.0
+   ],
+   "green_stop sign": [
+    -4.5,
+    -2.0
+   ],
+   "blue_chair": [
+    3.45,
+    2.0
+   ]
+  },
+  "naive_same_material": {
+   "green_chair": "LookupError: Multiple simulator bodies match color='green', class='chair': [1, 8]",
+   "red_chair": [
+    -2.0,
+    -2.0
+   ],
+   "orange_sports ball": [
+    -3.5,
+    0.0
+   ],
+   "red_stop sign": [
+    -1.3,
+    0.0
+   ],
+   "yellow_stop sign": [
+    -4.5,
+    2.0
+   ],
+   "green_stop sign": [
+    -4.5,
+    -2.0
+   ],
+   "blue_chair": [
+    3.45,
+    2.0
+   ]
+  }
+ },
+ "helpers": {
+  "green_chair": {
+   "camera_height_above_target_m": 0.047,
+   "gt_distance_logged_m": 2.82,
+   "gt_measures_to": "green_chair#1"
+  },
+  "red_chair": {
+   "camera_height_above_target_m": 0.047,
+   "gt_distance_logged_m": 2.82,
+   "gt_measures_to": "red_chair"
+  },
+  "orange_sports ball": {
+   "camera_height_above_target_m": 0.377,
+   "gt_distance_logged_m": 3.48,
+   "gt_measures_to": "orange_sports ball"
+  },
+  "red_stop sign": {
+   "camera_height_above_target_m": -0.013,
+   "gt_distance_logged_m": 1.28,
+   "gt_measures_to": "red_stop sign"
+  },
+  "yellow_stop sign": {
+   "camera_height_above_target_m": -0.013,
+   "gt_distance_logged_m": 4.91,
+   "gt_measures_to": "yellow_stop sign"
+  },
+  "green_stop sign": {
+   "camera_height_above_target_m": -0.013,
+   "gt_distance_logged_m": 4.91,
+   "gt_measures_to": "green_stop sign"
+  },
+  "blue_chair": {
+   "camera_height_above_target_m": -0.353,
+   "gt_distance_logged_m": 4.0,
+   "gt_measures_to": "blue_chair"
+  }
+ },
+ "spawn_sweep_dim": {
+  "0": {
+   "pose": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "light": 0.55,
+   "mean_luma": 68.1,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "blue",
+     "conf": 0.6,
+     "bbox": [
+      86,
+      81,
+      160,
+      179
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "blue",
+     "conf": 0.34,
+     "bbox": [
+      122,
+      81,
+      160,
+      178
+     ]
+    }
+   ]
+  },
+  "30": {
+   "pose": [
+    0.0,
+    0.0,
+    30.0
+   ],
+   "light": 0.55,
+   "mean_luma": 69.6,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "blue",
+     "conf": 0.5,
+     "bbox": [
+      290,
+      93,
+      341,
+      176
+     ]
+    }
+   ]
+  },
+  "60": {
+   "pose": [
+    0.0,
+    0.0,
+    60.0
+   ],
+   "light": 0.55,
+   "mean_luma": 63.0,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "blue",
+     "conf": 0.93,
+     "bbox": [
+      470,
+      78,
+      546,
+      177
+     ]
+    }
+   ]
+  },
+  "90": {
+   "pose": [
+    0.0,
+    0.0,
+    90.0
+   ],
+   "light": 0.55,
+   "mean_luma": 62.3,
+   "detections": [
+    {
+     "class": "bench",
+     "color": "unknown",
+     "conf": 0.35,
+     "bbox": [
+      390,
+      166,
+      639,
+      335
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.35,
+     "bbox": [
+      0,
+      173,
+      58,
+      245
+     ]
+    }
+   ]
+  },
+  "120": {
+   "pose": [
+    0.0,
+    0.0,
+    120.0
+   ],
+   "light": 0.55,
+   "mean_luma": 59.5,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.88,
+     "bbox": [
+      183,
+      111,
+      268,
+      232
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.69,
+     "bbox": [
+      0,
+      172,
+      69,
+      234
+     ]
+    }
+   ]
+  },
+  "150": {
+   "pose": [
+    0.0,
+    0.0,
+    150.0
+   ],
+   "light": 0.55,
+   "mean_luma": 58.1,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.83,
+     "bbox": [
+      218,
+      126,
+      272,
+      215
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.82,
+     "bbox": [
+      366,
+      110,
+      442,
+      231
+     ]
+    },
+    {
+     "class": "sports ball",
+     "color": "orange",
+     "conf": 0.75,
+     "bbox": [
+      122,
+      197,
+      149,
+      221
+     ]
+    }
+   ]
+  },
+  "180": {
+   "pose": [
+    0.0,
+    0.0,
+    180.0
+   ],
+   "light": 0.55,
+   "mean_luma": 59.1,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.67,
+     "bbox": [
+      391,
+      124,
+      446,
+      215
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "red",
+     "conf": 0.56,
+     "bbox": [
+      0,
+      173,
+      58,
+      244
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.53,
+     "bbox": [
+      572,
+      92,
+      640,
+      254
+     ]
+    }
+   ]
+  },
+  "210": {
+   "pose": [
+    0.0,
+    0.0,
+    210.0
+   ],
+   "light": 0.55,
+   "mean_luma": 58.0,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "red",
+     "conf": 0.73,
+     "bbox": [
+      183,
+      115,
+      268,
+      233
+     ]
+    },
+    {
+     "class": "chair",
+     "color": "green",
+     "conf": 0.6,
+     "bbox": [
+      612,
+      116,
+      640,
+      228
+     ]
+    },
+    {
+     "class": "sports ball",
+     "color": "orange",
+     "conf": 0.57,
+     "bbox": [
+      484,
+      195,
+      510,
+      218
+     ]
+    }
+   ]
+  },
+  "240": {
+   "pose": [
+    0.0,
+    0.0,
+    240.0
+   ],
+   "light": 0.55,
+   "mean_luma": 60.1,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "red",
+     "conf": 0.67,
+     "bbox": [
+      366,
+      117,
+      443,
+      231
+     ]
+    }
+   ]
+  },
+  "270": {
+   "pose": [
+    0.0,
+    0.0,
+    270.0
+   ],
+   "light": 0.55,
+   "mean_luma": 61.6,
+   "detections": [
+    {
+     "class": "chair",
+     "color": "red",
+     "conf": 0.31,
+     "bbox": [
+      572,
+      101,
+      640,
+      253
+     ]
+    },
+    {
+     "class": "bench",
+     "color": "unknown",
+     "conf": 0.26,
+     "bbox": [
+      0,
+      173,
+      280,
+      243
+     ]
+    }
+   ]
+  },
+  "300": {
+   "pose": [
+    0.0,
+    0.0,
+    300.0
+   ],
+   "light": 0.55,
+   "mean_luma": 64.0,
+   "detections": []
+  },
+  "330": {
+   "pose": [
+    0.0,
+    0.0,
+    330.0
+   ],
+   "light": 0.55,
+   "mean_luma": 69.0,
+   "detections": []
+  }
+ },
+ "poses": {
+  "S_spawn_yaw180": {
+   "what": "spawn facing the objects",
+   "dim": {
+    "pose": [
+     0.0,
+     0.0,
+     180.0
+    ],
+    "light": 0.55,
+    "mean_luma": 59.0,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.63,
+      "bbox": [
+       391,
+       123,
+       446,
+       215
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "red",
+      "conf": 0.56,
+      "bbox": [
+       0,
+       173,
+       58,
+       244
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.5,
+      "bbox": [
+       572,
+       92,
+       640,
+       254
+      ]
+     }
+    ]
+   },
+   "full": {
+    "pose": [
+     0.0,
+     0.0,
+     180.0
+    ],
+    "light": 1.0,
+    "mean_luma": 74.3,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.73,
+      "bbox": [
+       391,
+       126,
+       446,
+       215
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "red",
+      "conf": 0.36,
+      "bbox": [
+       0,
+       172,
+       58,
+       246
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.28,
+      "bbox": [
+       572,
+       92,
+       640,
+       255
+      ]
+     }
+    ]
+   },
+   "darker": {
+    "0.3": {
+     "pose": [
+      0.0,
+      0.0,
+      180.0
+     ],
+     "light": 0.3,
+     "mean_luma": 40.7,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.62,
+       "bbox": [
+        391,
+        124,
+        446,
+        215
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "red",
+       "conf": 0.56,
+       "bbox": [
+        0,
+        172,
+        57,
+        244
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.55,
+       "bbox": [
+        572,
+        92,
+        640,
+        253
+       ]
+      }
+     ]
+    },
+    "0.15": {
+     "pose": [
+      0.0,
+      0.0,
+      180.0
+     ],
+     "light": 0.15,
+     "mean_luma": 29.9,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.55,
+       "bbox": [
+        572,
+        93,
+        640,
+        251
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.49,
+       "bbox": [
+        0,
+        171,
+        58,
+        245
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.48,
+       "bbox": [
+        391,
+        120,
+        446,
+        215
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.21,
+       "bbox": [
+        391,
+        106,
+        571,
+        215
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "A_ball_orange_box": {
+   "what": "ball + orange box + green chair #2",
+   "dim": {
+    "pose": [
+     -2.2,
+     -0.5,
+     170.0
+    ],
+    "light": 0.55,
+    "mean_luma": 60.0,
+    "detections": [
+     {
+      "class": "sports ball",
+      "color": "orange",
+      "conf": 0.89,
+      "bbox": [
+       354,
+       236,
+       409,
+       290
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.76,
+      "bbox": [
+       523,
+       40,
+       640,
+       293
+      ]
+     }
+    ]
+   },
+   "full": {
+    "pose": [
+     -2.2,
+     -0.5,
+     170.0
+    ],
+    "light": 1.0,
+    "mean_luma": 74.7,
+    "detections": [
+     {
+      "class": "sports ball",
+      "color": "orange",
+      "conf": 0.9,
+      "bbox": [
+       354,
+       235,
+       409,
+       290
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.52,
+      "bbox": [
+       523,
+       41,
+       640,
+       292
+      ]
+     }
+    ]
+   },
+   "darker": {
+    "0.3": {
+     "pose": [
+      -2.2,
+      -0.5,
+      170.0
+     ],
+     "light": 0.3,
+     "mean_luma": 43.0,
+     "detections": [
+      {
+       "class": "sports ball",
+       "color": "orange",
+       "conf": 0.92,
+       "bbox": [
+        354,
+        235,
+        409,
+        289
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.75,
+       "bbox": [
+        524,
+        38,
+        640,
+        291
+       ]
+      }
+     ]
+    },
+    "0.15": {
+     "pose": [
+      -2.2,
+      -0.5,
+      170.0
+     ],
+     "light": 0.15,
+     "mean_luma": 32.8,
+     "detections": [
+      {
+       "class": "sports ball",
+       "color": "orange",
+       "conf": 0.9,
+       "bbox": [
+        354,
+        235,
+        410,
+        289
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.76,
+       "bbox": [
+        523,
+        37,
+        640,
+        291
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "orange",
+       "conf": 0.27,
+       "bbox": [
+        32,
+        188,
+        217,
+        327
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "B_red_chair_red_box": {
+   "what": "red chair + red box",
+   "dim": {
+    "pose": [
+     -1.0,
+     -1.5,
+     215.0
+    ],
+    "light": 0.55,
+    "mean_luma": 57.0,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "red",
+      "conf": 0.64,
+      "bbox": [
+       254,
+       1,
+       468,
+       381
+      ]
+     }
+    ]
+   },
+   "full": {
+    "pose": [
+     -1.0,
+     -1.5,
+     215.0
+    ],
+    "light": 1.0,
+    "mean_luma": 72.4,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "red",
+      "conf": 0.47,
+      "bbox": [
+       257,
+       2,
+       469,
+       381
+      ]
+     }
+    ]
+   },
+   "darker": {
+    "0.3": {
+     "pose": [
+      -1.0,
+      -1.5,
+      215.0
+     ],
+     "light": 0.3,
+     "mean_luma": 39.4,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "red",
+       "conf": 0.59,
+       "bbox": [
+        254,
+        2,
+        468,
+        381
+       ]
+      }
+     ]
+    },
+    "0.15": {
+     "pose": [
+      -1.0,
+      -1.5,
+      215.0
+     ],
+     "light": 0.15,
+     "mean_luma": 28.8,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "red",
+       "conf": 0.69,
+       "bbox": [
+        253,
+        2,
+        468,
+        380
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "red",
+       "conf": 0.26,
+       "bbox": [
+        253,
+        2,
+        563,
+        384
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "C_two_green_chairs": {
+   "what": "both green chairs, wall_north",
+   "dim": {
+    "pose": [
+     -1.0,
+     1.0,
+     160.0
+    ],
+    "light": 0.55,
+    "mean_luma": 56.4,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.76,
+      "bbox": [
+       163,
+       99,
+       247,
+       244
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.75,
+      "bbox": [
+       393,
+       2,
+       602,
+       332
+      ]
+     },
+     {
+      "class": "sports ball",
+      "color": "orange",
+      "conf": 0.59,
+      "bbox": [
+       0,
+       214,
+       50,
+       250
+      ]
+     }
+    ]
+   },
+   "full": {
+    "pose": [
+     -1.0,
+     1.0,
+     160.0
+    ],
+    "light": 1.0,
+    "mean_luma": 70.4,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.61,
+      "bbox": [
+       163,
+       98,
+       249,
+       242
+      ]
+     },
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.51,
+      "bbox": [
+       393,
+       3,
+       602,
+       332
+      ]
+     },
+     {
+      "class": "sports ball",
+      "color": "orange",
+      "conf": 0.41,
+      "bbox": [
+       0,
+       214,
+       51,
+       250
+      ]
+     }
+    ]
+   },
+   "darker": {
+    "0.3": {
+     "pose": [
+      -1.0,
+      1.0,
+      160.0
+     ],
+     "light": 0.3,
+     "mean_luma": 39.4,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.77,
+       "bbox": [
+        163,
+        99,
+        248,
+        244
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.76,
+       "bbox": [
+        394,
+        2,
+        602,
+        331
+       ]
+      },
+      {
+       "class": "sports ball",
+       "color": "orange",
+       "conf": 0.66,
+       "bbox": [
+        0,
+        214,
+        50,
+        250
+       ]
+      }
+     ]
+    },
+    "0.15": {
+     "pose": [
+      -1.0,
+      1.0,
+      160.0
+     ],
+     "light": 0.15,
+     "mean_luma": 29.2,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.78,
+       "bbox": [
+        394,
+        2,
+        602,
+        331
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.61,
+       "bbox": [
+        163,
+        99,
+        249,
+        244
+       ]
+      },
+      {
+       "class": "sports ball",
+       "color": "orange",
+       "conf": 0.6,
+       "bbox": [
+        0,
+        214,
+        50,
+        250
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "D_behind_wall_north": {
+   "what": "yellow stop sign from behind wall_north, diagonal",
+   "dim": {
+    "pose": [
+     -5.8,
+     0.4,
+     51.0
+    ],
+    "light": 0.55,
+    "mean_luma": 59.9,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.93,
+      "bbox": [
+       453,
+       77,
+       619,
+       261
+      ]
+     }
+    ]
+   },
+   "full": {
+    "pose": [
+     -5.8,
+     0.4,
+     51.0
+    ],
+    "light": 1.0,
+    "mean_luma": 73.3,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.84,
+      "bbox": [
+       452,
+       77,
+       618,
+       259
+      ]
+     }
+    ]
+   },
+   "darker": {
+    "0.3": {
+     "pose": [
+      -5.8,
+      0.4,
+      51.0
+     ],
+     "light": 0.3,
+     "mean_luma": 42.3,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.93,
+       "bbox": [
+        457,
+        77,
+        619,
+        260
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.32,
+       "bbox": [
+        453,
+        127,
+        521,
+        225
+       ]
+      }
+     ]
+    },
+    "0.15": {
+     "pose": [
+      -5.8,
+      0.4,
+      51.0
+     ],
+     "light": 0.15,
+     "mean_luma": 31.6,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.84,
+       "bbox": [
+        476,
+        77,
+        619,
+        260
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.48,
+       "bbox": [
+        454,
+        127,
+        521,
+        219
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "E_yellow_sign_square_on": {
+   "what": "yellow stop sign square-on, from between the walls",
+   "dim": {
+    "pose": [
+     -4.6,
+     -0.3,
+     90.0
+    ],
+    "light": 0.55,
+    "mean_luma": 58.0,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.81,
+      "bbox": [
+       497,
+       22,
+       640,
+       307
+      ]
+     }
+    ]
+   },
+   "full": {
+    "pose": [
+     -4.6,
+     -0.3,
+     90.0
+    ],
+    "light": 1.0,
+    "mean_luma": 69.2,
+    "detections": [
+     {
+      "class": "chair",
+      "color": "green",
+      "conf": 0.52,
+      "bbox": [
+       497,
+       22,
+       640,
+       309
+      ]
+     }
+    ]
+   },
+   "darker": {
+    "0.3": {
+     "pose": [
+      -4.6,
+      -0.3,
+      90.0
+     ],
+     "light": 0.3,
+     "mean_luma": 41.6,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "green",
+       "conf": 0.85,
+       "bbox": [
+        497,
+        21,
+        640,
+        306
+       ]
+      }
+     ]
+    },
+    "0.15": {
+     "pose": [
+      -4.6,
+      -0.3,
+      90.0
+     ],
+     "light": 0.15,
+     "mean_luma": 31.8,
+     "detections": [
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.8,
+       "bbox": [
+        498,
+        21,
+        640,
+        306
+       ]
+      },
+      {
+       "class": "chair",
+       "color": "unknown",
+       "conf": 0.22,
+       "bbox": [
+        365,
+        4,
+        639,
+        292
+       ]
+      }
+     ]
+    }
+   }
+  }
+ }
+}
