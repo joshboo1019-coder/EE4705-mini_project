@@ -439,7 +439,7 @@ def test_until_see_gives_up_after_max_iter_and_skips_the_rest(capsys):
     assert "[UNTIL] not seen after 3 iteration(s)" in out
     assert "[EXEC] until_see target not seen; skipping 1 remaining action(s)" in out
     assert "[DONE] actions=1" in out
-    assert ("Robot: I skipped the last 1 step: never saw the orange sports ball (3 tries); "
+    assert ("Robot: I skipped the last 1 step; never saw the orange sports ball (3 tries); "
             "net turn 135° left.") in out
 
 
@@ -1012,3 +1012,22 @@ def test_common_names_map_to_coco_classes(given, want):
     assert r.commands == [GotoObjectCommand(want, "orange")]
     r = _v({"action": "until_see", "class": given, "color": "", "do": [TURN_L]})
     assert r.commands[0].object_class == want
+
+
+def test_bare_repeat_object_is_the_repeat_not_its_body():
+    """Regression (Hard set H-U8, gpt-5-nano): a bare repeat has both
+    "action" and "actions"; reading "actions" first dropped the repeat."""
+    bare = {"action": "repeat", "times": 20, "actions": [{**MOVE_3S, "duration": 1.0}]}
+    r = llm_parser._validate(json.dumps(bare))
+    assert not r.accepted and r.reject_reason == "too_many_iterations:20"
+    r = llm_parser._validate(json.dumps({**bare, "times": 3}))
+    assert r.accepted and r.commands == [RepeatCommand(3, [MoveCommand(0.8, 0.0, 0.0, 1.0)])]
+    from eval.hard_cases import raw_unsafe
+    assert raw_unsafe(json.dumps(bare)) == "iterations=20"
+
+
+def test_model_reasons_without_a_template_get_no_free_text_suggestion():
+    assert talkback.reject_reply("ambiguous", "go to what? Please specify") == \
+        "Sorry, I'm not sure what you mean. Could you say exactly where or what?"
+    assert talkback.reject_reply("weird_reason", "do a flip") == \
+        "Sorry, I couldn't turn that into a safe command. Could you rephrase it?"

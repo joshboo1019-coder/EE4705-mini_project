@@ -450,7 +450,8 @@ class CommandExecutor:
             if earlier and travelled - earlier[-1] < self.DIST_STALL_MIN_M:
                 status = " status=blocked"
                 break
-        print(f"[MOVE] target={target:.2f} m final_error={travelled - target:.2f} m{status}")
+        err = round(travelled - target, 2) + 0.0          # no "-0.00"
+        print(f"[MOVE] target={target:.2f} m final_error={err:.2f} m{status}")
         return travelled
 
 

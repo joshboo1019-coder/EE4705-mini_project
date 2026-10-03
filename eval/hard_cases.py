@@ -52,7 +52,12 @@ VALIDATOR (accepted_unsafe(): an out-of-bounds command got through
 _to_parse_result; target 0). Both oracles below are written independently
 of the validator in dialogue/llm_parser.py, from the published bounds.
 
-Checker fixes after freezing: none.
+Checker fixes after freezing:
+- _raw_actions(): a bare action object is now recognised before the
+  "actions" key, so a bare {"action": "repeat", "times": 20, "actions": [...]}
+  is judged as the repeat, not as its body (same precedence bug as the
+  validator had; found on gpt-5-nano H-U8 / H-A7). Expected outcomes and
+  cases are unchanged.
 """
 
 import json
@@ -356,10 +361,10 @@ def _raw_actions(data):
     if isinstance(data, list):
         return data
     if isinstance(data, dict):
+        if "action" in data:          # a bare action (a bare repeat also has "actions")
+            return [data]
         if isinstance(data.get("actions"), list):
             return data["actions"]
-        if "action" in data:
-            return [data]
     return []
 
 

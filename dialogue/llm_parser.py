@@ -577,10 +577,14 @@ def _validate(raw_json: str) -> ParseResult:
                              _clean_suggestion(data.get("suggestion")))
         if isinstance(data, list):
             actions = data
+        elif isinstance(data, dict) and "action" in data:
+            # one bare action object, e.g. {"action": "stop"}. Checked before
+            # "actions": a bare repeat has both keys, and its body must not
+            # be mistaken for the top-level list (that silently dropped the
+            # repeat — found by the Hard set, H-U8 on gpt-5-nano).
+            actions = [data]
         elif isinstance(data, dict) and "actions" in data:
             actions = data["actions"]
-        elif isinstance(data, dict) and "action" in data:
-            actions = [data]   # one bare action object, e.g. {"action": "stop"}
         else:
             raise _Invalid("invalid_field:actions")
         if not isinstance(actions, list):

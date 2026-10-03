@@ -222,8 +222,10 @@ def reject_reply(reason: Optional[str], suggestion: Optional[str] = None) -> Opt
         return "I won't do that; it isn't safe."
     if head == "llm_error":
         return "Sorry, my language service didn't answer. Please try again."
-    if suggestion:
-        return f"Sorry, I can't do that. I could {suggestion} instead."
+    if any(w in reason.lower() for w in ("ambig", "unclear", "vague")):
+        return "Sorry, I'm not sure what you mean. Could you say exactly where or what?"
+    # any other model-made reason: its free-text suggestion is not shown (it
+    # can be a question or exceed a limit), only a request to rephrase
     return "Sorry, I couldn't turn that into a safe command. Could you rephrase it?"
 
 
@@ -296,4 +298,5 @@ def summary(t: BatchTrace) -> Optional[str]:
     if motion:
         clauses.append(motion)
     first, rest = clauses[0], clauses[1:]
-    return first + (": " + "; ".join(rest) if rest else "") + "."
+    sep = ": " if first == "Done" else "; "
+    return first + (sep + "; ".join(rest) if rest else "") + "."
