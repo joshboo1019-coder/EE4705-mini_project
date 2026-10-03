@@ -524,6 +524,7 @@ def test_estop_aborts_a_running_program_from_the_chat_thread(fake_llm, capsys):
     fake_llm.replies.append(_actions({"action": "turn", "angle_deg": -90}))
     chat_interface.handle_utterance("turn right", history, queue)
     assert _wait(lambda: skills.turns and skills.turns[-1] == -90)
+    assert _wait(lambda: not ex._busy)     # don't leave a batch printing into the next test
 
 
 def test_estop_interrupts_goto_object_at_its_next_motion_call(fake_llm, capsys):
