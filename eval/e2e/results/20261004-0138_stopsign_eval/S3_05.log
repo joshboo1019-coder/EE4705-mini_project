@@ -1,0 +1,169 @@
+
+=== Scenario 5: far_small_target ===
+Small ball 5+ m away (zoom pass), signs nearer.
+Robot start: x=-0.2 y=0.0 yaw=180.0 deg | target visible at start (expected): True
+Valid targets: orange sports ball, red stop sign, yellow stop sign
+Example: go to the orange sports ball
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_p4dc3d2m/scenario_05_far_small_target.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_p4dc3d2m/scenario_05_far_small_target.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-0.18 y=0.00 yaw=179.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=stop sign, color=yellow) n=1
+User: [EXEC] action=1/1 goto_object class=stop sign color=yellow
+[CMD] action=goto_object(class=stop sign, color=yellow)
+[DETECT] class=sports ball color=orange conf=0.50 bbox=[340.37, 183.91, 352.19, 196.36]
+[DETECT] class=sports ball color=unknown conf=0.44 bbox=[37.65, 295.89, 80.46, 329.70]
+[DETECT] class=tennis racket color=yellow conf=0.39 bbox=[588.32, 100.53, 639.19, 223.67]
+[DETECT] class=tennis racket color=red conf=0.38 bbox=[0.15, 102.76, 43.56, 226.52]
+[DETECT] class=sports ball color=orange conf=0.50 bbox=[340.36, 183.92, 352.29, 196.37]
+[DETECT] class=sports ball color=unknown conf=0.41 bbox=[37.62, 296.00, 80.51, 329.69]
+[DETECT] class=tennis racket color=red conf=0.34 bbox=[0.16, 102.71, 43.56, 226.53]
+[DETECT] class=tennis racket color=yellow conf=0.32 bbox=[588.35, 100.51, 639.29, 223.84]
+[DETECT] class=sports ball color=yellow conf=0.21 bbox=[596.94, 100.71, 638.81, 142.49]
+[DETECT] class=sports ball color=orange conf=0.50 bbox=[340.36, 183.92, 352.29, 196.38]
+[DETECT] class=sports ball color=unknown conf=0.41 bbox=[37.65, 296.00, 80.52, 329.69]
+[DETECT] class=tennis racket color=red conf=0.34 bbox=[0.16, 102.70, 43.56, 226.51]
+[DETECT] class=tennis racket color=yellow conf=0.31 bbox=[588.35, 100.51, 639.29, 223.91]
+[DETECT] class=sports ball color=yellow conf=0.21 bbox=[596.95, 100.70, 638.80, 142.49]
+[DETECT] class=sports ball color=orange conf=0.50 bbox=[340.36, 183.92, 352.29, 196.38]
+[DETECT] class=sports ball color=unknown conf=0.41 bbox=[37.65, 296.00, 80.52, 329.69]
+[DETECT] class=tennis racket color=red conf=0.34 bbox=[0.16, 102.70, 43.56, 226.51]
+[DETECT] class=tennis racket color=yellow conf=0.31 bbox=[588.35, 100.51, 639.29, 223.91]
+[DETECT] class=sports ball color=yellow conf=0.21 bbox=[596.95, 100.70, 638.80, 142.49]
+[DETECT] class=sports ball color=orange conf=0.50 bbox=[340.36, 183.92, 352.29, 196.38]
+[DETECT] class=sports ball color=unknown conf=0.41 bbox=[37.65, 296.00, 80.52, 329.69]
+[DETECT] class=tennis racket color=red conf=0.34 bbox=[0.16, 102.70, 43.56, 226.51]
+[DETECT] class=tennis racket color=yellow conf=0.31 bbox=[588.35, 100.51, 639.29, 223.91]
+[DETECT] class=sports ball color=yellow conf=0.21 bbox=[596.95, 100.70, 638.80, 142.49]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.3 deg
+[DETECT] class=stop sign color=red conf=0.66 bbox=[383.61, 128.64, 410.96, 157.87]
+[DETECT] class=fork color=unknown conf=0.24 bbox=[0.06, 158.77, 33.19, 237.04]
+[DETECT] class=sports ball color=unknown conf=0.20 bbox=[374.64, 273.64, 399.32, 297.38]
+[DETECT] class=stop sign color=red conf=0.66 bbox=[383.61, 128.64, 410.96, 157.87]
+[DETECT] class=fork color=unknown conf=0.24 bbox=[0.06, 158.77, 33.19, 237.04]
+[DETECT] class=sports ball color=unknown conf=0.20 bbox=[374.64, 273.64, 399.32, 297.38]
+[DETECT] class=stop sign color=red conf=0.66 bbox=[383.61, 128.64, 410.96, 157.87]
+[DETECT] class=fork color=unknown conf=0.24 bbox=[0.06, 158.77, 33.19, 237.04]
+[DETECT] class=sports ball color=unknown conf=0.20 bbox=[374.64, 273.64, 399.32, 297.38]
+[DETECT] class=stop sign color=red conf=0.66 bbox=[383.61, 128.64, 410.96, 157.87]
+[DETECT] class=fork color=unknown conf=0.24 bbox=[0.06, 158.77, 33.19, 237.04]
+[DETECT] class=sports ball color=unknown conf=0.20 bbox=[374.64, 273.64, 399.32, 297.38]
+[DETECT] class=stop sign color=red conf=0.66 bbox=[383.61, 128.64, 410.96, 157.87]
+[DETECT] class=fork color=unknown conf=0.24 bbox=[0.06, 158.77, 33.19, 237.04]
+[DETECT] class=sports ball color=unknown conf=0.20 bbox=[374.64, 273.64, 399.32, 297.38]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.9 deg
+[DETECT] class=stop sign color=red conf=0.70 bbox=[596.49, 112.48, 639.86, 152.26]
+[DETECT] class=bench color=unknown conf=0.32 bbox=[1.10, 182.50, 236.72, 263.03]
+[DETECT] class=chair color=red conf=0.24 bbox=[618.87, 115.74, 639.88, 239.21]
+[DETECT] class=tennis racket color=red conf=0.20 bbox=[620.02, 116.61, 639.79, 155.82]
+[DETECT] class=bench color=unknown conf=0.32 bbox=[1.10, 182.50, 236.72, 263.03]
+[DETECT] class=chair color=red conf=0.24 bbox=[618.87, 115.74, 639.88, 239.21]
+[DETECT] class=tennis racket color=red conf=0.20 bbox=[620.02, 116.61, 639.79, 155.82]
+[DETECT] class=bench color=unknown conf=0.32 bbox=[1.10, 182.50, 236.72, 263.03]
+[DETECT] class=chair color=red conf=0.24 bbox=[618.87, 115.74, 639.88, 239.21]
+[DETECT] class=tennis racket color=red conf=0.20 bbox=[620.02, 116.61, 639.79, 155.82]
+[DETECT] class=bench color=unknown conf=0.32 bbox=[1.10, 182.50, 236.72, 263.03]
+[DETECT] class=chair color=red conf=0.24 bbox=[618.87, 115.74, 639.88, 239.21]
+[DETECT] class=tennis racket color=red conf=0.20 bbox=[620.02, 116.61, 639.79, 155.82]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.1 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[DETECT] class=chair color=unknown conf=0.36 bbox=[591.99, 169.01, 620.54, 220.33]
+[DETECT] class=chair color=unknown conf=0.36 bbox=[591.99, 169.01, 620.54, 220.33]
+[DETECT] class=chair color=unknown conf=0.36 bbox=[591.99, 169.01, 620.54, 220.33]
+[DETECT] class=chair color=unknown conf=0.36 bbox=[591.99, 169.01, 620.54, 220.33]
+[DETECT] class=chair color=unknown conf=0.36 bbox=[591.99, 169.01, 620.54, 220.33]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.1 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=2.0 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=0.9 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=bench color=unknown conf=0.40 bbox=[364.30, 181.60, 639.47, 324.23]
+[DETECT] class=bench color=unknown conf=0.40 bbox=[364.30, 181.60, 639.47, 324.23]
+[DETECT] class=bench color=unknown conf=0.40 bbox=[364.30, 181.60, 639.47, 324.23]
+[DETECT] class=bench color=unknown conf=0.40 bbox=[364.30, 181.60, 639.47, 324.23]
+[DETECT] class=bench color=unknown conf=0.40 bbox=[364.30, 181.60, 639.47, 324.23]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.1 deg
+[DETECT] class=airplane color=unknown conf=0.64 bbox=[486.95, 140.28, 639.82, 285.25]
+[DETECT] class=airplane color=unknown conf=0.64 bbox=[486.95, 140.28, 639.82, 285.25]
+[DETECT] class=airplane color=unknown conf=0.64 bbox=[486.95, 140.28, 639.82, 285.25]
+[DETECT] class=airplane color=unknown conf=0.64 bbox=[486.95, 140.28, 639.82, 285.25]
+[DETECT] class=airplane color=unknown conf=0.64 bbox=[486.95, 140.28, 639.82, 285.25]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[DETECT] class=stop sign color=yellow conf=0.36 bbox=[309.89, 131.82, 329.14, 160.50]
+[DETECT] class=sports ball color=orange conf=0.31 bbox=[52.81, 188.92, 75.05, 206.83]
+[DETECT] class=stop sign color=yellow conf=0.22 bbox=[291.12, 123.07, 309.92, 152.36]
+[RANGE] estimated_planar=3.39 m ground_truth=3.78 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[41.97, 178.98, 64.71, 195.90]
+[TRACK] recovered yellow stop sign in live frame score=0.91
+[RANGE] estimated_planar=3.27 m ground_truth=3.67 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.39 bbox=[278.40, 120.93, 298.12, 151.99]
+[DETECT] class=sports ball color=orange conf=0.35 bbox=[21.79, 197.60, 47.10, 215.72]
+[RANGE] estimated_planar=3.16 m ground_truth=3.55 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.48 bbox=[277.46, 147.04, 297.66, 178.16]
+[DETECT] class=sports ball color=orange conf=0.48 bbox=[13.57, 225.58, 39.70, 244.58]
+[RANGE] estimated_planar=3.01 m ground_truth=3.40 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.25 bbox=[271.95, 127.06, 293.57, 160.75]
+[DETECT] class=sports ball color=orange conf=0.24 bbox=[0.11, 209.53, 17.92, 229.54]
+[RANGE] estimated_planar=2.87 m ground_truth=3.26 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.38 bbox=[264.81, 122.26, 287.86, 158.18]
+[RANGE] estimated_planar=2.73 m ground_truth=3.12 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.28 bbox=[261.29, 136.88, 284.46, 173.18]
+[RANGE] estimated_planar=2.58 m ground_truth=2.97 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.30 bbox=[256.58, 122.49, 281.48, 161.85]
+[RANGE] estimated_planar=2.43 m ground_truth=2.83 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.39 bbox=[251.08, 121.41, 277.33, 162.73]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=stop sign color=yellow conf=0.32 bbox=[269.25, 101.74, 296.08, 145.39]
+[RANGE] estimated_planar=2.27 m ground_truth=2.67 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.65 bbox=[265.67, 96.22, 294.24, 143.35]
+[RANGE] estimated_planar=2.14 m ground_truth=2.54 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.50 bbox=[263.77, 112.68, 293.23, 160.95]
+[RANGE] estimated_planar=1.99 m ground_truth=2.38 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.79 bbox=[257.29, 91.45, 289.75, 145.88]
+[RANGE] estimated_planar=1.84 m ground_truth=2.24 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.83 bbox=[249.49, 81.88, 283.54, 141.52]
+[RANGE] estimated_planar=1.70 m ground_truth=2.09 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.86 bbox=[241.29, 82.17, 277.92, 146.80]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=stop sign color=yellow conf=0.93 bbox=[249.24, 55.64, 287.36, 124.44]
+[RANGE] estimated_planar=1.54 m ground_truth=1.94 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.92 bbox=[267.87, 62.11, 308.11, 133.85]
+[RANGE] estimated_planar=1.41 m ground_truth=1.80 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.95 bbox=[256.40, 45.18, 301.07, 126.22]
+[RANGE] estimated_planar=1.27 m ground_truth=1.66 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.95 bbox=[243.70, 45.90, 294.41, 135.16]
+[RANGE] estimated_planar=1.11 m ground_truth=1.51 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.94 bbox=[233.01, 17.17, 293.03, 122.57]
+[TURN] target=5.0 deg final_error=0.9 deg
+[DETECT] class=stop sign color=yellow conf=0.94 bbox=[242.78, 10.66, 302.46, 120.19]
+[RANGE] estimated_planar=0.96 m ground_truth=1.35 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.91 bbox=[265.27, 1.67, 330.09, 96.97]
+[RANGE] estimated_planar=0.83 m ground_truth=1.23 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.84 bbox=[238.60, 1.30, 319.82, 83.06]
+[RANGE] estimated_planar=0.69 m ground_truth=1.09 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.56 bbox=[236.46, 1.20, 321.46, 77.50]
+[RANGE] estimated_planar=0.58 m ground_truth=0.97 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.26 bbox=[228.05, 0.76, 321.27, 84.30]
+[RANGE] estimated_planar=0.56 m ground_truth=0.96 m phase=approach
+[DETECT] class=stop sign color=yellow conf=0.25 bbox=[231.01, 1.19, 306.68, 53.83]
+[RANGE] estimated_planar=0.54 m ground_truth=0.93 m phase=stop_check
+[FOUND] class=stop sign color=yellow t=23.2 s d=0.93 m
+[MISSION] status=SUCCESS
+[DONE] actions=1 t=23.2 s

@@ -1,0 +1,138 @@
+
+=== Scenario 9: short_approach ===
+Target only ~1.2 m away: tests stopping at the 0.8 m threshold.
+Robot start: x=-1.0 y=0.0 yaw=180.0 deg | target visible at start (expected): True
+Valid targets: red stop sign, green chair, yellow stop sign
+Example: go to the red stop sign
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_3wjniwy0/scenario_09_short_approach.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_3wjniwy0/scenario_09_short_approach.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-0.98 y=0.00 yaw=179.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=stop sign, color=red) n=1
+User: [EXEC] action=1/1 goto_object class=stop sign color=red
+[CMD] action=goto_object(class=stop sign, color=red)
+[DETECT] class=stop sign color=red conf=0.53 bbox=[418.57, 1.42, 460.00, 95.02]
+[DETECT] class=stop sign color=red conf=0.49 bbox=[375.50, 0.87, 459.04, 95.07]
+[DETECT] class=stop sign color=red conf=0.48 bbox=[376.74, 1.83, 433.00, 93.72]
+[DETECT] class=stop sign color=yellow conf=0.48 bbox=[446.04, 116.46, 468.22, 148.11]
+[DETECT] class=chair color=green conf=0.25 bbox=[52.06, 104.78, 167.56, 240.29]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=stop sign color=red conf=0.83 bbox=[357.53, 1.65, 442.45, 99.96]
+[DETECT] class=chair color=green conf=0.57 bbox=[29.49, 104.14, 153.02, 243.57]
+[DETECT] class=stop sign color=yellow conf=0.44 bbox=[431.82, 118.98, 453.50, 149.78]
+[DETECT] class=stop sign color=red conf=0.31 bbox=[387.29, 0.92, 441.59, 100.54]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=stop sign color=red conf=0.91 bbox=[321.58, 1.34, 402.84, 105.50]
+[DETECT] class=stop sign color=yellow conf=0.40 bbox=[402.56, 122.88, 421.71, 153.28]
+[DETECT] class=stop sign color=red conf=0.92 bbox=[322.93, 1.27, 405.98, 99.31]
+[DETECT] class=stop sign color=yellow conf=0.45 bbox=[405.78, 118.79, 426.18, 149.03]
+[RANGE] estimated_planar=1.33 m ground_truth=1.25 m phase=approach
+[DETECT] class=stop sign color=red conf=0.81 bbox=[331.76, 0.53, 413.93, 45.74]
+[DETECT] class=stop sign color=yellow conf=0.54 bbox=[409.50, 90.56, 430.13, 123.84]
+[RANGE] estimated_planar=1.25 m ground_truth=1.18 m phase=approach
+[DETECT] class=stop sign color=red conf=0.86 bbox=[320.04, 0.60, 420.42, 79.28]
+[DETECT] class=stop sign color=yellow conf=0.44 bbox=[407.62, 129.32, 428.27, 160.35]
+[RANGE] estimated_planar=1.12 m ground_truth=1.04 m phase=approach
+[DETECT] class=stop sign color=red conf=0.44 bbox=[348.65, 1.03, 444.88, 56.12]
+[DETECT] class=stop sign color=yellow conf=0.28 bbox=[411.53, 127.02, 431.88, 159.80]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=stop sign color=red conf=0.64 bbox=[333.31, 0.86, 430.21, 47.16]
+[DETECT] class=stop sign color=yellow conf=0.38 bbox=[395.60, 122.39, 416.36, 155.26]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[TRACK] recovered red stop sign in live frame score=0.98
+[RANGE] estimated_planar=0.90 m ground_truth=0.82 m phase=approach
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=-25.7 deg final_error=-1.3 deg
+[DETECT] class=airplane color=unknown conf=0.43 bbox=[572.01, 191.16, 639.72, 209.20]
+[DETECT] class=airplane color=unknown conf=0.54 bbox=[573.39, 193.31, 639.82, 210.44]
+[DETECT] class=airplane color=unknown conf=0.47 bbox=[574.37, 193.95, 639.82, 210.90]
+[SEARCH] target lost, strafing right 2.2 s (attempt 2/4)
+[DETECT] class=sports ball color=unknown conf=0.42 bbox=[179.18, 274.77, 202.66, 305.59]
+[SEARCH] target lost, strafing left 3.3 s (attempt 3/4)
+[SEARCH] target lost, strafing right 4.4 s (attempt 4/4)
+[DETECT] class=stop sign color=yellow conf=0.63 bbox=[91.85, 94.59, 133.11, 136.02]
+[DETECT] class=sports ball color=unknown conf=0.23 bbox=[121.43, 285.75, 154.47, 318.94]
+[DETECT] class=stop sign color=yellow conf=0.62 bbox=[78.28, 102.07, 122.88, 143.54]
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[76.75, 101.38, 121.69, 143.50]
+[SEARCH] re-acquire failed, falling back to rotating search
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[76.75, 101.38, 121.69, 143.50]
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[76.75, 101.38, 121.69, 143.50]
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[76.75, 101.38, 121.69, 143.50]
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[76.75, 101.38, 121.69, 143.50]
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[76.75, 101.38, 121.69, 143.50]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=stop sign color=yellow conf=0.62 bbox=[278.26, 124.59, 305.12, 158.72]
+[DETECT] class=stop sign color=yellow conf=0.62 bbox=[278.26, 124.59, 305.12, 158.72]
+[DETECT] class=stop sign color=yellow conf=0.62 bbox=[278.26, 124.59, 305.12, 158.72]
+[DETECT] class=stop sign color=yellow conf=0.62 bbox=[278.26, 124.59, 305.12, 158.72]
+[DETECT] class=stop sign color=yellow conf=0.62 bbox=[278.26, 124.59, 305.12, 158.72]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.0 deg
+[DETECT] class=stop sign color=red conf=0.89 bbox=[78.53, 1.38, 190.88, 106.50]
+[DETECT] class=stop sign color=red conf=0.21 bbox=[129.77, 1.22, 190.33, 103.57]
+[DETECT] class=stop sign color=red conf=0.94 bbox=[83.35, 0.38, 204.65, 100.90]
+[DETECT] class=stop sign color=yellow conf=0.80 bbox=[462.39, 107.98, 495.39, 146.56]
+[DETECT] class=stop sign color=red conf=0.21 bbox=[82.00, 1.18, 148.05, 95.55]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=stop sign color=red conf=0.94 bbox=[115.32, 0.88, 224.39, 104.43]
+[DETECT] class=stop sign color=yellow conf=0.59 bbox=[479.98, 108.57, 514.80, 147.76]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=stop sign color=red conf=0.93 bbox=[147.23, 1.04, 250.33, 107.45]
+[DETECT] class=stop sign color=yellow conf=0.61 bbox=[505.79, 108.24, 543.72, 148.27]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=stop sign color=red conf=0.95 bbox=[164.72, 0.33, 265.68, 107.85]
+[DETECT] class=stop sign color=yellow conf=0.56 bbox=[520.44, 108.50, 559.83, 149.37]
+[DETECT] class=chair color=green conf=0.22 bbox=[149.13, 128.93, 219.23, 225.72]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=stop sign color=red conf=0.93 bbox=[219.10, 0.45, 310.91, 107.44]
+[DETECT] class=stop sign color=yellow conf=0.85 bbox=[575.49, 102.17, 623.27, 148.35]
+[DETECT] class=stop sign color=red conf=0.92 bbox=[229.03, 1.00, 323.25, 105.99]
+[DETECT] class=chair color=green conf=0.56 bbox=[204.62, 129.81, 271.12, 220.80]
+[DETECT] class=stop sign color=yellow conf=0.52 bbox=[598.30, 93.36, 639.71, 141.24]
+[RANGE] estimated_planar=1.27 m ground_truth=1.29 m phase=approach
+[DETECT] class=stop sign color=red conf=0.74 bbox=[206.23, 0.28, 316.55, 51.85]
+[DETECT] class=stop sign color=yellow conf=0.41 bbox=[614.20, 51.48, 639.85, 102.46]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=stop sign color=red conf=0.77 bbox=[225.82, 1.19, 338.12, 53.13]
+[DETECT] class=chair color=green conf=0.59 bbox=[210.82, 108.86, 281.39, 204.48]
+[RANGE] estimated_planar=1.17 m ground_truth=1.19 m phase=approach
+[DETECT] class=chair color=green conf=0.86 bbox=[220.11, 126.00, 287.24, 221.14]
+[DETECT] class=stop sign color=red conf=0.81 bbox=[234.32, 0.20, 351.57, 60.27]
+[RANGE] estimated_planar=1.06 m ground_truth=1.08 m phase=approach
+[DETECT] class=stop sign color=red conf=0.88 bbox=[220.24, 0.61, 353.98, 86.63]
+[DETECT] class=chair color=green conf=0.55 bbox=[219.14, 155.02, 281.09, 251.82]
+[RANGE] estimated_planar=0.91 m ground_truth=0.93 m phase=approach
+[DETECT] class=chair color=green conf=0.57 bbox=[209.83, 138.71, 272.82, 241.98]
+[DETECT] class=stop sign color=red conf=0.38 bbox=[216.20, 0.71, 338.82, 41.30]
+[RANGE] estimated_planar=0.77 m ground_truth=0.79 m phase=approach
+[DETECT] class=chair color=green conf=0.56 bbox=[201.21, 139.00, 255.33, 247.61]
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=-30.9 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.22 bbox=[0.18, 101.56, 128.09, 261.72]
+[DETECT] class=sports ball color=unknown conf=0.31 bbox=[485.04, 304.09, 514.69, 339.24]
+[DETECT] class=chair color=green conf=0.28 bbox=[0.00, 94.64, 144.04, 254.54]
+[DETECT] class=sports ball color=unknown conf=0.43 bbox=[485.99, 304.78, 516.56, 340.65]
+[DETECT] class=chair color=green conf=0.26 bbox=[0.00, 94.23, 145.63, 253.85]
+[SEARCH] target lost, strafing right 2.2 s (attempt 2/4)
+[DETECT] class=stop sign color=yellow conf=0.68 bbox=[410.55, 96.70, 447.62, 143.24]
+[DETECT] class=stop sign color=yellow conf=0.49 bbox=[408.79, 90.94, 446.46, 139.09]
+[DETECT] class=stop sign color=yellow conf=0.46 bbox=[407.05, 90.73, 445.30, 138.64]
+[SEARCH] target lost, strafing left 3.3 s (attempt 3/4)
+[DETECT] class=stop sign color=yellow conf=0.54 bbox=[591.21, 88.60, 631.56, 141.46]
+[DETECT] class=chair color=green conf=0.45 bbox=[41.36, 100.71, 186.08, 270.07]
+[DETECT] class=chair color=green conf=0.83 bbox=[25.19, 84.04, 182.42, 267.00]
+[DETECT] class=tennis racket color=yellow conf=0.37 bbox=[595.54, 82.22, 639.66, 239.74]
+[DETECT] class=chair color=green conf=0.75 bbox=[24.48, 82.79, 182.10, 266.20]
+[DETECT] class=tennis racket color=yellow conf=0.56 bbox=[595.43, 81.38, 639.66, 239.54]
+[SEARCH] target lost, strafing right 4.4 s (attempt 4/4)
+[DETECT] class=stop sign color=yellow conf=0.33 bbox=[396.58, 72.78, 447.31, 132.43]
+[DETECT] class=stop sign color=yellow conf=0.58 bbox=[395.55, 66.02, 448.82, 129.82]
+[MISSION] status=FAIL reason=timeout
+[DONE] actions=1 t=123.7 s
