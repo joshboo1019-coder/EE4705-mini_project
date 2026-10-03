@@ -72,20 +72,12 @@ WIDTH_AXIS = "y"
 WIDTH_CENTER = 2.0
 WIDTH_LIMIT = 0.8
 
-# IMPORTANT: (2.9, 2.0), NOT (3.45, 2.0) -- blue_chair's own body is placed
+# IMPORTANT: (0.5, 2.0), NOT (3.45, 2.0) -- blue_chair's own body is placed
 # at EXACTLY (3.45, 2.0, 0.4) (see custom_scene.xml's <body name="blue_chair"
 # pos="3.45 2.0 0.4">). A real run climbing straight to (3.45, 2.0) walked
 # the robot directly into the chair's own solid collision geometry and got
-# it physically wedged there -- trunk_z held steady around 0.70-0.72 m (not
-# collapsing, so not a fall) while "dist remaining" stuck at 0.47 m for 3
-# segments running, which is climb_stairs()'s own stuck-detection correctly
-# catching a robot jammed against something solid, not a locomotion
-# failure. Stopping at (2.9, 2.0) instead leaves ~0.55 m of clearance
-# before the chair's own footprint, and goto_object() below -- which
-# already stops on its own at config.FOUND_DISTANCE_M (0.8 m) -- handles
-# closing the remaining distance safely instead of climb_stairs() trying
-# to drive through the object it's supposed to stop in front of.
-CLIMB_TARGET = (2.9, 2.0)
+# it physically wedged there
+CLIMB_TARGET = (0.5, 2.0)
 
 
 def _log_blue_chair_range(stage: str, skills, perception) -> None:
