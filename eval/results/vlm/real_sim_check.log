@@ -1,0 +1,71 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: 
+### startup to first 'User:' = 1.5 s
+
+### >>> typed: turn around
+[CMD] actions=turn(180 deg) n=1
+User: [EXEC] action=1/1 turn angle=180.0 deg
+[TURN] target=180.0 deg final_error=-1.8 deg
+[DONE] actions=1 t=3.9 s
+[DRYRUN] pose x=-0.09 y=0.02 yaw=-177.7 deg  trunk_z=0.326 min_z=0.324 max_tilt=2.6 deg  fell=False  batch_wall=4.4s
+[DRYRUN] contacts=none
+### <<< 'turn around': finished=True in 5.0 s
+
+### >>> typed: what can you see?
+[CMD] actions=look("what can you see?") n=1
+User: [EXEC] action=1/1 look question="what can you see?"
+[DETECT] class=chair color=blue conf=0.50 bbox=[0.09477698057889938, 111.08379364013672, 83.903564453125, 262.9489440917969]
+[VLM] model=qwen3-vl-flash t=0.96 s tokens=395/73 frame=/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261002-232010-231387.png
+Robot: I see a red chair on the left, a large red square sign on a gray pole in the center, a green rectangular sign on a pole to the left of center, and a yellow rectangular sign on a pole to the right of center. The floor is a blue and dark-blue checkered grid with reflections, and the background is a solid blue gradient.
+[DONE] actions=1 t=2.7 s
+[DRYRUN] pose x=-0.09 y=0.01 yaw=-175.6 deg  trunk_z=0.323 min_z=0.323 max_tilt=0.6 deg  fell=False  batch_wall=3.2s
+[DRYRUN] contacts=none
+### <<< 'what can you see?': finished=True in 3.5 s
+
+### >>> typed: turn right 45 degrees
+[CMD] actions=turn(-45 deg) n=1
+User: [EXEC] action=1/1 turn angle=-45.0 deg
+[TURN] target=-45.0 deg final_error=-1.3 deg
+[DONE] actions=1 t=1.0 s
+[DRYRUN] pose x=-0.08 y=0.03 yaw=141.6 deg  trunk_z=0.330 min_z=0.323 max_tilt=2.3 deg  fell=False  batch_wall=1.5s
+[DRYRUN] contacts=none
+### <<< 'turn right 45 degrees': finished=True in 1.9 s
+
+### >>> typed: is there a chair in front of you?
+[CMD] actions=look("is there a chair in front of you?") n=1
+User: [EXEC] action=1/1 look question="is there a chair in front of you?"
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[65.77920532226562, 204.2873077392578, 98.51094818115234, 230.10487365722656]
+[VLM] model=qwen3-vl-flash t=0.60 s tokens=399/22 frame=/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261002-232018-702459.png
+Robot: Yes, there is a green chair in front of you, positioned toward the center-right of the view.
+[DONE] actions=1 t=0.6 s
+[DRYRUN] pose x=-0.08 y=0.03 yaw=143.9 deg  trunk_z=0.324 min_z=0.324 max_tilt=0.6 deg  fell=False  batch_wall=1.1s
+[DRYRUN] contacts=none
+### <<< 'is there a chair in front of you?': finished=True in 1.5 s
+
+### >>> typed: turn left 135 degrees
+[CMD] actions=turn(135 deg) n=1
+User: [EXEC] action=1/1 turn angle=135.0 deg
+[TURN] target=135.0 deg final_error=1.8 deg
+[DONE] actions=1 t=3.6 s
+[DRYRUN] pose x=-0.09 y=-0.01 yaw=-81.2 deg  trunk_z=0.328 min_z=0.320 max_tilt=2.1 deg  fell=False  batch_wall=4.1s
+[DRYRUN] contacts=none
+### <<< 'turn left 135 degrees': finished=True in 4.4 s
+
+### >>> typed: what colour is the ball ahead?
+[CMD] actions=look("what colour is the ball ahead?") n=1
+User: [EXEC] action=1/1 look question="what colour is the ball ahead?"
+[DETECT] none
+[VLM] model=qwen3-vl-flash t=0.46 s tokens=397/11 frame=/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261002-232027-560433.png
+Robot: There is no ball visible ahead in the image.
+[DONE] actions=1 t=0.5 s
+[DRYRUN] pose x=-0.09 y=-0.02 yaw=-81.9 deg  trunk_z=0.323 min_z=0.323 max_tilt=0.2 deg  fell=False  batch_wall=1.0s
+[DRYRUN] contacts=none
+### <<< 'what colour is the ball ahead?': finished=True in 1.4 s
+
+### sequence (first command typed -> last finished) = 26.6 s; launch -> end = 28.1 s

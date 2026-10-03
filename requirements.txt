@@ -9,5 +9,6 @@ ultralytics
 openai             # Qwen, Gemini and OpenAI all via OpenAI-compatible endpoints
 python-dotenv      # llm_parser reads API keys from the repo-root .env
 pytest
+faster-whisper     # bonus: local speech-to-text for push-to-talk (dialogue/speech_input.py)
 # google-genai        # if using Gemini
 # dashscope           # if using Alibaba Cloud Qwen (OpenAI-compatible endpoint also works)

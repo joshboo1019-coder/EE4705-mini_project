@@ -14,3 +14,8 @@ runs/
 quadruped_mujoco/
 *.onnx
 *.pt
+
+# bonus: voice recordings from eval/stt_eval.py stay local
+eval/results/stt/**/*.wav
+# bonus: frames sent to the VLM (a few examples are force-added for the report)
+eval/results/vlm/*.png

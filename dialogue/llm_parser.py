@@ -28,6 +28,7 @@ from core.schema import (
     StopCommand, ChatCommand,
 )
 from core import config
+from dialogue.commands import LookCommand
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -137,6 +138,13 @@ Each <action> is one of:
   {"action": "chat", "reply": string}
       a short spoken reply: answer a question about the robot, or ask a
       clarifying question when the request is ambiguous. Produces no motion.
+  {"action": "look", "question": string}
+      answer a question about what the robot can SEE right now (its camera
+      view is sent to a vision model). "question" is the user's question,
+      cleaned up. Produces no motion. Use it only for an actual question
+      or request about what is visible. An exclamation or warning that
+      happens to contain "look" (like "careful!") is not a look action;
+      treat a warning as stop.
 
 Sign convention (robot's own point of view; get this right):
 - vx  + = forward,  - = backward
@@ -154,6 +162,8 @@ Conventions:
 - Multi-step instructions become an ordered list, in the order spoken.
 - Follow-ups ("do that again", "now slower", "the other way") refer to the
   previous accepted actions in the conversation; reuse and modify them.
+- Decide the language first: an instruction that is not in English is
+  rejected as "non-English" even if you understand it.
 - Reject with a short snake_case reason when the request is:
   not in English -> "non-English"; empty or meaningless -> "empty";
   physically impossible for a walking robot dog (fly, swim, climb walls,
@@ -180,6 +190,10 @@ User: back up slowly for 2 seconds and then stop
 {"actions": [{"action": "move", "vx": -0.3, "vy": 0.0, "wz": 0.0, "duration": 2.0}, {"action": "stop"}]}
 User: fly to the roof
 {"rejected": true, "reason": "impossible:fly"}
+User: what's in front of you?
+{"actions": [{"action": "look", "question": "what's in front of you?"}]}
+User: turn right and tell me if you see anything red
+{"actions": [{"action": "turn", "angle_deg": -90}, {"action": "look", "question": "do you see anything red?"}]}
 User: what can you do?
 {"actions": [{"action": "chat", "reply": "I can walk, turn, stop, and walk to objects like the green chair."}]}
 """
@@ -189,6 +203,7 @@ User: what can you do?
 # ---------------------------------------------------------------------------
 
 MAX_DURATION_S = getattr(config, "LLM_MAX_DURATION_S", 30.0)
+MAX_LOOK_QUESTION_CHARS = 300
 NON_ASCII_LETTER_RATIO = 0.3
 
 # The 80 COCO class names YOLO (Task 4) can detect.
@@ -352,6 +367,8 @@ def _command_to_dict(c) -> Dict:
         return {"action": "stop"}
     if isinstance(c, ChatCommand):
         return {"action": "chat", "reply": c.reply}
+    if isinstance(c, LookCommand):
+        return {"action": "look", "question": c.question}
     raise TypeError(f"unknown command {c!r}")
 
 
@@ -423,6 +440,11 @@ def _to_command(a):
         return StopCommand()
     if kind == "chat":
         return ChatCommand(_string(a, "reply").strip())
+    if kind == "look":
+        question = _string(a, "question").strip()
+        if len(question) > MAX_LOOK_QUESTION_CHARS:
+            raise _Invalid("invalid_field:question")
+        return LookCommand(question)
     raise _Invalid(f"unknown_action:{kind}")
 
 
@@ -473,4 +495,6 @@ def _describe(c) -> str:
         return "stop"
     if isinstance(c, ChatCommand):
         return "chat"
+    if isinstance(c, LookCommand):
+        return f'look("{c.question}")'
     return str(c)

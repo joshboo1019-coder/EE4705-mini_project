@@ -1,0 +1,354 @@
+    0.2 [KEYBOARD] evdev not installed; browser keyboard control is available
+    0.2 [SCENE] using custom scene: <repo>/assets/scenes/custom_scene.xml
+    0.2 [UI] live tuning panel: http://127.0.0.1:8765
+    0.3 [MAP] switched to custom_scene
+    0.4 [CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+    1.4 Type an English command and press ENTER (Ctrl+C to quit).
+    1.4 To speak instead, type v + ENTER and talk (up to 5 s).
+    1.4 ### >>> typed: go to the orange ball and then the red chair
+    2.3 User: [CMD] actions=goto_object(class=sports ball, color=orange), goto_object(class=chair, color=red) n=2
+    2.3 User: [EXEC] action=1/2 goto_object class=sports ball color=orange
+    2.3 [CMD] action=goto_object(class=sports ball, color=orange)
+    3.6 [DETECT] class=chair color=blue conf=0.72 bbox=[87.62, 80.93, 160.81, 180.03]
+    3.6 [DETECT] class=umbrella color=unknown conf=0.23 bbox=[150.26, 183.02, 640.00, 473.82]
+    3.6 [DETECT] class=chair color=blue conf=0.72 bbox=[87.92, 80.79, 160.99, 179.69]
+    3.6 [DETECT] class=umbrella color=unknown conf=0.23 bbox=[149.17, 182.95, 640.00, 474.14]
+    3.6 [DETECT] class=chair color=blue conf=0.72 bbox=[87.92, 80.79, 160.99, 179.69]
+    3.6 [DETECT] class=umbrella color=unknown conf=0.23 bbox=[149.17, 182.95, 640.00, 474.14]
+    3.6 [DETECT] class=chair color=blue conf=0.72 bbox=[87.92, 80.79, 160.99, 179.69]
+    3.6 [DETECT] class=umbrella color=unknown conf=0.23 bbox=[149.17, 182.95, 640.00, 474.14]
+    3.6 [DETECT] class=chair color=blue conf=0.72 bbox=[87.92, 80.79, 160.99, 179.69]
+    3.6 [DETECT] class=umbrella color=unknown conf=0.23 bbox=[149.17, 182.95, 640.00, 474.14]
+    3.6 [SEARCH] target not visible, rotating
+    4.4 [TURN] target=30.0 deg final_error=1.6 deg
+    4.4 [DETECT] class=chair color=blue conf=0.53 bbox=[272.23, 101.78, 321.16, 183.50]
+    4.4 [DETECT] class=chair color=blue conf=0.53 bbox=[272.23, 101.78, 321.16, 183.50]
+    4.4 [DETECT] class=chair color=blue conf=0.87 bbox=[284.67, 105.23, 334.15, 186.09]
+    4.4 [DETECT] class=chair color=blue conf=0.87 bbox=[284.67, 105.23, 334.15, 186.09]
+    4.4 [DETECT] class=chair color=blue conf=0.87 bbox=[284.67, 105.23, 334.15, 186.09]
+    4.4 [SEARCH] target not visible, rotating
+    5.2 [TURN] target=30.0 deg final_error=1.7 deg
+    5.2 [DETECT] class=chair color=blue conf=0.92 bbox=[428.47, 93.40, 493.86, 183.71]
+    5.2 [DETECT] class=airplane color=unknown conf=0.27 bbox=[0.25, 195.80, 77.21, 212.19]
+    5.2 [DETECT] class=chair color=blue conf=0.92 bbox=[428.47, 93.40, 493.86, 183.71]
+    5.2 [DETECT] class=airplane color=unknown conf=0.27 bbox=[0.25, 195.80, 77.21, 212.19]
+    5.2 [DETECT] class=chair color=blue conf=0.92 bbox=[428.47, 93.40, 493.86, 183.71]
+    5.2 [DETECT] class=airplane color=unknown conf=0.27 bbox=[0.25, 195.80, 77.21, 212.19]
+    5.2 [DETECT] class=chair color=blue conf=0.94 bbox=[453.50, 93.93, 523.81, 186.95]
+    5.2 [DETECT] class=chair color=blue conf=0.94 bbox=[453.50, 93.93, 523.81, 186.95]
+    5.2 [SEARCH] target not visible, rotating
+    6.0 [TURN] target=30.0 deg final_error=1.7 deg
+    6.0 [DETECT] class=bench color=unknown conf=0.23 bbox=[375.23, 181.82, 639.48, 341.60]
+    6.0 [DETECT] class=bench color=unknown conf=0.23 bbox=[375.23, 181.82, 639.48, 341.60]
+    6.0 [DETECT] class=bench color=unknown conf=0.23 bbox=[375.23, 181.82, 639.48, 341.60]
+    6.0 [DETECT] class=bench color=unknown conf=0.23 bbox=[375.23, 181.82, 639.48, 341.60]
+    6.0 [DETECT] class=bench color=unknown conf=0.23 bbox=[375.23, 181.82, 639.48, 341.60]
+    6.0 [SEARCH] target not visible, rotating
+    6.8 [TURN] target=30.0 deg final_error=1.9 deg
+    6.8 [DETECT] class=chair color=green conf=0.87 bbox=[133.59, 111.71, 228.34, 240.24]
+    6.8 [DETECT] class=chair color=yellow conf=0.51 bbox=[0.09, 119.39, 32.94, 214.57]
+    6.8 [DETECT] class=bench color=unknown conf=0.24 bbox=[518.06, 144.88, 639.62, 275.73]
+    6.8 [DETECT] class=chair color=green conf=0.87 bbox=[133.59, 111.71, 228.34, 240.24]
+    6.8 [DETECT] class=chair color=yellow conf=0.51 bbox=[0.09, 119.39, 32.94, 214.57]
+    6.8 [DETECT] class=bench color=unknown conf=0.24 bbox=[518.06, 144.88, 639.62, 275.73]
+    6.8 [DETECT] class=chair color=green conf=0.87 bbox=[133.59, 111.71, 228.34, 240.24]
+    6.8 [DETECT] class=chair color=yellow conf=0.51 bbox=[0.09, 119.39, 32.94, 214.57]
+    6.8 [DETECT] class=bench color=unknown conf=0.24 bbox=[518.06, 144.88, 639.62, 275.73]
+    6.8 [DETECT] class=chair color=green conf=0.87 bbox=[133.59, 111.71, 228.34, 240.24]
+    6.8 [DETECT] class=chair color=yellow conf=0.51 bbox=[0.09, 119.39, 32.94, 214.57]
+    6.8 [DETECT] class=bench color=unknown conf=0.24 bbox=[518.06, 144.88, 639.62, 275.73]
+    6.8 [DETECT] class=chair color=green conf=0.87 bbox=[133.59, 111.71, 228.34, 240.24]
+    6.8 [DETECT] class=chair color=yellow conf=0.51 bbox=[0.09, 119.39, 32.94, 214.57]
+    6.8 [DETECT] class=bench color=unknown conf=0.24 bbox=[518.06, 144.88, 639.62, 275.73]
+    6.8 [SEARCH] target not visible, rotating
+    7.6 [TURN] target=30.0 deg final_error=1.6 deg
+    7.6 [DETECT] class=sports ball color=orange conf=0.70 bbox=[50.88, 208.24, 84.52, 234.33]
+    7.6 [DETECT] class=chair color=green conf=0.67 bbox=[322.09, 121.13, 396.46, 239.74]
+    7.8 [TURN] target=5.0 deg final_error=1.2 deg
+    7.8 [DETECT] class=sports ball color=orange conf=0.69 bbox=[71.02, 202.98, 102.93, 228.66]
+    7.8 [DETECT] class=chair color=green conf=0.49 bbox=[334.70, 119.59, 409.43, 240.22]
+    7.9 [TURN] target=5.0 deg final_error=1.2 deg
+    7.9 [DETECT] class=sports ball color=orange conf=0.77 bbox=[115.32, 201.55, 143.66, 224.70]
+    7.9 [DETECT] class=chair color=green conf=0.65 bbox=[364.29, 118.91, 442.92, 241.60]
+    8.0 [TURN] target=5.0 deg final_error=1.1 deg
+    8.0 [DETECT] class=sports ball color=orange conf=0.75 bbox=[145.26, 203.29, 171.34, 225.34]
+    8.0 [DETECT] class=chair color=green conf=0.30 bbox=[386.93, 116.36, 469.19, 243.79]
+    8.1 [TURN] target=5.0 deg final_error=2.0 deg
+    8.1 [DETECT] class=sports ball color=orange conf=0.81 bbox=[177.60, 202.01, 200.55, 223.64]
+    8.1 [DETECT] class=chair color=green conf=0.28 bbox=[414.70, 112.85, 503.68, 244.55]
+    8.1 [DETECT] class=stop sign color=red conf=0.21 bbox=[58.88, 1.74, 199.38, 106.35]
+    8.2 [TURN] target=5.0 deg final_error=1.7 deg
+    8.2 [DETECT] class=chair color=green conf=0.70 bbox=[435.58, 109.89, 530.76, 245.67]
+    8.2 [DETECT] class=sports ball color=orange conf=0.69 bbox=[199.68, 199.72, 221.35, 220.43]
+    8.2 [DETECT] class=chair color=green conf=0.63 bbox=[0.09, 122.58, 34.66, 217.45]
+    8.2 [DETECT] class=stop sign color=red conf=0.45 bbox=[97.46, 1.50, 226.65, 107.35]
+    8.3 [TURN] target=5.0 deg final_error=1.2 deg
+    8.3 [DETECT] class=chair color=green conf=0.57 bbox=[468.42, 105.59, 577.39, 248.16]
+    8.3 [DETECT] class=sports ball color=orange conf=0.36 bbox=[230.59, 196.28, 250.61, 217.03]
+    8.4 [TURN] target=5.0 deg final_error=1.9 deg
+    8.4 [DETECT] class=chair color=green conf=0.64 bbox=[486.90, 106.29, 604.45, 255.25]
+    8.4 [DETECT] class=sports ball color=orange conf=0.28 bbox=[247.95, 199.27, 266.17, 219.41]
+    8.5 [TURN] target=5.0 deg final_error=1.5 deg
+    8.5 [DETECT] class=sports ball color=orange conf=0.70 bbox=[268.85, 201.07, 285.02, 220.93]
+    8.5 [DETECT] class=stop sign color=red conf=0.27 bbox=[199.53, 1.65, 305.17, 112.23]
+   10.0 [DETECT] class=sports ball color=orange conf=0.26 bbox=[268.02, 194.72, 284.54, 214.91]
+   10.0 [RANGE] estimated_planar=3.53 m ground_truth=3.47 m phase=approach
+   10.6 [DETECT] class=sports ball color=orange conf=0.34 bbox=[259.34, 187.80, 279.31, 207.65]
+   10.6 [DETECT] class=chair color=green conf=0.24 bbox=[514.52, 77.89, 639.06, 244.74]
+   10.6 [RANGE] estimated_planar=3.44 m ground_truth=3.38 m phase=approach
+   11.1 [DETECT] class=sports ball color=orange conf=0.47 bbox=[256.24, 207.94, 277.18, 228.54]
+   11.1 [RANGE] estimated_planar=3.31 m ground_truth=3.25 m phase=approach
+   11.6 [DETECT] class=sports ball color=orange conf=0.78 bbox=[246.21, 203.00, 269.22, 225.57]
+   11.7 [TURN] target=5.0 deg final_error=1.3 deg
+   11.7 [DETECT] class=sports ball color=orange conf=0.56 bbox=[256.82, 204.40, 278.62, 227.70]
+   11.7 [DETECT] class=sports ball color=unknown conf=0.22 bbox=[257.85, 229.96, 279.74, 248.91]
+   11.7 [RANGE] estimated_planar=3.16 m ground_truth=3.10 m phase=approach
+   12.2 [DETECT] class=sports ball color=orange conf=0.71 bbox=[266.90, 198.57, 290.33, 221.43]
+   12.2 [DETECT] class=baseball bat color=red conf=0.28 bbox=[182.51, 0.32, 254.58, 403.35]
+   12.2 [RANGE] estimated_planar=3.02 m ground_truth=2.96 m phase=approach
+   12.7 [DETECT] class=sports ball color=orange conf=0.56 bbox=[264.90, 221.06, 289.24, 245.92]
+   12.7 [RANGE] estimated_planar=2.87 m ground_truth=2.82 m phase=approach
+   13.3 [DETECT] class=sports ball color=orange conf=0.76 bbox=[260.34, 217.42, 285.50, 243.78]
+   13.3 [RANGE] estimated_planar=2.74 m ground_truth=2.69 m phase=approach
+   13.8 [DETECT] class=sports ball color=orange conf=0.70 bbox=[250.69, 212.58, 278.36, 239.99]
+   13.9 [TURN] target=5.0 deg final_error=1.0 deg
+   13.9 [DETECT] class=sports ball color=orange conf=0.78 bbox=[265.25, 212.82, 292.24, 240.14]
+   13.9 [DETECT] class=sports ball color=unknown conf=0.29 bbox=[267.15, 248.09, 292.91, 267.64]
+   13.9 [RANGE] estimated_planar=2.58 m ground_truth=2.53 m phase=approach
+   14.4 [DETECT] class=sports ball color=orange conf=0.72 bbox=[287.39, 223.38, 314.76, 251.70]
+   14.4 [RANGE] estimated_planar=2.54 m ground_truth=2.48 m phase=approach
+   14.9 [DETECT] class=sports ball color=orange conf=0.67 bbox=[297.18, 224.75, 324.21, 252.93]
+   14.9 [RANGE] estimated_planar=2.53 m ground_truth=2.48 m phase=approach
+   15.5 [DETECT] class=sports ball color=orange conf=0.84 bbox=[287.92, 216.02, 316.17, 244.56]
+   15.5 [DETECT] class=sports ball color=unknown conf=0.22 bbox=[289.15, 246.90, 316.70, 271.93]
+   15.5 [RANGE] estimated_planar=2.51 m ground_truth=2.46 m phase=approach
+   16.0 [DETECT] class=sports ball color=orange conf=0.73 bbox=[297.16, 230.05, 325.24, 258.45]
+   16.0 [RANGE] estimated_planar=2.51 m ground_truth=2.45 m phase=approach
+   16.5 [DETECT] class=sports ball color=orange conf=0.79 bbox=[300.73, 231.59, 328.45, 260.57]
+   16.5 [RANGE] estimated_planar=2.50 m ground_truth=2.45 m phase=approach
+   17.0 [DETECT] class=sports ball color=orange conf=0.76 bbox=[309.23, 228.99, 337.68, 257.46]
+   17.0 [RANGE] estimated_planar=2.49 m ground_truth=2.44 m phase=approach
+   17.5 [DETECT] class=sports ball color=orange conf=0.83 bbox=[318.12, 230.05, 346.50, 258.63]
+   17.6 [RANGE] estimated_planar=2.50 m ground_truth=2.44 m phase=approach
+   18.1 [DETECT] class=sports ball color=orange conf=0.79 bbox=[319.50, 228.73, 347.46, 257.90]
+   18.1 [RANGE] estimated_planar=2.49 m ground_truth=2.44 m phase=approach
+   18.6 [APPROACH] forward progress blocked for 4 s; backing up and strafing to retry
+   19.1 [SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+   20.9 [TURN] target=-13.2 deg final_error=-1.9 deg
+   21.2 [DETECT] class=sports ball color=orange conf=0.83 bbox=[313.79, 210.18, 340.56, 238.52]
+   22.7 [DETECT] class=sports ball color=orange conf=0.79 bbox=[322.65, 205.81, 350.97, 234.44]
+   22.7 [RANGE] estimated_planar=2.58 m ground_truth=2.47 m phase=approach
+   23.2 [DETECT] class=sports ball color=orange conf=0.83 bbox=[308.79, 192.00, 337.69, 221.32]
+   23.2 [DETECT] class=sports ball color=unknown conf=0.22 bbox=[309.21, 231.72, 335.02, 249.04]
+   23.2 [RANGE] estimated_planar=2.56 m ground_truth=2.45 m phase=approach
+   23.7 [DETECT] class=sports ball color=orange conf=0.75 bbox=[303.53, 232.59, 331.32, 261.51]
+   23.7 [RANGE] estimated_planar=2.55 m ground_truth=2.44 m phase=approach
+   24.3 [DETECT] class=sports ball color=orange conf=0.82 bbox=[279.15, 227.87, 307.96, 257.73]
+   24.3 [DETECT] class=traffic light color=unknown conf=0.23 bbox=[80.95, 311.51, 117.82, 351.39]
+   24.3 [RANGE] estimated_planar=2.54 m ground_truth=2.43 m phase=approach
+   24.8 [DETECT] class=sports ball color=orange conf=0.83 bbox=[265.62, 233.21, 295.00, 262.35]
+   24.8 [RANGE] estimated_planar=2.53 m ground_truth=2.42 m phase=approach
+   25.3 [DETECT] class=sports ball color=orange conf=0.67 bbox=[247.16, 247.78, 276.08, 277.55]
+   25.4 [TURN] target=5.0 deg final_error=1.2 deg
+   25.4 [DETECT] class=sports ball color=orange conf=0.80 bbox=[250.35, 241.79, 279.02, 272.08]
+   25.5 [TURN] target=5.0 deg final_error=1.2 deg
+   25.5 [DETECT] class=sports ball color=orange conf=0.76 bbox=[280.10, 223.39, 309.58, 252.01]
+   25.5 [RANGE] estimated_planar=2.53 m ground_truth=2.42 m phase=approach
+   26.1 [DETECT] class=sports ball color=orange conf=0.77 bbox=[295.34, 239.17, 324.51, 268.75]
+   26.1 [RANGE] estimated_planar=2.45 m ground_truth=2.34 m phase=approach
+   26.6 [DETECT] class=sports ball color=orange conf=0.69 bbox=[299.46, 213.38, 330.72, 245.71]
+   26.6 [RANGE] estimated_planar=2.31 m ground_truth=2.20 m phase=approach
+   27.1 [DETECT] class=sports ball color=orange conf=0.89 bbox=[292.90, 227.52, 327.09, 262.56]
+   27.1 [RANGE] estimated_planar=2.17 m ground_truth=2.06 m phase=approach
+   27.6 [DETECT] class=sports ball color=orange conf=0.87 bbox=[290.98, 224.77, 327.36, 263.03]
+   27.6 [RANGE] estimated_planar=2.02 m ground_truth=1.91 m phase=approach
+   28.1 [DETECT] class=sports ball color=orange conf=0.88 bbox=[287.63, 226.29, 328.29, 267.44]
+   28.2 [RANGE] estimated_planar=1.88 m ground_truth=1.77 m phase=approach
+   28.7 [DETECT] class=sports ball color=orange conf=0.91 bbox=[278.28, 226.62, 323.79, 271.67]
+   28.7 [RANGE] estimated_planar=1.73 m ground_truth=1.62 m phase=approach
+   29.2 [DETECT] class=sports ball color=orange conf=0.92 bbox=[275.67, 235.06, 326.23, 286.08]
+   29.2 [RANGE] estimated_planar=1.58 m ground_truth=1.47 m phase=approach
+   29.7 [DETECT] class=sports ball color=orange conf=0.91 bbox=[269.86, 245.62, 327.04, 303.19]
+   29.7 [RANGE] estimated_planar=1.44 m ground_truth=1.32 m phase=approach
+   30.2 [DETECT] class=sports ball color=orange conf=0.93 bbox=[262.81, 249.85, 328.21, 315.81]
+   30.2 [RANGE] estimated_planar=1.29 m ground_truth=1.18 m phase=approach
+   30.8 [DETECT] class=sports ball color=orange conf=0.90 bbox=[243.57, 254.36, 321.88, 333.40]
+   30.8 [RANGE] estimated_planar=1.15 m ground_truth=1.04 m phase=approach
+   31.3 [DETECT] class=sports ball color=orange conf=0.90 bbox=[231.36, 295.44, 326.02, 395.35]
+   31.3 [RANGE] estimated_planar=1.00 m ground_truth=0.89 m phase=approach
+   31.8 [DETECT] class=sports ball color=orange conf=0.90 bbox=[209.45, 296.59, 329.95, 424.03]
+   31.8 [RANGE] estimated_planar=0.86 m ground_truth=0.75 m phase=approach
+   32.0 [DETECT] class=sports ball color=orange conf=0.75 bbox=[189.79, 325.89, 328.21, 476.64]
+   32.0 [DETECT] class=mouse color=orange conf=0.52 bbox=[190.63, 325.95, 328.13, 476.57]
+   32.1 [TURN] target=5.0 deg final_error=1.2 deg
+   32.1 [DETECT] class=sports ball color=orange conf=0.63 bbox=[196.25, 328.35, 343.39, 477.01]
+   32.1 [DETECT] class=mouse color=orange conf=0.23 bbox=[196.74, 328.08, 343.78, 477.04]
+   32.1 [RANGE] estimated_planar=0.77 m ground_truth=0.66 m phase=approach
+   32.6 [DETECT] class=sports ball color=orange conf=0.21 bbox=[203.47, 347.05, 356.73, 477.49]
+   32.6 [DETECT] class=mouse color=orange conf=0.18 bbox=[203.23, 347.15, 357.04, 477.68]
+   32.7 [TRACK] recovered orange sports ball in live frame score=0.99
+   32.7 [RANGE] estimated_planar=0.73 m ground_truth=0.62 m phase=stop_check
+   32.7 [FOUND] class=sports ball color=orange t=30.4 s d=0.62 m
+   32.7 [MISSION] status=SUCCESS
+   32.7 [GOAL] 1/2 orange sports ball status=REACHED t=30.4 s
+   32.7 [EXEC] action=2/2 goto_object class=chair color=red
+   32.7 [CMD] action=goto_object(class=chair, color=red)
+   32.8 [SEARCH] target not visible, rotating
+   33.5 [TURN] target=30.0 deg final_error=1.5 deg
+   33.5 [DETECT] class=toilet color=orange conf=0.60 bbox=[401.94, 392.45, 598.55, 479.21]
+   33.5 [DETECT] class=toilet color=orange conf=0.60 bbox=[401.94, 392.45, 598.55, 479.21]
+   33.5 [DETECT] class=toilet color=orange conf=0.60 bbox=[401.94, 392.45, 598.55, 479.21]
+   33.5 [DETECT] class=toilet color=orange conf=0.60 bbox=[401.94, 392.45, 598.55, 479.21]
+   33.5 [DETECT] class=toilet color=orange conf=0.60 bbox=[401.94, 392.45, 598.55, 479.21]
+   33.5 [SEARCH] target not visible, rotating
+   34.2 [TURN] target=30.0 deg final_error=1.8 deg
+   34.3 [SEARCH] target not visible, rotating
+   35.1 [TURN] target=30.0 deg final_error=1.6 deg
+   35.1 [DETECT] class=chair color=red conf=0.76 bbox=[0.11, 100.70, 130.67, 285.89]
+   35.2 [TURN] target=5.0 deg final_error=1.6 deg
+   35.2 [DETECT] class=chair color=red conf=0.72 bbox=[25.38, 98.54, 171.10, 273.09]
+   35.2 [DETECT] class=chair color=green conf=0.66 bbox=[511.60, 80.76, 572.75, 251.78]
+   35.3 [TURN] target=5.0 deg final_error=1.7 deg
+   35.3 [DETECT] class=chair color=green conf=0.78 bbox=[532.69, 82.28, 599.20, 258.38]
+   35.3 [DETECT] class=chair color=red conf=0.64 bbox=[51.01, 105.33, 188.38, 273.48]
+   35.4 [TURN] target=5.0 deg final_error=1.4 deg
+   35.4 [DETECT] class=chair color=green conf=0.68 bbox=[566.72, 68.47, 639.87, 258.31]
+   35.4 [DETECT] class=chair color=red conf=0.48 bbox=[86.37, 109.63, 212.90, 271.57]
+   35.6 [TURN] target=5.0 deg final_error=1.6 deg
+   35.6 [DETECT] class=chair color=red conf=0.60 bbox=[125.51, 109.85, 247.45, 264.55]
+   35.6 [DETECT] class=bench color=red conf=0.55 bbox=[0.26, 180.09, 106.84, 225.46]
+   35.7 [TURN] target=5.0 deg final_error=1.8 deg
+   35.7 [DETECT] class=chair color=red conf=0.52 bbox=[137.34, 107.39, 252.04, 260.88]
+   35.7 [DETECT] class=bench color=red conf=0.38 bbox=[0.22, 174.90, 113.20, 219.62]
+   35.8 [TURN] target=5.0 deg final_error=1.7 deg
+   35.8 [DETECT] class=chair color=red conf=0.71 bbox=[179.68, 106.17, 278.98, 256.88]
+   35.8 [DETECT] class=bench color=red conf=0.21 bbox=[0.58, 172.41, 147.46, 212.21]
+   35.9 [TURN] target=5.0 deg final_error=1.9 deg
+   35.9 [DETECT] class=chair color=red conf=0.72 bbox=[199.74, 111.89, 298.17, 259.22]
+   35.9 [DETECT] class=bench color=red conf=0.25 bbox=[0.45, 176.22, 169.55, 213.95]
+   36.0 [TURN] target=5.0 deg final_error=1.9 deg
+   36.0 [DETECT] class=chair color=red conf=0.72 bbox=[236.63, 114.43, 331.15, 260.02]
+   37.5 [DETECT] class=chair color=red conf=0.67 bbox=[219.71, 106.66, 314.22, 255.07]
+   37.5 [RANGE] estimated_planar=1.53 m ground_truth=2.17 m phase=approach
+   38.1 [DETECT] class=chair color=red conf=0.83 bbox=[203.83, 73.22, 307.88, 232.21]
+   38.1 [DETECT] class=bench color=red conf=0.27 bbox=[0.46, 154.56, 178.66, 190.48]
+   38.1 [TURN] target=5.0 deg final_error=1.6 deg
+   38.2 [DETECT] class=chair color=red conf=0.84 bbox=[224.58, 89.06, 323.80, 245.71]
+   38.2 [RANGE] estimated_planar=1.44 m ground_truth=2.08 m phase=approach
+   38.7 [DETECT] class=chair color=red conf=0.83 bbox=[229.68, 107.51, 334.10, 269.30]
+   38.7 [RANGE] estimated_planar=1.32 m ground_truth=1.96 m phase=approach
+   39.2 [DETECT] class=chair color=red conf=0.80 bbox=[216.86, 111.13, 330.86, 286.32]
+   39.2 [RANGE] estimated_planar=1.18 m ground_truth=1.82 m phase=approach
+   39.7 [DETECT] class=chair color=red conf=0.76 bbox=[203.46, 98.49, 332.18, 296.08]
+   39.7 [RANGE] estimated_planar=1.04 m ground_truth=1.68 m phase=approach
+   40.2 [DETECT] class=chair color=red conf=0.92 bbox=[189.60, 80.19, 333.08, 300.31]
+   40.3 [TURN] target=5.0 deg final_error=1.8 deg
+   40.3 [DETECT] class=chair color=red conf=0.86 bbox=[190.80, 75.36, 336.60, 297.57]
+   40.4 [TURN] target=5.0 deg final_error=1.4 deg
+   40.4 [DETECT] class=chair color=red conf=0.74 bbox=[236.31, 60.22, 383.98, 292.75]
+   40.4 [RANGE] estimated_planar=0.88 m ground_truth=1.52 m phase=approach
+   40.7 [DETECT] class=chair color=red conf=0.84 bbox=[242.85, 85.89, 389.32, 310.93]
+   40.7 [RANGE] estimated_planar=0.82 m ground_truth=1.46 m phase=approach
+   40.8 [DETECT] class=chair color=red conf=0.86 bbox=[234.02, 57.83, 390.71, 306.23]
+   40.8 [RANGE] estimated_planar=0.80 m ground_truth=1.44 m phase=approach
+   41.2 [DETECT] class=chair color=red conf=0.79 bbox=[227.20, 65.66, 385.87, 313.21]
+   41.6 [TRACK] recovered red chair in live frame score=0.97
+   41.6 [RANGE] estimated_planar=0.76 m ground_truth=1.40 m phase=stop_check
+   41.6 [FOUND] class=chair color=red t=8.9 s d=1.40 m
+   41.6 [MISSION] status=SUCCESS
+   41.6 [GOAL] 2/2 red chair status=REACHED t=39.3 s
+   41.6 [MULTI] status=SUCCESS reached=2/2 t=39.3 s
+   41.6 [DONE] actions=2 t=39.3 s
+   41.6 ### <<< 'go to the orange ball and then the red chair': finished=True
+   42.6 Traceback (most recent call last):
+   42.6   File "<repo>/main.py", line 59, in <module>
+   42.6     main()
+   42.6     ~~~~^^
+   42.6   File "<repo>/main.py", line 51, in main
+   42.6     executor.run_forever()  # blocks; keep the sim/physics alive in here
+   42.6     ~~~~~~~~~~~~~~~~~~~~^^
+   42.6   File "<repo>/dialogue/executor.py", line 41, in run_forever
+   42.6     cmd = self.queue.pop(timeout=poll_timeout)
+   42.6   File "<repo>/core/schema.py", line 111, in pop
+   42.6     return self._q.get(timeout=timeout)
+   42.6            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+   42.6   File "/home/jiamo/miniconda3/lib/python3.13/queue.py", line 213, in get
+   42.6     self.not_empty.wait(remaining)
+   42.6     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+   42.6   File "/home/jiamo/miniconda3/lib/python3.13/threading.py", line 363, in wait
+   42.6     gotit = waiter.acquire(True, timeout)
+   42.6 KeyboardInterrupt
+   42.6 Exception in thread Thread-2 (_render_loop):
+   42.6 Traceback (most recent call last):
+   42.6   File "/home/jiamo/miniconda3/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+   42.6     self.run()
+   42.6     ~~~~~~~~^^
+   42.6   File "/home/jiamo/miniconda3/lib/python3.13/threading.py", line 994, in run
+   42.6     self._target(*self._args, **self._kwargs)
+   42.6     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   42.6   File "/home/jiamo/EE4705/quadruped_mujoco/src/runtime_control/runtime.py", line 434, in _render_loop
+   42.6     renderer.close()
+   42.6     ~~~~~~~~~~~~~~^^
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/rendering/classic/renderer.py", line 335, in close
+   42.6     self._gl_context.free()
+   42.6     ~~~~~~~~~~~~~~~~~~~~~^^
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 132, in free
+   42.6     EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,
+   42.6     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   42.6                        EGL.EGL_NO_SURFACE, EGL.EGL_NO_CONTEXT)
+   42.6                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/OpenGL/error.py", line 230, in glCheckError
+   42.6     raise self._errorClass(
+   42.6     ...<4 lines>...
+   42.6     )
+   42.6 OpenGL.raw.EGL._errors.EGLError: EGLError(
+   42.6 	err = EGL_NOT_INITIALIZED,
+   42.6 	baseOperation = eglMakeCurrent,
+   42.6 	cArguments = (
+   42.6 		<OpenGL._opaque.EGLDisplay_pointer object at 0x7a7b85cdd750>,
+   42.6 		<OpenGL._opaque.EGLSurface_pointer object at 0x7a7b8f5316d0>,
+   42.6 		<OpenGL._opaque.EGLSurface_pointer object at 0x7a7b8f5316d0>,
+   42.6 		<OpenGL._opaque.EGLContext_pointer object at 0x7a7b8f5315d0>,
+   42.6 	),
+   42.6 	result = 0
+   42.6 )
+   42.6 Exception ignored in: <function Renderer.__del__ at 0x7a7b8f5b1120>
+   42.6 Traceback (most recent call last):
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/rendering/classic/renderer.py", line 349, in __del__
+   42.6     self.close()
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/rendering/classic/renderer.py", line 335, in close
+   42.6     self._gl_context.free()
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 132, in free
+   42.6     EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/OpenGL/error.py", line 230, in glCheckError
+   42.6     raise self._errorClass(
+   42.6 OpenGL.raw.EGL._errors.EGLError: EGLError(
+   42.6 	err = EGL_NOT_INITIALIZED,
+   42.6 	baseOperation = eglMakeCurrent,
+   42.6 	cArguments = (
+   42.6 		<OpenGL._opaque.EGLDisplay_pointer object at 0x7a7b85cdd750>,
+   42.6 		<OpenGL._opaque.EGLSurface_pointer object at 0x7a7b8f5316d0>,
+   42.6 		<OpenGL._opaque.EGLSurface_pointer object at 0x7a7b8f5316d0>,
+   42.6 		<OpenGL._opaque.EGLContext_pointer object at 0x7a7b8f5315d0>,
+   42.6 	),
+   42.6 	result = 0
+   42.6 )
+   42.6 Exception ignored in: <function GLContext.__del__ at 0x7a7b8f5b0a40>
+   42.6 Traceback (most recent call last):
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 139, in __del__
+   42.6     self.free()
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 132, in free
+   42.6     EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,
+   42.6   File "<repo>/.venv/lib/python3.13/site-packages/OpenGL/error.py", line 230, in glCheckError
+   42.6     raise self._errorClass(
+   42.6 OpenGL.raw.EGL._errors.EGLError: EGLError(
+   42.6 	err = EGL_NOT_INITIALIZED,
+   42.6 	baseOperation = eglMakeCurrent,
+   42.6 	cArguments = (
+   42.6 		<OpenGL._opaque.EGLDisplay_pointer object at 0x7a7b85cdd750>,
+   42.6 		<OpenGL._opaque.EGLSurface_pointer object at 0x7a7b8f5316d0>,
+   42.6 		<OpenGL._opaque.EGLSurface_pointer object at 0x7a7b8f5316d0>,
+   42.6 		<OpenGL._opaque.EGLContext_pointer object at 0x7a7b8f5315d0>,
+   42.6 	),
+   42.6 	result = 0
+   42.6 )

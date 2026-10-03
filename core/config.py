@@ -28,6 +28,10 @@ LLM_SERVICE = "qwen-flash"
 LLM_TIMEOUT_S = 15
 LLM_MAX_DURATION_S = 30.0     # parser rejects move commands longer than this
 LLM_HISTORY_TURNS = 6         # user+assistant exchanges kept as LLM context
+# Bonus (visual QA): one of dialogue.vlm.VLM_SERVICES. qwen3-vl-flash answered
+# best on sim frames (it was the only one to spot a half-visible chair) and
+# fastest (~0.4-1.4 s); see eval/task3_eval.md, "Prompt v4 / look".
+VLM_SERVICE = "qwen3-vl-flash"
 
 # --- Task 4 (Student C) -----------------------------------------------------
 YOLO_MODEL = "yolo11n.pt"
