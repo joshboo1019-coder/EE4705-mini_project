@@ -428,3 +428,18 @@ capped at 4 steps + "(+N more steps)"); the one STATE example in the prompt was 
 prompt rule changed. After: the same sequence gives `move(vx=0, vy=0.3, 2.0 s) n=1` 3/3 on mocks; Standard set
 qwen-flash 45/45 (unchanged), Hard set qwen-flash 61/71 with the identical failing cases
 (`eval/results/snapfix/`, US$0.018). Two regression tests added.
+
+## Fixes from the code walkthrough (2026-10-04 02:45, Student B)
+
+Found while writing `docs/B_code_walkthrough.md` (by reading the code, not from an eval set):
+
+| Issue | Fix | Test |
+|---|---|---|
+| `turn(360)` did nothing and `turn(270)` turned right 90°: RealSkills.turn() aims at wrap(start + angle), i.e. the short way ("spin around three times" passed the parser checks but would not spin) | the executor splits a turn of more than 180° into equal chunks of ≤ 120° (each printing its own `[TURN]` line), with the e-stop checked between chunks | `test_turns_over_180_are_split_into_chunks`, `test_a_split_turn_stops_between_chunks_on_estop` |
+| `goto_object` isn't in the 60 s budget, so `repeat(8x: two gotos)` was accepted (16 searches of up to 120 s) | at most 4 goals per utterance, loops multiplied out → `too_many_goals:<n>` | `test_goal_count_is_capped_through_loops` |
+| "walk 2 s, then go to the chair" walked first, then asked which chair | a colour-less goto anywhere makes the whole utterance the clarifying question (no motion) | `test_colourless_goto_anywhere_makes_the_whole_utterance_a_question` |
+
+Re-check (qwen-flash, 1 run, `eval/results/fixes/`, US$0.018): Standard 45/45, Hard 61/71 with the identical failing
+ids — no change in scores. Known and not changed: two utterances typed while a long batch runs are executed as one
+batch (one `[DONE]`); an e-stop can't interrupt a closed-loop turn already in progress (it ends after that turn,
+or now after the current ≤ 120° chunk).

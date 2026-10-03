@@ -48,6 +48,25 @@ def program_seconds(commands) -> float:
     return total
 
 
+MAX_GOALS = 4            # goto_object actions per utterance, loops multiplied out
+
+
+def goal_count(commands) -> int:
+    """goto_object actions an utterance would run, repeats/until_see multiplied
+    out. Navigation has its own per-goal timeout, so this caps the total
+    instead of the time budget (repeat(8x: two gotos) would be 16 searches)."""
+    n = 0
+    for c in commands:
+        k = kind(c)
+        if k == "goto_object":
+            n += 1
+        elif k == "repeat":
+            n += c.times * goal_count(c.actions)
+        elif k == "until_see":
+            n += c.max_iter * goal_count(c.actions)
+    return n
+
+
 def distance_seconds(vx: float, vy: float, distance_m: float) -> float:
     speed = math.hypot(vx, vy)
     return abs(distance_m) / speed if speed >= MIN_TRANSLATION else float("inf")

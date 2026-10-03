@@ -1147,3 +1147,64 @@ def test_snapshot_caps_a_long_last_command():
         st.record_action(ActionRecord(1, c, RobotPose(0, 0, 0), RobotPose(0, 0, 0), True))
     snap = st.snapshot()
     assert "(+4 more steps)" in snap and len(snap) / 4 < 120
+
+
+# ---------------------------------------------------------------------------
+# Fixes from the code walkthrough (2026-10-04)
+# ---------------------------------------------------------------------------
+
+class _TurnRecorder:
+    def __init__(self):
+        self.turns = []
+
+    def turn(self, a):
+        self.turns.append(round(a, 3))
+
+
+def test_turns_over_180_are_split_into_chunks():
+    """RealSkills.turn() takes the short way to wrap(start + angle):
+    turn(360) would not move and turn(270) would turn right 90."""
+    from dialogue.executor import _AbortableSkills
+    for angle, expected in [(360, [120.0] * 3), (270, [90.0] * 3), (-450, [-112.5] * 4),
+                            (180, [180.0]), (-90, [-90.0]), (720, [120.0] * 6)]:
+        rec = _TurnRecorder()
+        _AbortableSkills(rec, lambda: False).turn(angle)
+        assert rec.turns == expected, angle
+        assert abs(sum(rec.turns) - angle) < 1e-6
+
+
+def test_a_split_turn_stops_between_chunks_on_estop():
+    from dialogue.executor import _AbortableSkills, ExecutionAborted
+    rec = _TurnRecorder()
+    calls = {"n": 0}
+
+    def aborted():
+        calls["n"] += 1
+        return calls["n"] > 1           # e-stop fires after the first chunk
+    import pytest
+    with pytest.raises(ExecutionAborted):
+        _AbortableSkills(rec, aborted).turn(360)
+    assert rec.turns == [120.0]
+
+
+def test_goal_count_is_capped_through_loops():
+    two_gotos = [{"action": "goto_object", "class": "chair", "color": "red"},
+                 {"action": "goto_object", "class": "chair", "color": "green"}]
+    r = llm_parser._to_parse_result(json.dumps(
+        {"actions": [{"action": "repeat", "times": 8, "actions": two_gotos}]}))
+    assert not r.accepted and r.reject_reason == "too_many_goals:16"
+    four = [dict(g, color=c) for g, c in zip(two_gotos * 2, ["red", "green", "blue", "yellow"])]
+    assert llm_parser._to_parse_result(json.dumps({"actions": four})).accepted
+    five = four + [{"action": "goto_object", "class": "sports ball", "color": "orange"}]
+    r = llm_parser._to_parse_result(json.dumps({"actions": five}))
+    assert not r.accepted and r.reject_reason == "too_many_goals:5"
+
+
+def test_colourless_goto_anywhere_makes_the_whole_utterance_a_question():
+    """'walk 2 s, then go to the chair' must not walk first and ask later."""
+    r = llm_parser._to_parse_result(json.dumps({"actions": [
+        {"action": "move", "vx": 0.8, "vy": 0.0, "wz": 0.0, "duration": 2.0},
+        {"action": "goto_object", "class": "chair", "color": ""}]}))
+    assert r.accepted and len(r.commands) == 1
+    assert isinstance(r.commands[0], ChatCommand)
+    assert r.commands[0].reply == "Which chair do you mean? Please tell me its colour."

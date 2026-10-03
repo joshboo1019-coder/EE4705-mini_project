@@ -337,8 +337,8 @@ def _coco_class(a: Dict) -> str:
 
 
 class _NeedColour(Exception):
-    """A goto_object without a colour inside a program: the whole utterance
-    becomes the clarifying question (a program can't contain a chat)."""
+    """A goto_object without a colour (anywhere, also inside a program): the
+    whole utterance becomes the clarifying question, nothing moves."""
 
 
 class _Invalid(Exception):
@@ -595,6 +595,9 @@ def _validate(raw_json: str) -> ParseResult:
         total = limits.program_seconds(commands)
         if total > limits.MAX_PROGRAM_S:
             raise _Invalid(f"program_too_long:{total:.0f}s", out_of_bounds=True)
+        goals = limits.goal_count(commands)
+        if goals > limits.MAX_GOALS:
+            raise _Invalid(f"too_many_goals:{goals}", out_of_bounds=True)
     except _Invalid as e:
         return _rejected(e.args[0], e.suggestion)
     except _NeedColour as e:
@@ -655,9 +658,9 @@ def _to_command(a, depth: int = 0):
         if not color:
             # navigation needs an exact colour match, so ask instead of
             # sending the robot on a search that can't succeed.
-            if depth > 0:
-                raise _NeedColour(cls)
-            return ChatCommand(_which(cls))
+            # Anywhere in the utterance, the WHOLE utterance becomes the
+            # question: "walk 2 s, then go to the chair" must not walk first.
+            raise _NeedColour(cls)
         return GotoObjectCommand(cls, color)
     if kind in ("repeat", "until_see"):
         return _program(a, kind, depth)
