@@ -1,3 +1,8 @@
+# Change contributed by Student B (assist), pending review by Student C:
+# stop signs are now the octagonal STOP plate (mesh "stopsign_octagon" from
+# custom_scene.xml's <asset>, textures assets/scenes/textures/stopsign_*.png,
+# see tools/make_stopsign_assets.py and docs/task4_stopsign.md) instead of the
+# two crossed square boxes. Positions, pole and heights are unchanged.
 """
 scenarios.py -- Student C. Ten reproducible Task 4 test scenarios, each with
 its own object layout and robot start pose.
@@ -30,6 +35,8 @@ from core import config
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BASE_SCENE = PROJECT_ROOT / "assets" / "scenes" / "custom_scene.xml"
 RESULTS_CSV = PROJECT_ROOT / "docs" / "test_result" / "task4_trials.csv"
+SIGN_TEXTURE_DIR = PROJECT_ROOT / "assets" / "scenes" / "textures"
+SIGN_PLATE_YAWS = (0.0, 90.0)   # (B, assist) two crossed plates, same as custom_scene.xml
 
 # Placement limits (see module docstring).
 OBJ_X_RANGE = (-6.0, -1.0)
@@ -170,6 +177,19 @@ def build_scene_xml(s: Scenario, output_dir: Path) -> Path:
     for color in sorted({o.color for o in s.objects}):
         ET.SubElement(asset, "material", name=f"gen_{color}_mat",
                       rgba=COLOR_RGBA[color], specular="0.1", shininess="0.1")
+    # (B, assist) the scenario XML is written elsewhere, so give the base
+    # scene's texture files absolute paths; then one textured material per
+    # sign colour. The name keeps the colour token and "sign", which
+    # navigation._find_target_body_id matches on.
+    for tex in asset.findall("texture"):
+        if tex.get("file") and not Path(tex.get("file")).is_absolute():
+            tex.set("file", str((BASE_SCENE.parent / tex.get("file")).resolve()))
+    for color in sorted({o.color for o in s.objects if o.cls == "stop sign"}):
+        ET.SubElement(asset, "texture", name=f"gen_{color}_sign_tex", type="2d",
+                      file=str(SIGN_TEXTURE_DIR / f"stopsign_{color}.png"))
+        ET.SubElement(asset, "material", name=f"gen_{color}_sign_mat",
+                      texture=f"gen_{color}_sign_tex", rgba="1 1 1 1",
+                      specular="0.2", shininess="0.2")
 
     def geom(parent, typ, size, pos, mat):
         ET.SubElement(parent, "geom", type=typ, size=size, pos=pos, material=mat)
@@ -188,8 +208,9 @@ def build_scene_xml(s: Scenario, output_dir: Path) -> Path:
         elif o.cls == "stop sign":
             b = ET.SubElement(world, "body", name=name, pos=f"{o.x} {o.y} 0")
             geom(b, "cylinder", "0.025 0.375", "0 0 0.375", "sign_pole_mat")
-            geom(b, "box", "0.15 0.02 0.15", "0 0 0.85", mat)
-            geom(b, "box", "0.02 0.15 0.15", "0 0 0.85", mat)
+            for yaw in SIGN_PLATE_YAWS:   # (B, assist) octagonal STOP plate
+                ET.SubElement(b, "geom", type="mesh", mesh="stopsign_octagon", pos="0 0 0.85",
+                              euler=f"0 0 {yaw:g}", material=f"gen_{o.color}_sign_mat")
         else:  # sports ball
             b = ET.SubElement(world, "body", name=name, pos=f"{o.x} {o.y} 0.11")
             geom(b, "sphere", "0.11", "0 0 0", mat)
