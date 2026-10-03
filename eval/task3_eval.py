@@ -7,8 +7,8 @@ eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
     python eval/task3_eval.py --services qwen-flash --prompt v1 --cases L1 L2 L3     # add cases to old runs
     python eval/task3_eval.py --report      # rebuild eval/results/summary.md from the logs
 
---prompt v1 / v2 / v3 are the frozen prompts in eval/prompt_v1.py ... prompt_v3.py;
-v4 is the current llm_parser.SYSTEM_PROMPT.
+--prompt v1 / v2 / v3 / v4 are the frozen prompts in eval/prompt_v1.py ... prompt_v4.py;
+v5 is the current llm_parser.SYSTEM_PROMPT.
 
 (If ROS's PYTHONPATH is set in your shell: `env -u PYTHONPATH .venv/bin/python ...`.)
 
@@ -39,6 +39,7 @@ from dialogue import llm_parser  # noqa: E402
 from eval.prompt_v1 import SYSTEM_PROMPT_V1  # noqa: E402
 from eval.prompt_v2 import SYSTEM_PROMPT_V2  # noqa: E402
 from eval.prompt_v3 import SYSTEM_PROMPT_V3  # noqa: E402
+from eval.prompt_v4 import SYSTEM_PROMPT_V4  # noqa: E402
 from dialogue.commands import LookCommand  # noqa: E402
 
 PING_SERVICES = ["qwen-flash", "gemini-3.8-flash", "gpt-5-nano"]
@@ -225,7 +226,7 @@ CASES = [
 # ---------------------------------------------------------------------------
 
 PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": SYSTEM_PROMPT_V3,
-           "v4": llm_parser.SYSTEM_PROMPT}
+           "v4": SYSTEM_PROMPT_V4, "v5": llm_parser.SYSTEM_PROMPT}
 
 
 class QuotaExhausted(Exception):
