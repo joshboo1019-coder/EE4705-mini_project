@@ -72,7 +72,7 @@ ball` — 3 `keep turning until you see the green chair, then go to it` — 4 `g
 the other way` · `undo that` — 6 `what did you just do?` — 7 `walk forward half a meter and back half a meter, three
 times` then `stop` while it walks — 8 `gira a la derecha noventa grados` then `turn right 90 degrees`.
 **Speech segment:** `v` + ENTER before each: "turn left ninety degrees", "walk forward for three seconds, then turn
-back", Mandarin "向前走三秒" (rejected by language ID before any LLM call, then the `Did you mean …?` line).
+back", Mandarin "向前走三秒" (rejected by whisper's language ID before any LLM call; `Robot: I only take commands in English. Please say it again in English.` — no "Did you mean" here: that suggestion comes from the LLM, and the speech path makes no call).
 
 ## Risky / unfinished
 

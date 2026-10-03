@@ -26,8 +26,9 @@ the spawn heading, the red stop sign stands at (−1.3, 0) behind it.
 | 8 | non-English → redirect | `gira a la derecha noventa grados` · then `turn right 90 degrees` | `[CMD] rejected reason=non-English`, `Robot: I only take commands in English. Did you mean "turn right 90 degrees"?` — the suggestion is never executed; you type it |
 
 **Speech segment** (your morning addition): use Segment 1 below (two spoken commands, one multi-step, plus the
-Mandarin sentence), pressing `v` + ENTER before each. With v5 the non-English rejection is followed by the
-`Robot: … Did you mean …?` suggestion line.
+Mandarin sentence), pressing `v` + ENTER before each. The spoken Mandarin is rejected by whisper's language ID
+before any LLM call, so the reply is `Robot: I only take commands in English. Please say it again in English.` (the typed path adds a "Did you mean …?"
+suggestion from the LLM; the speech path doesn't).
 
 **Display tonight:** there was no external monitor, so the automatic take used a virtual display (Xvfb :99,
 1920×1080: demo terminal left, panel right). For your own take, the original DP-1 recipe below still applies when
