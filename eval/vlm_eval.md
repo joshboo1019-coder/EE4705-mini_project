@@ -11,23 +11,40 @@ move during a look. Full terminal output: `eval/results/vlm/real_sim_check.log`.
 
 ## The 3-frame real-sim check
 
-| # | Pose (x, y, yaw) | Frame | Question | Ground truth in the frame | VLM answer | YOLO `[DETECT]` on the same frame | VLM | YOLO |
-|---|---|---|---|---|---|---|---|---|
-| 1 | −0.09, 0.01, −176° | `eval/results/vlm/20261002-232010-231387.png` | what can you see? | red chair (left edge, large), red stop sign (centre), green and yellow signs, orange ball half-hidden by the pole, sliver of the green chair (right edge) | "a red chair on the left, a large red square sign on a gray pole in the center, a green … sign … left of center, and a yellow … sign … right of center. The floor is a blue and dark-blue checkered grid …" | `chair color=blue conf=0.50` (the red chair) | ✅ correct, misses the half-hidden ball and the green-chair sliver | ❌ wrong colour on the chair; misses all 3 signs and the ball |
-| 2 | −0.08, 0.03, 144° | `eval/results/vlm/20261002-232018-702459.png` | is there a chair in front of you? | green chair (centre-right, fully visible), orange ball, yellow sign, red sign edge | "Yes, there is a green chair in front of you, positioned toward the center-right of the view." | `sports ball color=orange conf=0.73` only | ✅ | ❌ misses the green chair |
-| 3 | −0.09, −0.02, −82° | `eval/results/vlm/20261002-232027-560433.png` | what colour is the ball ahead? | open floor, terrain blocks; no ball | "There is no ball visible ahead in the image." | none | ✅ | ✅ |
+The live run used `bonus_b`'s copy of `perception/perception_real.py`, which predates Student C's colour fix
+on main (`9da795e`, 2026-10-02 22:19). On 2026-10-03, YOLO was re-run offline on the 3 saved frames with the
+same settings (`yolo11n`, conf 0.2, imgsz 736; these are identical on `bonus_b` and main). Each box was then
+grounded with three versions: the live one ("pre-9da795e"), main's, and `fix/task4-color-grounding`'s. The
+boxes and confidences are identical to the live `[DETECT]` lines; only the colour step differs.
 
-**The VLM was right 3/3. YOLO was wrong on 2 of the 3 frames.**
+| # | Pose (x, y, yaw) | Frame | Question | Ground truth in the frame | VLM answer (live) | VLM |
+|---|---|---|---|---|---|---|
+| 1 | −0.09, 0.01, −176° | `eval/results/vlm/20261002-232010-231387.png` | what can you see? | red chair (left edge, large), red stop sign (centre), green and yellow signs, orange ball half-hidden by the pole, sliver of the green chair (right edge) | "a red chair on the left, a large red square sign on a gray pole in the center, a green … sign … left of center, and a yellow … sign … right of center. The floor is a blue and dark-blue checkered grid …" | ✅ misses the half-hidden ball and the green-chair sliver |
+| 2 | −0.08, 0.03, 144° | `eval/results/vlm/20261002-232018-702459.png` | is there a chair in front of you? | green chair (centre-right, fully visible), orange ball, yellow sign, red sign edge | "Yes, there is a green chair in front of you, positioned toward the center-right of the view." | ✅ |
+| 3 | −0.09, −0.02, −82° | `eval/results/vlm/20261002-232027-560433.png` | what colour is the ball ahead? | open floor, terrain blocks; no ball | "There is no ball visible ahead in the image." | ✅ |
 
-## VLM vs YOLO: what went wrong for YOLO
+| # | YOLO detections (conf ≥ 0.2) | colour: pre-9da795e (live) | colour: main | colour: fix branch | YOLO misses (any colour version) |
+|---|---|---|---|---|---|
+| 1 | chair conf 0.50, bbox [0, 111, 84, 263] (the red chair) | **blue** ❌ | red ✅ | red ✅ | all 3 signs and the ball; none of them shows up even at conf ≥ 0.05 |
+| 2 | sports ball conf 0.73 | orange ✅ | orange ✅ | orange ✅ | **the green chair**: scored 0.14, below the 0.2 threshold |
+| 3 | none | – | – | – | nothing to detect ✅ |
 
-- **Frame 1: the red chair is labelled "blue".** YOLO finds the chair (conf 0.50), but the colour step
-  (`perception_real._grounded_color`, the median hue of the inner half of the bbox) mostly sees blue floor and
-  sky through the thin chair frame. This matters for Task 4, which must tell the green chair from the red one,
-  and "blue" also collides with the scene's real blue chair. The VLM names the colour correctly. The fix is on
-  `fix/task4-color-grounding` (`docs/task4_color_grounding.md`).
-- **Frame 2: the green chair is missed.** A fully visible chair gets no detection at
-  conf ≥ 0.2, while the VLM reports it and where it is ("center-right").
+**The VLM was right 3/3.** With current code, YOLO is fully right on 1 of the 3 frames (frame 3). It gets the
+red chair right but misses objects in frame 1, and misses the green chair in frame 2. In the live run it also
+had the chair's colour wrong, but that part was stale code.
+
+## VLM vs YOLO: what YOLO really misses, and what was a stale-code artefact
+
+- **Stale-code artefact: frame 1's red chair → "blue".** It came from the pre-`9da795e` grounding (median hue
+  of the bbox's inner half, where the blue floor and sky dominate a thin chair frame). Main and the fix branch
+  both say red on the same box. It isn't evidence against YOLO + grounding as they stand now.
+- **Real miss: frame 2's green chair.** The chair is fully visible, about centre-right, but YOLO scores it 0.14,
+  below `YOLO_CONF_THRESHOLD = 0.2`. The VLM reports it and where it is. This matches the rendered test set in
+  `docs/task4_color_grounding.md`: yolo11n finds the green chair in 66% of the views where it is visible.
+- **Real miss: the stop signs.** None of the 3 signs in frame 1 is detected at any confidence. That's expected
+  for this scene: its signs are square "+" plates, and yolo11n labels a sign "stop sign" in only 7 of 387
+  rendered views. The VLM reports all three, as red, green and yellow square/rectangular signs on poles.
+- **Real miss: the half-hidden ball** in frame 1. The VLM misses it too.
 - The VLM has the opposite weakness: it gives no geometry (no bbox, no range), so navigation still needs YOLO.
   It also needs a network round trip. YOLO is local and gives boxes. So the two are complementary: YOLO for
   `goto_object`, the VLM for answering the user's questions.

@@ -259,11 +259,15 @@ collided.
 
 | Pose (x, y, yaw) | Frame | Question | VLM answer (qwen3-vl-flash, t) | YOLO `[DETECT]` on the same frame | Correct? |
 |---|---|---|---|---|---|
-| −0.09, 0.01, −176° (facing the red stop sign) | `eval/results/vlm/20261002-232010-231387.png` | what can you see? | "I see a red chair on the left, a large red square sign on a gray pole in the center, a green rectangular sign on a pole to the left of center, and a yellow rectangular sign on a pole to the right of center. The floor is a blue and dark-blue checkered grid…" (0.96 s) | `chair color=blue conf=0.50` (the red chair, wrong colour); no stop signs, no ball | VLM ✅ (misses the half-hidden ball and the green chair sliver); YOLO partly (wrong colour, misses 3 signs) |
+| −0.09, 0.01, −176° (facing the red stop sign) | `eval/results/vlm/20261002-232010-231387.png` | what can you see? | "I see a red chair on the left, a large red square sign on a gray pole in the center, a green rectangular sign on a pole to the left of center, and a yellow rectangular sign on a pole to the right of center. The floor is a blue and dark-blue checkered grid…" (0.96 s) | `chair color=blue conf=0.50` (the red chair; "blue" is a stale-code artefact, see below); no stop signs, no ball | VLM ✅ (misses the half-hidden ball and the green chair sliver); YOLO partly (wrong colour, misses 3 signs) |
 | −0.08, 0.03, 144° (green-chair area) | `eval/results/vlm/20261002-232018-702459.png` | is there a chair in front of you? | "Yes, there is a green chair in front of you, positioned toward the center-right of the view." (0.60 s) | `sports ball color=orange conf=0.73` only | VLM ✅; YOLO ❌ (misses the green chair) |
 | −0.09, −0.02, −82° (open floor, terrain blocks on the left) | `eval/results/vlm/20261002-232027-560433.png` | what colour is the ball ahead? | "There is no ball visible ahead in the image." (0.46 s) | none | ✅ both |
 
-On identical frames the VLM was right 3/3, while YOLO missed or mislabelled an object in 2 of 3. That's the
+**Correction (2026-10-03):** this run used `bonus_b`'s pre-`9da795e` `perception_real.py`. With main's (and the
+fix branch's) colour grounding, the same box is labelled red. YOLO's real misses on these frames are the green
+chair in frame 2 (conf 0.14 < 0.2), the stop signs and the half-hidden ball. Details: `eval/vlm_eval.md`.
+
+On identical frames the VLM was right 3/3, while YOLO (current code) still missed an object in 2 of 3. That's the
 expected trade-off: YOLO is local and gives boxes for navigation; the VLM gives a reliable
 open-vocabulary answer but needs a network call (~0.5–1 s) and no geometry.
 
