@@ -1,7 +1,7 @@
 """
 eval/e2e/run_all.py — Student B. End-to-end harness on the real sim.
 
-    eval/run_env.sh eval/e2e/run_all.py --suites S1 S2 S3 S4 [S5] --label baseline
+    eval/run_env.sh eval/e2e/run_all.py --suites S1 S2 S3 S4 [S5] [S6] --label baseline
         [--s3-path main|driver] [--no-video] [--only S3_03 ...]
 
 Each scenario starts from a fresh sim launch at a defined start pose, runs on
@@ -25,6 +25,11 @@ Suites
               Success = [MISSION] SUCCESS and true d <= 0.80 m and C1.
   S4 Bonus    3 look questions at fixed poses + the 2-goal mission.
   S5 B upgrades (b/upgrade): programs, return home, status, stop, ...
+  S6 Hard scene (optional, assist/hard-scene): 6 typed goto trials on
+              `main.py --gui --scene hard` (2nd green chair, occluding walls,
+              colour distractor boxes, dim light; docs/hard_scene.md).
+              Scored like S3 against the INTENDED instance
+              (perception/hard_scene.OBJECT_POSITIONS_HARD + trace).
 The real LLM (config.LLM_SERVICE, qwen-flash) is used throughout.
 """
 
@@ -182,6 +187,39 @@ def suite_s5() -> List[Scenario]:
         else:
             steps = [Step(t, timeout=to) for t in texts]
         out.append(Scenario("S5", name, "eval/run_env.sh main.py --gui", steps=steps))
+    return out
+
+
+# S6 (assist/hard-scene, optional): the hard scene, perception/hard_scene.py.
+# name -> (typed utterance, intended instance(s) -- reaching any one counts,
+#          --gt-instance for the [FOUND]/[RANGE] logs, expected outcome, what it stresses)
+S6_TABLE = [
+    ("01_green_ambiguous", "go to the green chair", ["green_chair#1", "green_chair#2"], None,
+     "SUCCESS", "two identical green chairs: which one, and does it switch mid-approach?"),
+    ("02_green_by_ball", "go to the green chair next to the orange ball", ["green_chair#2"],
+     "green_chair#2", "SUCCESS",
+     "spatial qualifier the goto_object schema cannot express: record the parse"),
+    ("03_red_chair_red_box", "go to the red chair", ["red_chair"], None, "SUCCESS",
+     "red box distractor next to the red chair (same rgba)"),
+    ("04_ball_orange_box", "go to the orange ball", ["orange_sports ball"], None, "SUCCESS",
+     "orange box distractor next to the ball (same rgba)"),
+    ("05_occluded_yellow_sign", "find the yellow stop sign", ["yellow_stop sign"], None,
+     "FAIL:target_not_found", "target hidden by wall_north from the spawn (search does not explore)"),
+    ("06_red_sign_dim", "go to the red stop sign", ["red_stop sign"], None, "SUCCESS",
+     "control: unoccluded, no distractor, dim light only"),
+]
+
+
+def suite_s6() -> List[Scenario]:
+    out = []
+    for name, text, intended, gt, expected, stress in S6_TABLE:
+        launch = "eval/run_env.sh main.py --gui --scene hard"
+        if gt:
+            launch += f" --gt-instance '{gt}'"
+        target = intended[0].split("#", 1)[0]
+        out.append(Scenario("S6", name, launch, steps=[Step(text, timeout=170)],
+                            meta={"target": target, "intended": intended, "expected": expected,
+                                  "stress": stress}))
     return out
 
 
@@ -386,6 +424,8 @@ def evaluate(rec: dict) -> dict:
         return ev
     if suite == "S5":
         return _eval_s5(rec, lines, ev)
+    if suite == "S6":
+        return _eval_s6(rec, lines, ev)
     return ev
 
 
@@ -489,6 +529,66 @@ def _eval_s3(rec: dict, lines: List[str], ev: dict) -> dict:
     return ev
 
 
+def _eval_s6(rec: dict, lines: List[str], ev: dict) -> dict:
+    """Hard scene: S3-style scoring against the INTENDED instance(s). Ground
+    truth (perception/hard_scene.py + the trace) is logging/evaluation only."""
+    from perception import hard_scene as H
+    meta = rec["meta"]
+    key = meta["target"]
+    color, cls = key.split("_", 1)
+    clean = [re.sub(r"^(User: )+", "", l) for l in lines]
+    scene_pairs = {tuple(reversed(H.plain_key(k).split("_", 1))) for k in H.OBJECT_POSITIONS_HARD}
+    cmds = [l for l in clean if l.startswith("[CMD] actions=") or l.startswith("[CMD] rejected")]
+    detects = [m.groups() for l in clean
+               if (m := re.search(r"^\[DETECT\] class=(.+?) color=(\S+) conf", l))]
+    relevant = [p for p in detects if p[0] in ("chair", "stop sign", "sports ball")]
+    mission = next((l for l in clean if l.startswith("[MISSION] status=")), None)
+    found = next((l for l in clean if l.startswith("[FOUND] ")), None)
+    stop_check = [l for l in clean if "phase=stop_check" in l]
+    status = None
+    if mission:
+        status = "SUCCESS" if "status=SUCCESS" in mission else "FAIL:" + (
+            re.search(r"reason=(\S+)", mission).group(1) if "reason=" in mission else "?")
+    tr = rec.get("trace") or []
+    d_inst, d_box, went_to, true_d = {}, {}, None, None
+    if tr:
+        # pose when the FIRST goto ended ([MISSION] line): with a multi-goal
+        # parse ("... next to the orange ball") the run goes on to a 2nd goal
+        end_t = next((t for t, l in rec.get("lines", [])
+                      if re.match(r"^(User: )*\[MISSION\] status=", l)), None)
+        if end_t is None:
+            end_t = max((s.get("t_end") or 0) for s in rec["steps"]) if rec["steps"] else tr[-1]["t"]
+        p = _pose_at(tr, end_t) or tr[-1]
+        d_inst = {i: round(math.hypot(p["x"] - x, p["y"] - y), 2)
+                  for i, (x, y) in H.OBJECT_POSITIONS_HARD.items() if H.plain_key(i) == key}
+        d_box = {n: round(math.hypot(p["x"] - x, p["y"] - y), 2)
+                 for n, ((x, y), _, _) in H.DISTRACTORS_HARD.items()}
+        went_to = min(d_inst, key=d_inst.get) if d_inst else None
+        true_d = min(d_inst[i] for i in meta["intended"] if i in d_inst)
+    labels = H.geom_labels()
+    touched = sorted({labels.get(c.split("|", 1)[1], c.split("|", 1)[1])
+                      for c in ev.get("contacts", [])})
+    est_stop = None
+    if stop_check and (m := re.search(r"estimated_planar=([\d.]+)", stop_check[-1])):
+        est_stop = float(m.group(1))
+    c1 = bool(stop_check) or bool(found)
+    if meta["expected"].startswith("FAIL"):
+        success = status == meta["expected"]
+    else:
+        success = status == "SUCCESS" and true_d is not None and true_d <= 0.80 and c1
+    ev.update(cmd=cmds[0] if cmds else None, n_goals=len(re.findall(r"goto_object", cmds[0])) if cmds else 0,
+              search=any("[SEARCH]" in l for l in clean),
+              detect_total=len(relevant),
+              detect_target=sum(1 for p in relevant if p == (cls, color)),
+              detect_not_in_scene=sorted({f"{c}/{k}" for k, c in relevant if (k, c) not in scene_pairs}),
+              mission=status, found=found, est_d_stop=est_stop, d_by_instance=d_inst,
+              went_to=went_to, true_d=true_d, d_to_distractors=d_box, touched=touched,
+              wall_contact=any(t.startswith("wall_") for t in touched),
+              C1=c1, C2_true=(true_d is not None and true_d <= 0.80))
+    ev["pass"] = success
+    return ev
+
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
@@ -577,6 +677,29 @@ def write_summary(run: Run, records: List[dict]) -> Path:
         out.append("")
         for r in by["S5"]:
             out += [f"### {r['scenario']}", "", "```"] + r["eval"].get("key_lines", [])[:40] + ["```", ""]
+    if "S6" in by:
+        out += ["## S6 — Hard scene (optional; `main.py --gui --scene hard`, docs/hard_scene.md)", "",
+                "Success as S3, but true d is to the INTENDED instance (S6_01: either green "
+                "chair). True d / went-to / touched are ground truth from the trace, logged only.", "",
+                "| # | Typed | [CMD] line | Mission | Est. d at stop | Went to (true d per instance) "
+                "| True d intended | C1 | C2 true | Not-in-scene detections | Touched | Fall | Success | Clip |",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        n_ok = 0
+        for r in by["S6"]:
+            e = r["eval"]
+            n_ok += bool(e.get("pass"))
+            out.append(
+                f"| {r['scenario']} | `{r['steps'][0]['text'] if r['steps'] else ''}` | "
+                f"`{e.get('cmd')}` | {e.get('mission')} (expected {r['meta']['expected']}) | "
+                f"{e.get('est_d_stop')} | {e.get('went_to')} {e.get('d_by_instance')} | "
+                f"{e.get('true_d')} | {_yn(e.get('C1'))} | {_yn(e.get('C2_true'))} | "
+                f"{', '.join(e.get('detect_not_in_scene') or []) or 'none'} | "
+                f"{', '.join(e.get('touched') or []) or 'none'} | {_yn(not e.get('fall'))} | "
+                f"{_yn(e.get('pass'))} | {_clip(r)} |")
+        out += ["", f"**S6 success: {n_ok}/{len(by['S6'])}**", ""]
+        for r in by["S6"]:
+            out.append(f"- `{r['scenario']}`: {r['meta'].get('stress')}")
+        out.append("")
     crashed = [r["suite"] + "_" + r["scenario"] for r in records if r.get("crash")]
     deleted = [r["suite"] + "_" + r["scenario"] for r in records if (r.get("frame") or {}).get("deleted")]
     out += ["## Run notes", "",
@@ -637,7 +760,7 @@ def main():
     scen: List[Scenario] = []
     for s in args.suites:
         scen += {"S1": suite_s1, "S2": suite_s2, "S3": lambda: suite_s3(args.s3_path),
-                 "S4": suite_s4, "S5": suite_s5}[s]()
+                 "S4": suite_s4, "S5": suite_s5, "S6": suite_s6}[s]()
     if args.only:
         scen = [s for s in scen if s.sid in args.only]
     print(f"[E2E] run {run.stamp}: {len(scen)} scenarios -> {run.dir}", flush=True)
