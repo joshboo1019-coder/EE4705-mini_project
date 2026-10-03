@@ -92,7 +92,11 @@ def _log_blue_chair_range(stage: str, skills, perception) -> None:
     """Grab one frame, look for blue_chair, print [DETECT]/[RANGE] lines
     using the exact same range-estimation helpers navigation.py's own
     goto_object() uses internally -- not a separate/different distance
-    computation."""
+    computation. navigation._camera_height_above_ground() itself now
+    corrects for local (not world-frame) ground clearance via
+    skills.get_ground_height_below(), so this script no longer needs
+    its own terrain-aware override -- the fix lives in shared code and
+    applies to every object/test, not just this one."""
     frame = skills.get_camera_frame()
     detections = perception.detect(frame)
     target = navigation._pick_target(detections, "chair", "blue")
