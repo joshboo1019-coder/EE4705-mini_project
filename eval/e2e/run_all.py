@@ -149,27 +149,36 @@ def suite_s4() -> List[Scenario]:
             Scenario("S4", "multigoal", "eval/run_env.sh main.py --gui", steps=mission)]
 
 
+# S5 (b/upgrade). Moves are chosen to stay on the clear floor: the robot spawns
+# at the origin facing +x and the rough-terrain track starts at x ~ 1.5 m, so
+# walking programs either turn left first (clear strip along +y) or stay in
+# x in [0, 1]. The non-English case is typed in Spanish: xdotool can't type
+# CJK into the xterm reliably (Mandarin is covered offline and by speech).
 S5_STEPS = [
-    ("until_see", ["keep turning until you see the orange ball, then go to it"], 300),
-    ("square", ["walk in a square with 1 meter sides"], 120),
-    ("return_home", ["walk forward for two seconds, then turn left 90 degrees",
-                     "go back to where you started"], 120),
+    ("until_see", ["keep turning until you see the orange ball, then go to it",
+                   "what have you seen?"], 300),
+    ("square", ["walk in a square with 1 meter sides"], 150),
+    ("return_home", ["turn left 90 degrees, then walk forward for two seconds",
+                     "go back to where you started",
+                     "how far are you from the start?"], 120),
     ("status", ["turn left 90 degrees", "what did you just do?"], 60),
-    ("estop", ["turn left 90 degrees, then walk forward for 3 seconds, then turn right "
-               "90 degrees, then walk forward for 3 seconds"], 60),
-    ("non_english", ["向前走三秒", "walk forward for three seconds"], 60),
-    ("out_of_range", ["walk forward for a hundred meters"], 60),
+    ("estop", None, 60),
+    ("non_english", ["gira a la izquierda noventa grados", "turn left 90 degrees"], 60),
+    ("out_of_range", ["walk forward for a hundred meters", "why did you reject that?"], 60),
 ]
 
 
 def suite_s5() -> List[Scenario]:
     out = []
     for name, texts, to in S5_STEPS:
-        steps = [Step(t, timeout=to) for t in texts]
         if name == "estop":
-            # "stop" is typed while the program is still running.
-            steps = [Step(texts[0], wait=r"\[EXEC\] action=2/", timeout=40),
-                     Step("stop", wait=r"\[ESTOP\]|\[DONE\]", timeout=30)]
+            # "stop" is typed while the program is still walking.
+            steps = [Step("walk forward 1 meter and back 1 meter, three times",
+                          wait=r"\[(MOVE|REPEAT)\]|\[EXEC\] action=1/", timeout=40),
+                     Step("stop", wait=r"\[DONE\]", timeout=30),
+                     Step("what did you just do?", timeout=40)]
+        else:
+            steps = [Step(t, timeout=to) for t in texts]
         out.append(Scenario("S5", name, "eval/run_env.sh main.py --gui", steps=steps))
     return out
 
@@ -374,10 +383,52 @@ def evaluate(rec: dict) -> dict:
             ev["strict_c2"] = bool(ds) and all(d <= 0.80 for d in ds)
         return ev
     if suite == "S5":
-        ev["key_lines"] = [l for l in lines if re.search(
-            r"\[(CMD|PLAN|MOVE|ESTOP|MULTI|FOUND|MISSION|DONE|STATE)\]|Robot: ", l)]
-        ev["pass"] = None    # judged per scenario in summary.md
-        return ev
+        return _eval_s5(rec, lines, ev)
+    return ev
+
+
+def _eval_s5(rec: dict, lines: List[str], ev: dict) -> dict:
+    """Automatic checks for the B-upgrade scenarios (ground truth = trace, logging only)."""
+    name = rec["scenario"]
+    clean = [re.sub(r"^(User: )+", "", l) for l in lines]
+    ev["key_lines"] = [l for l in clean if re.search(
+        r"^\[(CMD|PLAN|MOVE|REPEAT|UNTIL|ESTOP|MULTI|FOUND|MISSION|DONE|GOAL)\]|^Robot: |^### >>>", l)]
+    tr = rec.get("trace") or []
+    start = tr[0] if tr else None
+    end = tr[-1] if tr else None
+    dist_home = (math.hypot(end["x"] - start["x"], end["y"] - start["y"]) if tr else None)
+    robot = [l for l in clean if l.startswith("Robot: ")]
+    has = lambda pat: any(re.search(pat, l) for l in clean)
+    checks = {}
+    if name == "until_see":
+        checks = {"until_line": has(r"^\[UNTIL\]"), "found_ball": has(r"^\[FOUND\] class=sports ball"),
+                  "mission_success": has(r"^\[MISSION\] status=SUCCESS"), "summary": len(robot) >= 2}
+    elif name == "square":
+        moves = [l for l in clean if l.startswith("[MOVE]")]
+        checks = {"plan": has(r"^\[PLAN\]"), "four_sides": len(moves) >= 4,
+                  "closed_back_within_0.5m": dist_home is not None and dist_home <= 0.5,
+                  "summary": bool(robot)}
+        ev["moves"] = moves
+    elif name == "return_home":
+        checks = {"plan": has(r"^\[PLAN\]"), "home_within_0.3m": dist_home is not None and dist_home <= 0.3,
+                  "status_answer": len(robot) >= 3}
+    elif name == "status":
+        checks = {"answer_mentions_turn": any("turn" in l.lower() for l in robot[1:])}
+    elif name == "estop":
+        m = next((re.search(r"\[ESTOP\] latency=([\d.]+) ms", l) for l in clean if "[ESTOP]" in l), None)
+        ev["estop_latency_ms"] = float(m.group(1)) if m else None
+        checks = {"estop_line": m is not None, "no_llm_for_stop": not any(
+            "### >>> typed: stop" in l for l in clean) or not has(r"^\[CMD\] actions=stop")}
+    elif name == "non_english":
+        checks = {"rejected_non_english": has(r"^\[CMD\] rejected reason=non-English"),
+                  "suggestion": any("Did you mean" in l for l in robot),
+                  "redirect_turned": has(r"^\[TURN\] target=90\.0 deg")}
+    elif name == "out_of_range":
+        checks = {"rejected_out_of_range": has(r"^\[CMD\] rejected reason=out_of_range"),
+                  "suggestion": len(robot) >= 1, "why_answer": len(robot) >= 2}
+    ev["checks"] = checks
+    ev["dist_end_from_start_m"] = round(dist_home, 2) if dist_home is not None else None
+    ev["pass"] = bool(checks) and all(checks.values()) and not ev.get("fall")
     return ev
 
 
@@ -512,10 +563,18 @@ def write_summary(run: Run, records: List[dict]) -> Path:
                 out += [f"Multi-goal (clip {_clip(r)}): `{e.get('multi')}` · true d at stops "
                         f"{e.get('true_d_at_stops')} · strict C2 {_yn(e.get('strict_c2'))}", ""]
     if "S5" in by:
-        out += ["## S5 — B upgrades", ""]
+        out += ["## S5 — B upgrades (typed into main.py)", "",
+                "| Scenario | Checks | Pass | Fall / contacts | Clip |", "|---|---|---|---|---|"]
         for r in by["S5"]:
-            out += [f"### {r['scenario']} (clip {_clip(r)})", "", "```"] + \
-                   r["eval"].get("key_lines", [])[:40] + ["```", ""]
+            e = r["eval"]
+            chk = ", ".join(f"{k} {_yn(v)}" for k, v in (e.get("checks") or {}).items())
+            if e.get("estop_latency_ms") is not None:
+                chk += f", latency {e['estop_latency_ms']} ms"
+            out.append(f"| {r['scenario']} | {chk} | {_yn(e.get('pass'))} | "
+                       f"{_yn(not e.get('fall'))} fall, {len(e.get('contacts', []))} contacts | {_clip(r)} |")
+        out.append("")
+        for r in by["S5"]:
+            out += [f"### {r['scenario']}", "", "```"] + r["eval"].get("key_lines", [])[:40] + ["```", ""]
     crashed = [r["suite"] + "_" + r["scenario"] for r in records if r.get("crash")]
     deleted = [r["suite"] + "_" + r["scenario"] for r in records if (r.get("frame") or {}).get("deleted")]
     out += ["## Run notes", "",
