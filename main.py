@@ -1,3 +1,4 @@
+# Change contributed by Student B (assist), pending review by the group
 """
 main.py — ALL. The only file that wires the real (or mock) implementations
 together. Nobody develops against this file day-to-day; you only touch it
@@ -15,6 +16,13 @@ from dialogue import chat_interface
 # becomes ready. Everything else in the codebase is unaffected by the flip.
 USE_REAL_SKILLS = True
 USE_REAL_PERCEPTION = True
+
+
+def use_mocks():
+    """`--mock`: wire MockSkills + MockPerception (no sim, no YOLO) for
+    this run only, without editing the defaults above."""
+    global USE_REAL_SKILLS, USE_REAL_PERCEPTION
+    USE_REAL_SKILLS = USE_REAL_PERCEPTION = False
 
 
 def build_skills(gui: bool = False, native: bool = False):
@@ -39,7 +47,10 @@ def main():
                         help="browser control panel at http://localhost:8765 (real skills only)")
     parser.add_argument("--native", action="store_true",
                         help="native MuJoCo window (real skills only)")
+    parser.add_argument("--mock", action="store_true", help="MockSkills + MockPerception (no sim, no YOLO)")
     args = parser.parse_args()
+    if args.mock:
+        use_mocks()
 
     skills = build_skills(gui=args.gui, native=args.native)
     perception = build_perception()
