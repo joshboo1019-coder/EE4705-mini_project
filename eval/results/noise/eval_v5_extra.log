@@ -1,0 +1,110 @@
+
+=== NOISE qwen-flash prompt v5 run 1/2 (24 cases) ===
+  N-E1  PASS  'wlak forwrad for four seconds'  
+  N-E2  PASS  'turn left thirty degrease'  
+  N-E3  PASS  'turn around walk forward one second'  
+  N-E4  PASS  'turnright andthen stop'  
+  N-E5  PASS  'okay so first turn left then walk forward three seconds then'  
+  N-E6  FAIL  'walk to the blew chair'  rejected (non-English)
+  N-E7  FAIL  'reverse for won second'  rejected (non-English)
+  N-E8  PASS  'pls turn rt 90 deg'  
+  N-E9  PASS  'sotp moving!'  
+  N-E10 PASS  'um walk uh forward for like two seconds'  
+  N-E11 FAIL  'strafe lefft for three secods'  rejected (non-English)
+  N-E12 PASS  'TURN ARROUND!!'  
+  N-E13 PASS  'go to the yellow stop sigh'  
+  N-E14 FAIL  'walk forward for ate seconds'  rejected (out_of_range:duration)
+  N-F1  PASS  'recule pendant deux secondes'  
+  N-F2  FAIL  'camina hacia adelante tres segundos'  accepted: move(0.8,0,0,3s)
+  N-F3  PASS  'dreh dich nach links'  
+  N-F4  PASS  'pusing ke kanan sembilan puluh darjah'  
+  N-F5  PASS  'jalan maju dua detik'  
+  N-S1  PASS  'go backwards 两秒'  
+  N-S2  PASS  'va tout droit for two seconds'  
+  N-S3  FAIL  'go to the silla verde'  accepted: goto(chair,green)
+  N-S4  PASS  'please jalan ke depan for two seconds'  
+  N-S5  PASS  'walk vorwärts for two seconds'  
+  spend so far: qwen-flash $0.0035 over 24 calls
+
+=== NOISE qwen-flash prompt v5 run 2/2 (24 cases) ===
+  N-E1  PASS  'wlak forwrad for four seconds'  
+  N-E2  PASS  'turn left thirty degrease'  
+  N-E3  PASS  'turn around walk forward one second'  
+  N-E4  PASS  'turnright andthen stop'  
+  N-E5  PASS  'okay so first turn left then walk forward three seconds then'  
+  N-E6  FAIL  'walk to the blew chair'  rejected (non-English)
+  N-E7  FAIL  'reverse for won second'  rejected (non-English)
+  N-E8  PASS  'pls turn rt 90 deg'  
+  N-E9  PASS  'sotp moving!'  
+  N-E10 PASS  'um walk uh forward for like two seconds'  
+  N-E11 FAIL  'strafe lefft for three secods'  rejected (non-English)
+  N-E12 PASS  'TURN ARROUND!!'  
+  N-E13 PASS  'go to the yellow stop sigh'  
+  N-E14 FAIL  'walk forward for ate seconds'  rejected (out_of_range:duration)
+  N-F1  PASS  'recule pendant deux secondes'  
+  N-F2  FAIL  'camina hacia adelante tres segundos'  accepted: move(0.8,0,0,3s)
+  N-F3  PASS  'dreh dich nach links'  
+  N-F4  PASS  'pusing ke kanan sembilan puluh darjah'  
+  N-F5  PASS  'jalan maju dua detik'  
+  N-S1  PASS  'go backwards 两秒'  
+  N-S2  PASS  'va tout droit for two seconds'  
+  N-S3  FAIL  'go to the silla verde'  accepted: goto(chair,green)
+  N-S4  PASS  'please jalan ke depan for two seconds'  
+  N-S5  PASS  'walk vorwärts for two seconds'  
+  spend so far: qwen-flash $0.0070 over 48 calls
+
+=== NOISE gpt-5-nano prompt v5 run 1/2 (24 cases) ===
+  N-E1  FAIL  'wlak forwrad for four seconds'  rejected (non-English)
+  N-E2  PASS  'turn left thirty degrease'  
+  N-E3  PASS  'turn around walk forward one second'  
+  N-E4  PASS  'turnright andthen stop'  
+  N-E5  PASS  'okay so first turn left then walk forward three seconds then'  
+  N-E6  FAIL  'walk to the blew chair'  rejected (impossible:blew)
+  N-E7  PASS  'reverse for won second'  
+  N-E8  PASS  'pls turn rt 90 deg'  
+  N-E9  PASS  'sotp moving!'  
+  N-E10 FAIL  'um walk uh forward for like two seconds'  rejected (non-English)
+  N-E11 FAIL  'strafe lefft for three secods'  rejected (non-English)
+  N-E12 PASS  'TURN ARROUND!!'  
+  N-E13 PASS  'go to the yellow stop sigh'  
+  N-E14 FAIL  'walk forward for ate seconds'  action 1 wrong: move(0.8,0,0,1.5s)
+  N-F1  PASS  'recule pendant deux secondes'  
+  N-F2  PASS  'camina hacia adelante tres segundos'  
+  N-F3  PASS  'dreh dich nach links'  
+  N-F4  PASS  'pusing ke kanan sembilan puluh darjah'  
+  N-F5  PASS  'jalan maju dua detik'  
+  N-S1  PASS  'go backwards 两秒'  
+  N-S2  PASS  'va tout droit for two seconds'  
+  N-S3  PASS  'go to the silla verde'  
+  N-S4  PASS  'please jalan ke depan for two seconds'  
+  N-S5  PASS  'walk vorwärts for two seconds'  
+  spend so far: gpt-5-nano $0.0035 over 24 calls
+
+=== NOISE gpt-5-nano prompt v5 run 2/2 (24 cases) ===
+  N-E1  PASS  'wlak forwrad for four seconds'  
+  N-E2  PASS  'turn left thirty degrease'  
+  N-E3  PASS  'turn around walk forward one second'  
+  N-E4  PASS  'turnright andthen stop'  
+  N-E5  PASS  'okay so first turn left then walk forward three seconds then'  
+  N-E6  FAIL  'walk to the blew chair'  rejected (non-English)
+  N-E7  FAIL  'reverse for won second'  rejected (empty)
+  N-E8  PASS  'pls turn rt 90 deg'  
+  N-E9  PASS  'sotp moving!'  
+  N-E10 FAIL  'um walk uh forward for like two seconds'  rejected (non-English)
+  N-E11 FAIL  'strafe lefft for three secods'  rejected (non-English)
+  N-E12 PASS  'TURN ARROUND!!'  
+  N-E13 PASS  'go to the yellow stop sigh'  
+  N-E14 FAIL  'walk forward for ate seconds'  action 1 wrong: move(0.8,0,0,1.5s)
+  N-F1  PASS  'recule pendant deux secondes'  
+  N-F2  PASS  'camina hacia adelante tres segundos'  
+  N-F3  PASS  'dreh dich nach links'  
+  N-F4  PASS  'pusing ke kanan sembilan puluh darjah'  
+  N-F5  PASS  'jalan maju dua detik'  
+  N-S1  PASS  'go backwards 两秒'  
+  N-S2  PASS  'va tout droit for two seconds'  
+  N-S3  PASS  'go to the silla verde'  
+  N-S4  PASS  'please jalan ke depan for two seconds'  
+  N-S5  PASS  'walk vorwärts for two seconds'  
+  spend so far: gpt-5-nano $0.0071 over 48 calls
+TOTAL estimated spend qwen-flash: $0.0070 over 48 calls
+TOTAL estimated spend gpt-5-nano: $0.0071 over 48 calls

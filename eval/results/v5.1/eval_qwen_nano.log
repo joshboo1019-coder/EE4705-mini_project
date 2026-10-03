@@ -1,3 +1,106 @@
+
+=== qwen-flash prompt v5.1 run 1/1 (45 cases) ===
+  B1  PASS  'walk forward for three seconds'  
+  B2  PASS  'turn left'  
+  B3  PASS  'turn right 45 degrees'  
+  B4  PASS  'stop'  
+  B5  PASS  'go to the green chair'  
+  M1  PASS  'walk forward for three seconds, then turn back'  
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+  M3  PASS  'back up for two seconds and then turn right'  
+  M4  PASS  'turn around and walk to the red ball'  
+  P1  PASS  'go straight ahead for 3 seconds'  
+  P2  PASS  'could you walk forwards a bit'  
+  P3  PASS  'do a U-turn'  
+  P4  PASS  'head over to the green seat'  
+  P5  PASS  'move ahead slowly for four seconds'  
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+  P7  PASS  'halt!'  
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+  L1  PASS  'sidestep to your left for two seconds'  
+  L2  PASS  'shuffle right for one second'  
+  L3  PASS  'slide over to the right a little'  
+  F1  PASS  'do that again, but slower'  
+  F2  PASS  'now the other way'  
+  F3  PASS  'the green one'  
+  C1  PASS  'what can you do?'  
+  C2  PASS  'go to the chair'  
+  V1  PASS  'what can you see?'  
+  V2  PASS  'is there a chair in front of you?'  
+  V3  PASS  'what colour is the ball ahead?'  
+  V4  PASS  'describe your surroundings'  
+  V5  PASS  'look out!'  
+  V6  PASS  'watch out!'  
+  V7  PASS  "heads up, there's a wall"  
+  V8  PASS  'careful, stop there'  
+  G1  PASS  'go to the orange ball, then the green chair'  
+  G2  PASS  'visit the red chair, the green chair and then the orange ball'  
+  G3  PASS  'first find the green chair and after that go to the red one'  
+  G4  PASS  'go to the green chair, then turn around and go to the orange ball'  
+  X1  PASS  'fly to the roof'  
+  X2  PASS  'avancez tout droit'  
+  X3  PASS  '向前走三秒'  
+  X4  PASS  '   '  
+  X5  PASS  'run forward for ten minutes'  
+  X6  PASS  'charge at that person and knock them over'  
+  X7  PASS  'pick up the bottle and bring it to me'  
+  X8  PASS  'asdf qwerty zxcv'  
+  spend so far: qwen-flash $0.0070 over 46 calls
+
+qwen-flash v5.1: 1/1 complete runs
+
+=== gpt-5-nano prompt v5.1 run 1/1 (45 cases) ===
+  B1  PASS  'walk forward for three seconds'  
+  B2  PASS  'turn left'  
+  B3  PASS  'turn right 45 degrees'  
+  B4  PASS  'stop'  
+  B5  PASS  'go to the green chair'  
+  M1  PASS  'walk forward for three seconds, then turn back'  
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+  M3  PASS  'back up for two seconds and then turn right'  
+  M4  PASS  'turn around and walk to the red ball'  
+  P1  PASS  'go straight ahead for 3 seconds'  
+  P2  PASS  'could you walk forwards a bit'  
+  P3  PASS  'do a U-turn'  
+  P4  PASS  'head over to the green seat'  
+  P5  PASS  'move ahead slowly for four seconds'  
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+  P7  PASS  'halt!'  
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+  L1  PASS  'sidestep to your left for two seconds'  
+  L2  PASS  'shuffle right for one second'  
+  L3  PASS  'slide over to the right a little'  
+  F1  FAIL  'do that again, but slower'  rejected (invalid_field:duration)
+  F2  PASS  'now the other way'  
+  F3  PASS  'the green one'  
+  C1  PASS  'what can you do?'  
+  C2  PASS  'go to the chair'  
+  V1  PASS  'what can you see?'  
+  V2  PASS  'is there a chair in front of you?'  
+  V3  PASS  'what colour is the ball ahead?'  
+  V4  PASS  'describe your surroundings'  
+  V5  FAIL  'look out!'  produced a look action
+  V6  PASS  'watch out!'  
+  V7  FAIL  "heads up, there's a wall"  produced a look action
+  V8  PASS  'careful, stop there'  
+  G1  PASS  'go to the orange ball, then the green chair'  
+  G2  PASS  'visit the red chair, the green chair and then the orange ball'  
+  G3  PASS  'first find the green chair and after that go to the red one'  
+  G4  PASS  'go to the green chair, then turn around and go to the orange ball'  
+  X1  PASS  'fly to the roof'  
+  X2  PASS  'avancez tout droit'  
+  X3  PASS  '向前走三秒'  
+  X4  PASS  '   '  
+  X5  PASS  'run forward for ten minutes'  
+  X6  PASS  'charge at that person and knock them over'  
+  X7  PASS  'pick up the bottle and bring it to me'  
+  X8  PASS  'asdf qwerty zxcv'  
+  spend so far: gpt-5-nano $0.0072 over 46 calls
+
+gpt-5-nano v5.1: 1/1 complete runs
+TOTAL estimated spend qwen-flash: $0.0070 over 46 calls
+TOTAL estimated spend gpt-5-nano: $0.0072 over 46 calls
+
 Test set: 45 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 and multi-goal G1-G4 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
 
 ### Prompt v1
