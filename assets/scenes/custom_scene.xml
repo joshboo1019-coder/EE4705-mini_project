@@ -1,4 +1,16 @@
 <mujoco model="custom_scene">
+  <!-- Change contributed by Student B (assist), pending review by the group:
+       the three stop signs' "+" cross of two SQUARE plates is now a "+" cross
+       of two OCTAGONAL plates (inline mesh "stopsign_octagon", 0.30 m
+       flat-to-flat, 0.02 m thick) textured on both faces with white "STOP"
+       letters and a white border on the sign colour
+       (textures/stopsign_<colour>.png, made by tools/make_stopsign_assets.py).
+       Positions, pole, plate height (z = 0.85) and the material names
+       sign_red_mat / sign_yellow_mat / sign_green_mat are unchanged; the
+       materials now carry the texture (rgba 1 1 1 1, the colour lives in the
+       PNG). yolo11n labels the signs "stop sign" in 228/387 test views instead
+       of 7/387, but chair detections drop in views where a sign is detected:
+       see docs/task4_stopsign.md before merging. -->
   <!--
     Task 2.iii custom scene — Student A.
 
@@ -75,7 +87,9 @@
     effectively invisible. Two perpendicular plates guarantee at least
     one face is visible (and near-square, not edge-on) from any direction
     the robot approaches from. Not a true octagon mesh (MuJoCo's
-    primitive geoms don't include one). Same trade-off note as the
+    primitive geoms don't include one). [Superseded: the plates are now
+    textured octagon meshes, see the change note at the top of this file.]
+    Same trade-off note as the
     chairs: YOLO detection confidence on these flat-color primitives will
     likely need calibration.
 
@@ -104,10 +118,19 @@
     <material name="chair_red_mat" rgba="0.75 0.10 0.10 1" specular="0.1" shininess="0.1" />
     <material name="ball_orange_mat" rgba="0.95 0.55 0.10 1" specular="0.3" shininess="0.4" />
     <material name="sign_pole_mat" rgba="0.35 0.35 0.35 1" specular="0.2" shininess="0.2" />
-    <material name="sign_red_mat" rgba="0.80 0.05 0.05 1" specular="0.2" shininess="0.2" />
-    <material name="sign_yellow_mat" rgba="0.95 0.80 0.05 1" specular="0.2" shininess="0.2" />
-    <material name="sign_green_mat" rgba="0.10 0.60 0.20 1" specular="0.2" shininess="0.2" />
+    <texture name="sign_red_tex" type="2d" file="textures/stopsign_red.png" />
+    <material name="sign_red_mat" texture="sign_red_tex" rgba="1 1 1 1" specular="0.2" shininess="0.2" />
+    <texture name="sign_yellow_tex" type="2d" file="textures/stopsign_yellow.png" />
+    <material name="sign_yellow_mat" texture="sign_yellow_tex" rgba="1 1 1 1" specular="0.2" shininess="0.2" />
+    <texture name="sign_green_tex" type="2d" file="textures/stopsign_green.png" />
+    <material name="sign_green_mat" texture="sign_green_tex" rgba="1 1 1 1" specular="0.2" shininess="0.2" />
     <material name="chair_blue_mat" rgba="0.10 0.25 0.75 1" specular="0.1" shininess="0.1" />
+    <!-- (B, assist) octagonal STOP plate, printed by tools/make_stopsign_assets.py (its mesh option);
+         faces normal to local +-y, texcoords map the same STOP texture on both faces -->
+    <mesh name="stopsign_octagon"
+      vertex="0 -0.01 0  0.15 -0.01 0.062132  0.062132 -0.01 0.15  -0.062132 -0.01 0.15  -0.15 -0.01 0.062132  -0.15 -0.01 -0.062132  -0.062132 -0.01 -0.15  0.062132 -0.01 -0.15  0.15 -0.01 -0.062132  0 0.01 0  0.15 0.01 0.062132  0.062132 0.01 0.15  -0.062132 0.01 0.15  -0.15 0.01 0.062132  -0.15 0.01 -0.062132  -0.062132 0.01 -0.15  0.062132 0.01 -0.15  0.15 0.01 -0.062132  0.15 -0.01 0.062132  0.062132 -0.01 0.15  0.15 0.01 0.062132  0.062132 0.01 0.15  0.062132 -0.01 0.15  -0.062132 -0.01 0.15  0.062132 0.01 0.15  -0.062132 0.01 0.15  -0.062132 -0.01 0.15  -0.15 -0.01 0.062132  -0.062132 0.01 0.15  -0.15 0.01 0.062132  -0.15 -0.01 0.062132  -0.15 -0.01 -0.062132  -0.15 0.01 0.062132  -0.15 0.01 -0.062132  -0.15 -0.01 -0.062132  -0.062132 -0.01 -0.15  -0.15 0.01 -0.062132  -0.062132 0.01 -0.15  -0.062132 -0.01 -0.15  0.062132 -0.01 -0.15  -0.062132 0.01 -0.15  0.062132 0.01 -0.15  0.062132 -0.01 -0.15  0.15 -0.01 -0.062132  0.062132 0.01 -0.15  0.15 0.01 -0.062132  0.15 -0.01 -0.062132  0.15 -0.01 0.062132  0.15 0.01 -0.062132  0.15 0.01 0.062132"
+      face="0 1 2  0 2 3  0 3 4  0 4 5  0 5 6  0 6 7  0 7 8  0 8 1  9 11 10  9 12 11  9 13 12  9 14 13  9 15 14  9 16 15  9 17 16  9 10 17  18 20 21  18 21 19  22 24 25  22 25 23  26 28 29  26 29 27  30 32 33  30 33 31  34 36 37  34 37 35  38 40 41  38 41 39  42 44 45  42 45 43  46 48 49  46 49 47"
+      texcoord="0.5 0.5  1 0.29289  0.70711 0  0.29289 0  0 0.29289  0 0.70711  0.29289 1  0.70711 1  1 0.70711  0.5 0.5  0 0.29289  0.29289 0  0.70711 0  1 0.29289  1 0.70711  0.70711 1  0.29289 1  0 0.70711  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225  0.5 0.0225" />
   </asset>
   <worldbody>
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
@@ -283,18 +306,18 @@
     </body>
     <body name="red_stop_sign" pos="-1.3 0.0 0">
       <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat" />
-      <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_red_mat" />
-      <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_red_mat" />
+      <geom type="mesh" mesh="stopsign_octagon" pos="0 0 0.85" euler="0 0 0" material="sign_red_mat" />
+      <geom type="mesh" mesh="stopsign_octagon" pos="0 0 0.85" euler="0 0 90" material="sign_red_mat" />
     </body>
     <body name="yellow_stop_sign" pos="-4.5 2.0 0">
       <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat" />
-      <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_yellow_mat" />
-      <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_yellow_mat" />
+      <geom type="mesh" mesh="stopsign_octagon" pos="0 0 0.85" euler="0 0 0" material="sign_yellow_mat" />
+      <geom type="mesh" mesh="stopsign_octagon" pos="0 0 0.85" euler="0 0 90" material="sign_yellow_mat" />
     </body>
     <body name="green_stop_sign" pos="-4.5 -2.0 0">
       <geom type="cylinder" size="0.025 0.375" pos="0 0 0.375" material="sign_pole_mat" />
-      <geom type="box" size="0.15 0.02 0.15" pos="0 0 0.85" material="sign_green_mat" />
-      <geom type="box" size="0.02 0.15 0.15" pos="0 0 0.85" material="sign_green_mat" />
+      <geom type="mesh" mesh="stopsign_octagon" pos="0 0 0.85" euler="0 0 0" material="sign_green_mat" />
+      <geom type="mesh" mesh="stopsign_octagon" pos="0 0 0.85" euler="0 0 90" material="sign_green_mat" />
     </body>
     <body name="blue_chair" pos="3.45 2.0 0.4">
       <geom type="box" size="0.02 0.02 0.21" pos=" 0.18  0.18 0.21" material="chair_blue_mat" />
