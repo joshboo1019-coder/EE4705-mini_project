@@ -79,20 +79,14 @@ The VLM answers vary in wording between runs; the content above is what to expec
 
 ## Segment 3 — multi-goal
 
-**Part 3 succeeded on the real sim** (`eval/multigoal_eval.md`): with the two goals that reach SUCCESS on
-their own (orange ball, red chair), the mission succeeded 3/3 from a fresh launch, in both orders. The green
-chair is not used (0/2 on its own).
+**Part 3 succeeded on the real sim** (`eval/multigoal_eval.md`). On current main (with C's `0b438c0` range fix)
+all three goals pass on their own, and both missions below succeeded from a fresh launch.
 
-| # | Input (fresh launch) | Expected | Dry runs |
+| # | Input (fresh launch) | Expected | Real-sim runs |
 |---|---|---|---|
-| 3a | say (or type) "go to the red chair, then the orange ball" | `[CMD] actions=goto_object(class=chair, color=red), goto_object(class=sports ball, color=orange) n=2`<br>`[FOUND] class=chair color=red …` `[MISSION] status=SUCCESS`<br>`[GOAL] 1/2 red chair status=REACHED t=… s`<br>`[FOUND] class=sports ball color=orange …` `[MISSION] status=SUCCESS`<br>`[GOAL] 2/2 orange sports ball status=REACHED t=… s`<br>`[MULTI] status=SUCCESS reached=2/2 t=… s` | M1 46.0 s, M2 58.7 s |
-| fallback | "go to the orange ball and then the red chair" | same, ball first | M3 39.3 s |
+| 3a | say (or type) "go to the red chair, then the orange ball" | `[CMD] actions=goto_object(class=chair, color=red), goto_object(class=sports ball, color=orange) n=2`<br>`[FOUND] class=chair color=red …` `[MISSION] status=SUCCESS`<br>`[GOAL] 1/2 red chair status=REACHED t=… s`<br>`[FOUND] class=sports ball color=orange …` `[MISSION] status=SUCCESS`<br>`[GOAL] 2/2 orange sports ball status=REACHED t=… s`<br>`[MULTI] status=SUCCESS reached=2/2 t=… s` | 4/4 (39–59 s) |
+| 3b (optional) | "go to the red chair, then the green chair, then the orange ball" | the same, with three `[GOAL]` lines and `[MULTI] status=SUCCESS reached=3/3` | 1/1 (110 s; the green-chair search is ~75 s of it) |
 
-Keep the camera on "Third-person follow" so both stops are visible; leave ~1 min per take. If a take ends
-`PARTIAL`, relaunch and redo it — the red chair alone failed 1 of 2 single runs (a stop-check boundary case,
-see the findings in `eval/multigoal_eval.md`).
-
-**Optional, only if time allows:** "go to the red chair, then the green chair, then the orange ball" shows a
-missed goal being skipped (M4: `[GOAL] 2/3 green chair status=NOT_REACHED`, then the ball is reached,
-`[MULTI] status=PARTIAL reached=2/3 missed=green_chair`), but it takes ~2.5 min, most of it the green-chair
-search. Say clearly in the video that the miss is expected.
+3a is the safe take. 3b shows more, but has a single run behind it. If it ends `PARTIAL … missed=green_chair`,
+that still shows the skip-and-continue behaviour (as in run M4), so it's usable if you say so on camera.
+Keep the camera on "Third-person follow" so each stop is visible. If a take fails, relaunch and redo it.

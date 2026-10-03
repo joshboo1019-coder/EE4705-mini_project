@@ -4,6 +4,10 @@ Branch `bonus_b`, 2026-10-03. A single utterance with two or more `goto_object` 
 then the orange ball") is run as one mission: the goals are visited in order, a goal that isn't reached is
 skipped (the robot goes on to the next one), and a summary line closes the batch.
 
+**Headline (current main, `0b438c0` range code + colour fix):** all three goals reach SUCCESS on their own, and
+a 3-goal mission red chair → green chair → orange ball succeeded **3/3 in 109.7 s** (run M6). Runs M1–M4 below
+were made before `0b438c0` and are kept as recorded.
+
 ## What changed
 
 - **Parser: nothing.** Prompt v4 already turns multi-step instructions into an ordered action list. Four
@@ -36,8 +40,10 @@ skipped (the robot goes on to the next one), and a summary line closes the batch
 ## Choosing the goals: single-goal runs from a fresh launch
 
 Rule: a goal is used only if it reaches `[MISSION] status=SUCCESS` on its own from a fresh launch. Code: the
-merged tree (`merge/bonus-b-and-color-fix` = main + `bonus_b` + `fix/task4-color-grounding`) plus this Part 3
-commit, so navigation is main's and colour grounding is the fix branch's. `eval/run_env.sh main.py --gui`,
+merged tree (main + `bonus_b` + `fix/task4-color-grounding`), so navigation is main's and colour grounding is the
+fix branch's. **First round** (this table, M1–M4): main at `9dbd91e`, before Student C's `0b438c0` ("separated
+estimated_planar calculation for ground-level and varying-level objects", landed 2026-10-03 afternoon). The
+**second round** on main at `d0f7a23` (which includes `0b438c0`) is further down. `eval/run_env.sh main.py --gui`,
 commands typed by a driver script. Logs: `eval/results/multigoal/`.
 
 | Goal | Runs | Result | Notes |
@@ -82,13 +88,31 @@ misses are mock limits, not Part 3 bugs: the mock green-chair bbox never centres
 and the mock perception has no ball. It confirms the mission path end to end. The mock re-centring loop
 printed 16 M lines in 180 s; the committed log has them collapsed.
 
-## Findings for Task 4 (Student C) — not changed here
+## Second round: current main (`d0f7a23`, includes `0b438c0`)
 
-- **Green chair range estimate is too long**: `estimated_planar − ground_truth` averaged +1.81 m, +0.62 m and
+Merge rebuilt from `origin/main` at `d0f7a23` + `bonus_b` + the fix branch; fresh launch per row.
+
+| # | Input | Result | Notes |
+|---|---|---|---|
+| S | turn left 90 degrees; go to the orange ball | turn final_error 1.7°; ball SUCCESS, d = 0.66 m, 31.0 s | the Part 2 smoke test (`smoke2.log`) |
+| G | go to the green chair | **SUCCESS**, d = 0.95 m, 15.0 s | estimate now 0.23 m *short* on average (was 0.3–1.8 m long) |
+| M5 | go to the red chair, then the orange ball | **SUCCESS 2/2**, 39.0 s | red chair d = 0.91 m, ball 0.68 m |
+| M6 | go to the red chair, then the green chair, then the orange ball | **SUCCESS 3/3**, 109.7 s | d = 0.88 / 0.93 / 0.66 m; the green-chair search took 76.4 s |
+
+So C's `0b438c0` fixed the green-chair range problem found in the first round; with it, all three candidate
+goals pass the single-goal rule (green chair n = 1 so far). Over both rounds the red chair + orange ball
+mission is **4/4**.
+
+## Findings for Task 4 (Student C) from the first round
+
+The first two are about the range code *before* `0b438c0`; the second round suggests it fixed them.
+
+- **Green chair range estimate was too long**: `estimated_planar − ground_truth` averaged +1.81 m, +0.62 m and
   +0.30 m over the three green-chair approaches (e.g. 2.27 m estimated at 0.76 m true). The robot is close
   enough but never passes `estimated ≤ 0.8 m`, then loses the chair at close range and strafes.
-- **Red chair estimate is short** (−0.1 to −0.4 m), so `[FOUND]` fires at 1.15–1.40 m true distance.
-- **Stop check has no hysteresis**: the approach stops at estimate ≤ 0.8 m, and the post-stop check re-measures
+- **Red chair estimate was short** (−0.1 to −0.4 m), so `[FOUND]` fired at 1.15–1.40 m true distance (0.88–0.91 m
+  in the second round).
+- **Stop check has no hysteresis** (still true on current main): the approach stops at estimate ≤ 0.8 m, and the post-stop check re-measures
   against the same 0.8 m. Red chair run 1 failed `stop_verification` reading 0.80 m both times (≤ before the
   stop, just over after). A small margin in the stop check (e.g. 0.8 m + 0.05 m) would avoid that.
 
