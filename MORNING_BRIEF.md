@@ -22,7 +22,7 @@
 | P2g Video_Task4 candidates | ✅ 3 takes via `main.py --scenario`, true d 0.60–0.70 m | `~/Videos/candidates/` |
 | P3 B upgrades | ✅ talk-back, repeat/until_see, distance_m, bounds, e-stop fast path, state/status/undo/return_home, v5; Hard set (71, held out) qwen 86 %, gemini 100 %, nano 70 %; injection: **0** unsafe passed; `if_see` not done | `b/upgrade`, `eval/upgrade_eval.md` |
 | P4 integrate + final e2e | ✅ S1 same, S2 7/7, **S3 5/10** (n=3: 16/30 vs 9/30), S4 3/3 + 2/2 strict, **S5 7/7** (+ spin 8/8); one v5 regression found by S2 and fixed | `eval/e2e/COMPARISON.md` |
-| P5 typed demo | ⚠️ recorded (288 s, 8 segments, frames checked); segment 3's `until_see` works but the green-chair goto failed at close range in both takes (take 1 = primary; take 2 also kept) | `~/Videos/Video_Bonus_typed_auto.mp4` |
+| P5 typed demo | ⚠️ recorded, frames checked; 4 complete takes, none with both chair goals: take 1 (primary) has the strict 2/2 mission but segment 3's green-chair goto failed; take 4 has segment 3 succeeding (d = 0.60 m at 1:14) but missed the red chair | `~/Videos/Video_Bonus_typed_auto.mp4` |
 | P6 docs | ✅ `docs/B_code_walkthrough.md` (+15 viva Q&A), `docs/TEAM_HANDOFF.md`, this brief | `b/overnight-all` |
 | Extra: v5 noise fix | ❌ v5.1 trades rejections for typo tolerance → keep v5; branch unmerged | `b/v5-noise`, `eval/noise_fix.md` |
 | Stretch: hard scene | ✅ built + run: S6 3/6 (two green chairs → timeout; red box → 0.88 m; occluded sign not found as expected) | `assist/hard-scene`, `docs/hard_scene.md`, COMPARISON.md |
@@ -59,9 +59,10 @@
 - Video_Task4 candidates: `~/Videos/candidates/Video_Task4_candidate_{a,b,c}.mp4` — (a) blue chair hidden at
   start → `[SEARCH]` → `[FOUND] class=chair color=blue … d=0.70 m`; (b) green chair among red/blue →
   `[FOUND] … d=0.68 m`; (c) "please head over to the orange ball" → `[FOUND] … d=0.60 m`.
-- Typed bonus demo: `~/Videos/Video_Bonus_typed_auto.mp4` (= take 1; 8 segments; per-segment frames, timings and the
-  terminal log as `Video_Bonus_typed_auto_take1_*`); take 2 next to it; take 3 aborted (its return-home path would
-  have crossed the red sign pole).
+- Typed bonus demo: `~/Videos/Video_Bonus_typed_auto.mp4` (= take 1, 288 s; per-segment frames, timings and the
+  terminal log as `Video_Bonus_typed_auto_take1_*`). Takes 2, 4, 5 next to it (take 4: segment 3 succeeds at 1:14);
+  take 3 aborted (its return-home path would have crossed the red sign pole). Every failure is a chair goto at close
+  range (Task 4), never the language side.
 
 ## Cue sheets (full versions in `eval/video_bonus.md`)
 
