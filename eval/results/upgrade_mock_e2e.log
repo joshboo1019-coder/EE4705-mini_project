@@ -100,13 +100,13 @@ Robot: Done: net turn 45° left.
 User: 向前走三秒
 [CMD] rejected reason=non-English
 Robot: I only take commands in English. Did you mean "walk forward for 3 seconds"?
-User: walk forward for two minutes
-[CMD] rejected reason=out_of_range:duration
-Robot: The longest single move is 30 s; I could walk forward for 30 seconds instead.
+User: walk forward for a hundred meters
+[CMD] rejected reason=out_of_range:distance
+Robot: The longest single move is 30 s, about 24 m at walking speed; I could walk forward 24 meters instead.
 User: why did you reject that?
 [CMD] actions=status(last_reject) n=1
 [EXEC] action=1/1 status topic=last_reject
-Robot: I rejected "walk forward for two minutes" because the longest single move is 30 s. I suggested "walk forward for 30 seconds" instead.
+Robot: I rejected "walk forward for a hundred meters" because the longest single move is 30 s, about 24 m at walking speed. I suggested "walk forward 24 meters" instead.
 [DONE] actions=1 t=0.0 s
 User: walk in a square with 2 meter sides
 [CMD] actions=move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m) n=7

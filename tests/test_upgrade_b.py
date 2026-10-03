@@ -1061,3 +1061,62 @@ def test_hard_set_state_is_rendered_by_the_system_under_test():
     for case in hard_cases.HARD_CASES:
         ok, why = case[4](ParseResult(accepted=False, reject_reason="x"))
         assert isinstance(ok, bool)
+
+
+# ---------------------------------------------------------------------------
+# Real-sim feedback fixes (S5 e2e run)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("given,fitted", [
+    ("walk forward for 30 meters", "walk forward for 24 meters"),     # the real-sim case
+    ("walk forward 100 metres", "walk forward 24 metres"),
+    ("go 1 km", "go 24 meters"),
+    ("run for two minutes", "run for 30 seconds"),
+    ("back up for 5 minutes", "back up for 30 seconds"),
+    ("walk forward for 30 seconds", "walk forward for 30 seconds"),  # already fits
+    ("walk forward for 1 second, 8 times", "walk forward for 1 second, 8 times"),
+    ("walk forward for 30 seconds, ten times", None),                # 8 x 30 s > 60 s
+    ("turn left 90 degrees", "turn left 90 degrees"),
+])
+def test_model_suggestions_are_fitted_into_the_limits(given, fitted):
+    assert talkback.fit_suggestion(given) == fitted
+
+
+def test_out_of_range_suggestion_from_the_model_never_exceeds_a_limit(fake_llm, capsys):
+    """Real sim: 'walk forward for a hundred meters' was answered with
+    '... I could walk forward for 30 meters instead.' (30 m > 24 m)."""
+    queue = CommandQueue()
+    ex = CommandExecutor(KinematicSkills(quiet=True), MockPerception(), queue)
+    fake_llm.replies += [
+        json.dumps({"rejected": True, "reason": "out_of_range:distance",
+                    "suggestion": "walk forward for 30 meters"}),
+        json.dumps({"rejected": True, "reason": "out_of_range:times",
+                    "suggestion": "walk forward for 30 seconds, ten times"})]
+    history = []
+    chat_interface.handle_utterance("walk forward for a hundred meters", history, queue)
+    out = capsys.readouterr().out.splitlines()
+    assert out[-1] == ("Robot: The longest single move is 30 s, about 24 m at walking speed; "
+                       "I could walk forward for 24 meters instead.")
+    assert json.loads(history[1]["content"])["suggestion"] == "walk forward for 24 meters"
+    assert ex.state.last_reject[2] == "walk forward for 24 meters"
+    chat_interface.handle_utterance("walk forward for 30 seconds, ten times", history, queue)
+    assert capsys.readouterr().out.splitlines()[-1] == \
+        "Robot: I can repeat something at most 8 times. Could you ask for something smaller?"
+
+
+def test_seen_lists_clearly_coloured_objects_and_counts_the_rest():
+    st = RobotState()
+    st.update_pose(RobotPose(0, 0, 0))
+    for c, col in [("bench", "unknown"), ("chair", "green"), ("person", "unknown"),
+                   ("sports ball", "orange"), ("bench", "unknown")]:
+        st.record_detections([_det(c, col)], RobotPose(0, 0, 0))
+    ans = st.answer("seen")
+    assert ans.startswith("I've seen 2 objects: the green chair (first)")
+    assert "unknown bench" not in ans
+    assert ans.endswith("; plus 2 other detections without a clear colour (bench, person).")
+    assert st.snapshot().endswith("camera has seen (first to last): green chair, orange sports ball "
+                                  "(+2 detections without a clear colour)")
+    only_junk = RobotState()
+    only_junk.record_detections([_det("bench", "unknown")], RobotPose(0, 0, 0))
+    assert only_junk.answer("seen") == ("I haven't seen any object clearly yet, plus 1 other "
+                                        "detection without a clear colour (bench).")

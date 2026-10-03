@@ -122,7 +122,12 @@ def say_rejection(result, user_text: str = "", queue=None) -> None:
         # "Did you mean <exactly what you typed>?" helps nobody (seen when a
         # model rejected an English injection attempt as non-English)
         suggestion = result.suggestion = None
-    reply = talkback.reject_reply(result.reject_reason, suggestion)
+    out_of_range = talkback.is_out_of_range(result.reject_reason or "", suggestion)
+    if out_of_range and suggestion:
+        # the model's own suggestion may exceed a limit too ("30 meters"):
+        # offer (and remember) the largest version that fits, or none
+        suggestion = result.suggestion = talkback.fit_suggestion(suggestion)
+    reply = talkback.reject_reply(result.reject_reason, suggestion, out_of_range=out_of_range)
     if reply:
         print(f"Robot: {reply}")
     executor = runtime.executor_for(queue) if queue is not None else None

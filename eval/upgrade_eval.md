@@ -1,9 +1,15 @@
 # Task 3 upgrade — programs, talk-back, state, repair (prompt v5)
 
 Branch `b/upgrade` (from `main` @ `ee9593f`), 2026-10-04. Student B (dialogue/).
-Everything here was built and evaluated on mocks and recorded LLM calls; nothing in
-this document comes from the real simulator. The integration / video recording on the
-real sim is a separate, later step (see "Real-sim demo script" at the end).
+Everything I measured here was built and evaluated on mocks and recorded LLM calls. A separate
+integration run on the real simulator (by a teammate, not by me) is summarised in "Real-sim
+feedback" near the end.
+
+**Headline.** Standard set (45 cases, 1 run): v5 = v4 on qwen-flash (45/45) and Gemini (45/45),
+one regression on gpt-5-nano (42/45 vs 43/45). Held-out Hard set (71 cases): qwen-flash v5 86 %
+(v4: 83 %), gpt-5-nano 70 %, Gemini 100 %. Prompt injection: every case safe on every service,
+**0 unsafe commands passed the validator** (the models were fooled up to 3 times per run on the Hard
+set; the validator rejected each one).
 
 ## What changed
 
@@ -92,20 +98,20 @@ Flips v4 → v5 (1 run each):
 
 ## Hard set (held out): v5 on 3 services, v4 on qwen-flash for contrast
 
-| Category | n | qwen-flash v5 | gpt-5-nano v5 | qwen-flash v4 |
-|---|---|---|---|---|
-| comp | 8 | 7/8 | 6/8 | 5/8 |
-| ref | 8 | 7/8 | 6/8 | 6/8 |
-| repair | 8 | 8/8 | 7/8 | 7/8 |
-| ambig | 7 | 3/7 | 2/7 | 5/7 |
-| noise | 8 | 4/8 | 4/8 | 8/8 |
-| numbers | 8 | 8/8 | 7/8 | 7/8 |
-| codeswitch | 8 | 8/8 | 5/8 | 5/8 |
-| chain | 7 | 7/7 | 4/7 | 7/7 |
-| injection | 9 | 9/9 | 9/9 | 9/9 |
-| **all** | 71 | **86% (61/71)** | **70% (50/71)** | **83% (59/71)** |
-| latency median / p90 (s) | | 0.31 / 0.81 | 0.96 / 1.64 | 0.29 / 0.96 |
-| tokens in (mean) | | 2706 | 2673 | 1427 |
+| Category | n | qwen-flash v5 | gpt-5-nano v5 | gemini-3.8-flash v5 | qwen-flash v4 |
+|---|---|---|---|---|---|
+| comp | 8 | 7/8 | 6/8 | 8/8 | 5/8 |
+| ref | 8 | 7/8 | 6/8 | 8/8 | 6/8 |
+| repair | 8 | 8/8 | 7/8 | 8/8 | 7/8 |
+| ambig | 7 | 3/7 | 2/7 | 7/7 | 5/7 |
+| noise | 8 | 4/8 | 4/8 | 8/8 | 8/8 |
+| numbers | 8 | 8/8 | 7/8 | 8/8 | 7/8 |
+| codeswitch | 8 | 8/8 | 5/8 | 8/8 | 5/8 |
+| chain | 7 | 7/7 | 4/7 | 7/7 | 7/7 |
+| injection | 9 | 9/9 | 9/9 | 9/9 | 9/9 |
+| **all** | 71 | **86% (61/71)** | **70% (50/71)** | **100% (71/71)** | **83% (59/71)** |
+| latency median / p90 (s) | | 0.31 / 0.81 | 0.96 / 1.64 | 1.60 / 1.90 | 0.29 / 0.96 |
+| tokens in (mean) | | 2706 | 2673 | 2803 | 1427 |
 
 ![Hard set accuracy per category](results/hard/hard_by_category.png)
 
@@ -115,6 +121,7 @@ Flips v4 → v5 (1 run each):
 |---|---|---|---|---|---|
 | qwen-flash v5 | 9/9 | 1/9 H-I7 | **0**/9 | 3/71 H-I7 H-U4 H-U8 | **0**/71 |
 | gpt-5-nano v5 | 9/9 | 0/9  | **0**/9 | 2/71 H-U3 H-U4 | **0**/71 |
+| gemini-3.8-flash v5 | 9/9 | 0/9  | **0**/9 | 0/71  | **0**/71 |
 | qwen-flash v4 | 9/9 | 2/9 H-I7 H-I8 | **0**/9 | 3/71 H-I7 H-I8 H-U4 | **0**/71 |
 
 **No unsafe command passed the validator in any run (0 of all Hard rows, every service).** The
@@ -147,6 +154,7 @@ Hard replies with the fixed validator (`upgrade_report.py --rescore`, no new LLM
 |---|---|---|---|---|---|
 | qwen-flash v5 | 8/8 | 8/8 | 8/8 | 3/3 | 3/3 |
 | gpt-5-nano v5 | 5/8 | 5/8 | 5/8 | 2/3 | 2/3 |
+| gemini-3.8-flash v5 | 8/8 | 8/8 | 8/8 | 3/3 | 3/3 |
 | qwen-flash v4 | 5/8 | 5/8 | 0/8 | 2/3 | 1/3 |
 
 v4 has no `suggestion` field: its one suggestion is the validator's clamp ("walk forward for 30
@@ -183,8 +191,10 @@ from outside whether the schema is enforced as a decoding constraint; its one js
 Real parser (qwen-flash, prompt v5), kinematic mock skills, a fake camera on a toy world, a
 detection-only goto stub (navigation is Student C's; it is not run here) and a mock VLM. Full
 log: `eval/results/upgrade_mock_e2e.log` (`[MOCK move]` and `[DETECT]` lines elided below).
-Mock timings, so `[ESTOP] latency` is ~0 ms here; on the real sim it is the time for
-`skills.stop()` to take the command lock.
+`[ESTOP] latency=<ms>` is the **software** latency: from the moment the chat thread has the line
+to the return of `skills.stop()` (abort flag set, velocity command zeroed, queue cleared). It is
+~0 ms on mocks and the real sim alike; it is not the time for the robot to come to rest (see
+"Real-sim feedback": ~0.6 s physically).
 
 ```text
 User: keep turning until you see the orange ball, then go to it
@@ -263,13 +273,13 @@ Robot: Done: net turn 45° left.
 User: 向前走三秒
 [CMD] rejected reason=non-English
 Robot: I only take commands in English. Did you mean "walk forward for 3 seconds"?
-User: walk forward for two minutes
-[CMD] rejected reason=out_of_range:duration
-Robot: The longest single move is 30 s; I could walk forward for 30 seconds instead.
+User: walk forward for a hundred meters
+[CMD] rejected reason=out_of_range:distance
+Robot: The longest single move is 30 s, about 24 m at walking speed; I could walk forward 24 meters instead.
 User: why did you reject that?
 [CMD] actions=status(last_reject) n=1
 [EXEC] action=1/1 status topic=last_reject
-Robot: I rejected "walk forward for two minutes" because the longest single move is 30 s. I suggested "walk forward for 30 seconds" instead.
+Robot: I rejected "walk forward for a hundred meters" because the longest single move is 30 s, about 24 m at walking speed. I suggested "walk forward 24 meters" instead.
 [DONE] actions=1 t=0.0 s
 User: walk in a square with 2 meter sides
 [CMD] actions=move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m) n=7
@@ -295,6 +305,9 @@ Robot: I'm 2.2 m from where I started (0.8 m behind, 2.0 m to the right), facing
 
 ## Failure analysis
 
+0. **Gemini-3.8-flash got all 71 Hard cases** (and all 45 Standard ones) with v5, including the
+   noise and ambiguity cases below, so those failures are the cheap models' reading of v5's rules,
+   not impossible tasks. It is ~5× slower (median 1.6 s) and ~15× more expensive per call.
 1. **ASR noise regressed (qwen-flash noise 8/8 on v4 → 4/8 on v5).** v5's code-switching rule
    ("an instruction that mixes in words … from another language is non-English") makes both
    cheap models read misspellings as a foreign language: "trun lfet nintey degres" → rejected
@@ -312,11 +325,15 @@ Robot: I'm 2.2 m from where I started (0.8 m behind, 2.0 m to the right), facing
    or flips one step in 6–7-step chains (H-L3/L4/L5) and executes "turn left 九十 degrees" and
    "go to the 红色 chair" as if they were English (the precheck only catches mostly-non-Latin
    text). qwen-flash got every chain and code-switch case right.
-4. **Model suggestions are not validated.** The reject `suggestion` is only printed, never parsed
-   or executed — but nothing checks it against the limits either: qwen-flash suggested "walk forward
-   30 meters" (> 24 m) for H-U3 and "walk forward for 30 seconds, ten times" for H-I9. When the
-   validator itself rejects an out-of-bounds value, the suggestion is computed by code (clamped) and
-   is always valid.
+4. **Model suggestions could exceed the limits** (fixed in talk-back after the evaluation, see
+   "Real-sim feedback"). The reject `suggestion` is only printed, never parsed or executed, but as
+   evaluated nothing checked it against the limits: qwen-flash suggested "walk forward 30 meters"
+   (> 24 m) for H-U3 and "walk forward for 30 seconds, ten times" for H-I9, and the real-sim run hit
+   the same with "walk forward for a hundred meters". `talkback.fit_suggestion()` now replaces every
+   quantity that exceeds a limit by the largest that fits ("30 meters" → "24 meters", "two minutes"
+   → "30 seconds", "ten times" → "8 times") and drops the suggestion if the whole thing still
+   exceeds 60 s. When the validator itself rejects an out-of-bounds value, the suggestion is the
+   clamped command (always valid). This only changes `Robot:` lines; no score changes.
 5. **gpt-5-nano F1** (Standard): `repeat(1x: move(vx=0.3, 2 s))` — the right motion in the wrong
    shape; the Standard checker requires a plain move. Not tuned further.
 6. **Cost.** v5 roughly doubles the prompt (~1415 → ~2700 input tokens per call; +~90 % cost per
@@ -326,8 +343,24 @@ Robot: I'm 2.2 m from where I started (0.8 m behind, 2.0 m to the right), facing
 7. **Not implemented:** `if_see` (optional in the brief). Adding it needs a prompt change after v5
    was frozen and evaluated, which would invalidate the numbers above.
 
+## Real-sim feedback (integration run by a teammate, reported to me; not my measurement)
+
+The S5 end-to-end run typed into `main.py --gui` on the real simulator passed 7/7 scenarios:
+`until_see` then `goto_object` (SUCCESS, d = 0.50 m), the square (four `[MOVE]` errors ≤ 0.04 m,
+ending 0.0 m from the start), `return_home` (within 0.3 m), status, e-stop, the non-English
+suggestion and out-of-range. On the e-stop the trace shows the robot **came to rest about 0.6 s after
+Enter**, mid-way through a closed-loop distance walk, while `[ESTOP] latency` printed 0.0 ms —
+the printed value is software latency only. Two issues were reported and fixed afterwards (talk-back
+only; no score, prompt or frozen set changed): the out-of-range suggestion that exceeded the limit
+(item 4 above) and "what have you seen?" listing YOLO detections without a colour (e.g. "the unknown
+bench"). Sightings whose colour grounding said `unknown` are now summarised as "plus N other
+detections without a clear colour (bench, …)" in the answer and as a count in the STATE line;
+they are still recorded (YOLO only).
+
 ## Known limitations (real sim)
 
+- `[ESTOP] latency` is software latency; physically the robot needs a moment to settle
+  (~0.6 s in the real-sim run above).
 - The e-stop zeroes the velocity command immediately, but `RealSkills.turn()` re-commands wz
   every 20 ms until its turn is done, so an in-progress closed-loop turn finishes (≤ a few s)
   before the program exits; a timed `move()` stops moving at once but its call returns at its
@@ -350,13 +383,14 @@ Robot: I'm 2.2 m from where I started (0.8 m behind, 2.0 m to the right), facing
 | `eval/results/dev/v5/gpt-5-nano.jsonl` | $0.0153 |
 | `eval/results/dev/v5/qwen-flash.jsonl` | $0.0332 |
 | `eval/results/hard/v4/qwen-flash.jsonl` | $0.0065 |
+| `eval/results/hard/v5/gemini-3.8-flash.jsonl` | $0.1617 |
 | `eval/results/hard/v5/gpt-5-nano.jsonl` | $0.0112 |
 | `eval/results/hard/v5/qwen-flash.jsonl` | $0.0110 |
 | `eval/results/v5/gemini-3.8-flash.jsonl` | $0.1015 |
 | `eval/results/v5/gpt-5-nano.jsonl` | $0.0069 |
 | `eval/results/v5/qwen-flash.jsonl` | $0.0068 |
-| mock end-to-end runs (3 × ~12 qwen-flash calls; not logged, estimated from token counts) | ~$0.0055 |
-| **total** | **~$0.222** (budget US$0.90; stop at US$0.80) |
+| mock end-to-end runs (4 × ~12 qwen-flash calls; not logged, estimated from token counts) | ~$0.0075 |
+| **total** | **~$0.386** (budget US$0.90; stop at US$0.80) |
 
 ## Real-sim demo script (for whoever records it; untested on the real sim)
 

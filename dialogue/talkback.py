@@ -16,6 +16,7 @@ are untouched):
 """
 
 import math
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -200,9 +201,67 @@ def reason_words(reason: str) -> str:
     return reason.replace("_", " ")
 
 
-def reject_reply(reason: Optional[str], suggestion: Optional[str] = None) -> Optional[str]:
+# --- fitting a free-text suggestion into the limits ---------------------------
+
+_NUM_WORDS = {
+    "a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+    "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "fifteen": 15, "twenty": 20,
+    "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "ninety": 90, "hundred": 100,
+    "a hundred": 100, "one hundred": 100, "thousand": 1000, "a thousand": 1000,
+}
+_QTY = re.compile(
+    r"\b(?P<num>\d+(?:\.\d+)?|a hundred|one hundred|a thousand|" + "|".join(
+        sorted((w for w in _NUM_WORDS if " " not in w and w not in ("a", "an")), key=len, reverse=True))
+    + r")\s*(?P<unit>seconds?|secs?|minutes?|mins?|hours?|meters?|metres?|m|kilometers?|kilometres?|km|times)\b",
+    re.I)
+
+
+def fit_suggestion(text: Optional[str]) -> Optional[str]:
+    """A model-made suggestion for an out-of-range request, with every
+    quantity that exceeds a limit replaced by the largest one that fits
+    (one move <= MAX_MOVE_S, about MAX_MOVE_S x NORMAL_SPEED metres, <= MAX_ITER
+    times), or None if it still can't fit (e.g. 30 s x 8 times > 60 s). The
+    model's text is never executed, but the robot shouldn't offer something
+    it would then reject."""
+    if not text:
+        return None
+    max_m = round(limits.MAX_MOVE_S * limits.NORMAL_SPEED)
+    secs, reps = [], []
+
+    def fix(m):
+        raw, unit = m.group("num").lower(), m.group("unit").lower()
+        val = float(raw) if raw[0].isdigit() else float(_NUM_WORDS[raw])
+        if unit.startswith(("min",)):
+            val *= 60
+        elif unit.startswith("hour"):
+            val *= 3600
+        elif unit.startswith(("kilo", "km")):
+            val *= 1000
+        if unit.startswith(("sec", "min", "hour")):
+            val = min(val, limits.MAX_MOVE_S)
+            secs.append(val)
+            return f"{_g(val)} second{'' if val == 1 else 's'}"
+        if unit == "times":
+            val = min(val, limits.MAX_ITER)
+            reps.append(val)
+            return f"{_g(val)} times"
+        val = min(val, max_m)
+        secs.append(val / limits.NORMAL_SPEED)
+        word = "metres" if "metre" in unit else "m" if unit == "m" else "meters"
+        return f"{_g(val)} {word}" if word != "m" else f"{_g(val)} m"
+
+    fitted = _QTY.sub(fix, text)
+    total = sum(secs) * (max(reps) if reps else 1)
+    if total > limits.MAX_PROGRAM_S + 1e-9:
+        return None
+    return fitted
+
+
+def reject_reply(reason: Optional[str], suggestion: Optional[str] = None,
+                 out_of_range: Optional[bool] = None) -> Optional[str]:
     """The `Robot: ...` sentence after `[CMD] rejected reason=...`, or None
-    (an empty input gets no reply)."""
+    (an empty input gets no reply). out_of_range: already decided by the
+    caller (chat_interface fits the suggestion first)."""
     reason = reason or "unspecified"
     if reason == "empty":
         return None
@@ -210,8 +269,9 @@ def reject_reply(reason: Optional[str], suggestion: Optional[str] = None) -> Opt
         if suggestion:
             return f'I only take commands in English. Did you mean "{suggestion}"?'
         return "I only take commands in English. Please say it again in English."
-    if is_out_of_range(reason, suggestion):
+    if out_of_range if out_of_range is not None else is_out_of_range(reason, suggestion):
         bound = _bound_sentence(reason)
+        suggestion = fit_suggestion(suggestion)
         if suggestion:
             return f"{bound}; I could {suggestion} instead."
         return f"{bound}. Could you ask for something smaller?"

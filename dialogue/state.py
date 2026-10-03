@@ -85,6 +85,15 @@ class Sighting:
     def name(self) -> str:
         return talkback.target_words(self.class_name, self.color)
 
+    @property
+    def clear(self) -> bool:
+        """YOLO + colour grounding gave a real colour (not "unknown" / ""),
+        i.e. something navigation could be sent to."""
+        return bool(self.color) and self.color.lower() not in UNCLEAR_COLORS
+
+
+UNCLEAR_COLORS = {"unknown", "none", "unclear", "-"}
+
 
 class RobotState:
     MAX_ACTIONS = 50
@@ -186,10 +195,14 @@ class RobotState:
         with self._lock:
             recent = [r for r in self.actions if r.kind != "estop"][-self.SNAPSHOT_ACTIONS:]
             last = "; ".join(r.words() for r in recent) or "none"
-            seen = [s.name() for s in self.sightings()]
+            sightings = self.sightings()
             reject = self.last_reject
+        seen = [s.name() for s in sightings if s.clear]
+        unclear = sum(1 for s in sightings if not s.clear)
         seen_txt = (", ".join(seen[:self.SNAPSHOT_SEEN]) + (", ..." if len(seen) > self.SNAPSHOT_SEEN else "")
                     if seen else "nothing yet")
+        if unclear:
+            seen_txt += f" (+{unclear} detection{'s' if unclear > 1 else ''} without a clear colour)"
         out = (f"STATE: {pose} | last actions (oldest first): {last} | "
                f"camera has seen (first to last): {seen_txt}")
         if reject:
@@ -250,8 +263,13 @@ class RobotState:
         return out
 
     def _answer_seen(self) -> str:
-        seen = self.sightings()
-        if not seen:
+        """Objects with a clear colour first (what navigation can go to);
+        detections YOLO couldn't colour (often false positives, e.g. an
+        "unknown bench") only as a count with their classes."""
+        all_seen = self.sightings()
+        seen = [s for s in all_seen if s.clear]
+        other = [s for s in all_seen if not s.clear]
+        if not all_seen:
             return "My camera hasn't recognised any objects yet."
         now = self._clock()
         items = []
@@ -259,7 +277,15 @@ class RobotState:
             tag = " (first)" if k == 0 and len(seen) > 1 else ""
             items.append(f"the {s.name()}{tag}, last seen {now - s.t_last:.0f} s ago "
                          f"at heading {s.yaw_deg:+.0f}°")
-        return f"I've seen {len(seen)} object{'s' if len(seen) > 1 else ''}: " + "; ".join(items) + "."
+        rest = ""
+        if other:
+            kinds = ", ".join(dict.fromkeys(s.class_name for s in other))
+            rest = (f"plus {len(other)} other detection{'s' if len(other) > 1 else ''} "
+                    f"without a clear colour ({kinds})")
+        if not seen:
+            return f"I haven't seen any object clearly yet, {rest}."
+        out = f"I've seen {len(seen)} object{'s' if len(seen) > 1 else ''}: " + "; ".join(items)
+        return out + (f"; {rest}." if rest else ".")
 
 
 class RecordingPerception:
