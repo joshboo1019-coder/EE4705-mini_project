@@ -186,42 +186,55 @@ If a GPU-less remote/headless box gives you a blank window: `export MUJOCO_GL=eg
      Include a short table/plot in the report showing why open-loop
      timing is inaccurate by comparison.
 
-### Open-loop vs. closed-loop turn accuracy — collected data (n=6)
+### Open-loop vs. closed-loop turn accuracy — collected data (n=24, FINAL)
 
-Run `python skills_real.py --compare-turn` (from inside `skills/`,
-headless — no `--gui`/`--native` needed) to reproduce: it does one
-closed-loop `turn(90.0)` followed by one open-loop
-`move(vx=0.0, vy=0.0, wz=0.6, duration=1.5)` (a fixed timing/rate guess
-with no feedback), both targeting 90 deg. 6 trials collected on the
-team's WSL2 laptop (`LAPTOP-6LL3JIIS`), 2026-09-30:
+**⚠️ Superseded data warning**: an earlier version of this section
+quoted a 6-trial, 90°-only collection with a "22.98° mean error, ~13x
+worse than closed-loop" headline. That number had a methodology bug —
+it compared the open-loop move's **absolute final heading** to the
+target, which only isolates the open-loop step by itself if the robot
+started that step at yaw=0° (true for one early trial, not the general
+case once trials chain `current_yaw + angle` back-to-back). **Use the
+corrected numbers below instead** — see the full methodology
+correction and all 24 raw trials in
+[`docs/test_result/student_a_turn_accuracy_data.md`](test_result/student_a_turn_accuracy_data.md)
+(the checklist below used to point at a `docs/turn_accuracy_data.md`
+that doesn't exist — the real file is under `docs/test_result/`).
 
-| Trial | Closed-loop yaw (deg) | Closed-loop \|error\| (deg) | Open-loop yaw (deg) | Open-loop \|error\| (deg) |
+Reproduce with `python -m skills.skills_real --compare-turn --angles 45
+90 180 --trials 6` (18 trials; the original single-pair 90°
+`--compare-turn` collection is also still valid once re-analyzed with
+the corrected formula — see the data file). Final summary, isolating
+each open-loop move's own net rotation relative to where the preceding
+closed-loop turn left the robot (`open_rotation = wrap(yaw_after_open −
+yaw_after_closed)`), rather than its absolute final heading:
+
+| Angle | Closed-loop mean error (deg) | Open-loop mean achieved rotation (deg) | Open-loop mean error (deg) | Fraction of target achieved |
 |---|---|---|---|---|
-| 1 | 88.12 | 1.88 | 112.5 | 22.5 |
-| 2 | 88.04 | 1.96 | 112.5 | 22.5 |
-| 3 | 88.21 | 1.79 | 112.8 | 22.8 |
-| 4 | 88.53 | 1.47 | 114.5 | 24.5 |
-| 5 | 88.21 | 1.79 | 112.9 | 22.9 |
-| 6 | 88.04 | 1.96 | 112.7 | 22.7 |
-| **mean (n=6)** | | **1.81** | | **22.98** |
-| **min / max** | | 1.47 / 1.96 | | 22.50 / 24.50 |
+| 45° | 1.52 | 12.65 | 32.35 | 28.1% |
+| 90° | 1.80 | 23.95 | 66.05 | 26.6% |
+| 180° | 1.57 | 45.67 | 134.33 | 25.4% |
+| **Overall closed-loop (n=24)** | **1.67** | | | |
 
-**Conclusion**: closed-loop `turn()` converges to a mean error of
-**1.81 deg** (tightly clustered, spread of only 0.49 deg across all 6
-trials — consistent with its own 2 deg tolerance being the binding
-constraint, not control noise). Open-loop `move()` produced a mean
-error of **22.98 deg** — roughly **13x** larger. This is overwhelmingly
-a **systematic bias**, not random noise: 5 of 6 trials landed within a
-0.4 deg band of each other (112.5, 112.5, 112.7, 112.8, 112.9 deg),
-meaning the `1.5s @ wz=0.6 -> 90 deg` assumption is consistently
-*wrong* by a fixed amount for this platform's real turning dynamics —
-exactly the kind of miscalibration open-loop control has no way to
-detect or correct, and that closed-loop control eliminates by
-construction (it measures true yaw and corrects toward it regardless
-of the underlying turning rate). **Headline numbers for the report:
-closed-loop mean error 1.81 deg vs. open-loop mean error 22.98 deg
-(n=6 each) — a ~13x accuracy improvement from closing the loop on true
-yaw feedback.**
+**Conclusion**: closed-loop `turn()` stays accurate across every angle
+tested — mean error only 1.52–1.80° regardless of target size,
+consistently close to its own 2° tolerance band (the tolerance setting,
+not control noise, is the binding constraint). Open-loop timing does
+**not** generalize at all: once measured correctly (isolating its own
+net rotation, not folding in the preceding closed-loop turn), it
+achieves only **~25–28% of the commanded angle at every target size
+tested** — a consistent *multiplicative* shortfall, not a fixed
+additive bias. A naive open-loop implementation that calibrates once
+(at 90°) and linearly scales duration for other angles — exactly what
+this test's own open-loop step does — inherits that same ~70–75%
+shortfall at every other angle rather than correcting for it, proving a
+single-point calibration cannot be extrapolated to other turn sizes.
+**Headline numbers for the report: closed-loop mean error stays in the
+1.5–1.8° range across 45°/90°/180° targets (24 trials total), while
+open-loop timing achieves only ~25–28% of whatever angle is commanded —
+a large, non-generalizing shortfall that true-yaw feedback fixes at
+every angle tested, not just the one it happened to be calibrated
+against.**
 
 ## 3. Where to write it
 
@@ -394,6 +407,94 @@ If you add or move objects in the scene, keep `core.config.
 OBJECT_POSITIONS` in sync — this script reads straight from it, so a
 stale position will make it plan routes around the wrong spot.
 
+### Terrain traversal: `climb_stairs()` / `cross_rough_terrain()` / `get_ground_height_below()`
+
+Three more `RealSkills`-only extras (same deal as `crouch()`/`stand()`/
+`run_fast()` — not part of the frozen `SkillsAPI` contract, so neither
+Task 3's executor nor Task 4's `navigation.py` ever calls them directly).
+They exist because `custom_scene.xml`'s imported `rc26_track` terrain
+(two real staircases, `stairs_gentle`/`stairs_steep`, and a randomly-
+tilted rubble patch) was never actually driven across or evaluated by
+anything else in this project.
+
+- **`get_ground_height_below(x=None, y=None)`**: the world-frame `z` of
+  the terrain surface directly below world point `(x, y)` (defaults to
+  the robot's own current position), found via a real downward MuJoCo
+  raycast (`mujoco.mj_ray`) — **not** assumed to be `0.0`. **Cross-team
+  dependency**: Student C's `navigation._camera_height_above_ground()`
+  now calls this to correct the camera-to-target height estimate for
+  local ground clearance (a flat-`z=0` assumption breaks as soon as the
+  robot is standing on a staircase peak) — if you ever rename, remove,
+  or change the return convention of this method, check `navigation.py`
+  first, the same caution as changing anything else `SkillsAPI`-adjacent
+  that another student's code has come to depend on.
+- **`climb_stairs(target_x, target_y, width_axis=None, width_center=None,
+  width_limit=None, segment_len=0.3, speed=0.3, recenter_gain=0.0,
+  max_recenter_turn_deg=6.0, climb_height_cmd=None)`**: walk to a target
+  across a staircase, re-facing it every short segment. Pass
+  `width_axis`/`width_center`/`width_limit` for a strip with a real
+  fall-off-the-side edge (e.g. `stairs_gentle`'s `y=2.0` strip); leave
+  them unset for a structure with no edge to guard. Returns one of
+  `"completed"`, `"edge_drift"` (drifted past the width guard),
+  `"stuck"` (stopped making real progress — likely tipped/wedged), or
+  `"incomplete"` (safety-cap segment count reached while still
+  genuinely progressing). Only `"completed"` means it actually arrived;
+  chain the next step only on that.
+- **`cross_rough_terrain(target_x, target_y, segment_len=0.3,
+  speed=0.3)`**: the same engine, for an open uneven patch (the rubble
+  patch) with no edge to fall off — no width guard.
+- Both are thin wrappers around a shared private engine
+  (`_walk_terrain_segment_loop()` + `_face_waypoint()`) that: re-faces
+  the target before every segment (a single uncorrected step-edge yaw
+  nudge otherwise compounds into drifting off the structure); flags a
+  single-segment trunk-height *delta* above `max_height_jump` as a
+  likely stumble (not an absolute-height check, since standing on an
+  elevated peak is correctly a high absolute reading); aborts
+  `"edge_drift"`/`"stuck"` as above; and keeps walking until the robot
+  actually **arrives**, rather than giving up after a fixed, precomputed
+  segment count (a real climb — re-facing every segment eats into
+  forward progress — can need several times the naive straight-line
+  segment estimate).
+- **Real-run finding worth citing in the report**: `recenter_gain`
+  (an explicit cross-track correction term, meant to pull the robot
+  back toward `width_center` when it drifts) defaults to `0.0`
+  (**off**). Three real runs on `stairs_steep`'s own crossing told a
+  consistent story: the plain, uncorrected version drifted off-center
+  but still climbed real height and safely self-aborted on
+  `edge_drift`; turning recentering on, at two different gains, both
+  made it *worse* — one caused a real stumble (trunk_z jumped +0.176 m
+  in one segment, ending `"stuck"`), the other stalled the robot almost
+  immediately (barely any forward progress, never clearing the first
+  riser). Interrupting a tall-riser climbing gait with extra turn
+  commands — even small, capped ones — looks to break its rhythm more
+  than the uncorrected lateral drift itself hurts. Pass
+  `recenter_gain > 0` explicitly to opt back in; see `_face_waypoint`'s
+  own docstring in `skills_real.py` for the full numbers from all three
+  runs.
+- **`climb_height_cmd` caveat**: there is no exposed control anywhere in
+  this codebase over how high a foot swings mid-stride — that's
+  entirely internal to the trained ONNX policy. Raising `height_cmd`
+  toward the top of the trained range before a climb (the default
+  behavior unless you pass `climb_height_cmd=False`) is only a *proxy*
+  — a taller commanded standing stance *might* give the legs more
+  extension margin — whether it actually changes real step clearance
+  during a climb is **unverified**.
+- **Test harness**: `tools/visual_test_rough_terrain.py` exercises all
+  three real terrain features by world coordinate, read directly off
+  `custom_scene.xml`. Default (`python tools/visual_test_rough_terrain.py`,
+  no flags) now runs **rubble only** — `stairs_steep` is opt-in
+  (`--feature stairs_steep`) since every real run of its own climb so
+  far has ended `"stuck"` or `"edge_drift"`; `--feature all` runs the
+  full canonical three in one process. See that script's own module
+  docstring for the full run-by-run history (it's extensive — this
+  terrain work went through several real-hardware-adjacent iterations).
+- This also underpins the optional advanced-requirement scenario Task 4
+  can claim: `blue_chair` sits on `stairs_gentle`'s own peak, not
+  reachable by a flat-ground `goto_object()` call — see
+  `tools/visual_test_blue_chair_stairs.py`, which climbs it via
+  `climb_stairs()` before handing off to Student C's `goto_object()`
+  for the final vision-based approach/stop.
+
 ### Watch it run in the simulation
 
 `tools/visual_test_task2.py` boots the real `RealSkills` (`gui=True`)
@@ -460,7 +561,7 @@ only ever written against `core.interfaces.SkillsAPI`.
 
 ## 6. Deliverables checklist (Task 2)
 
-Status below reflects what's actually in this repo as of 2026-10-01 —
+Status below reflects what's actually in this repo as of 2026-10-04 —
 re-check before submitting, since this file isn't updated automatically.
 
 - [x] Block diagram + explanation of the control pipeline in the report
@@ -478,10 +579,23 @@ re-check before submitting, since this file isn't updated automatically.
       `TODO(Student A)`/`NotImplementedError` left in `skills_real.py`;
       `turn()` prints the required `[TURN]` line
 - [x] Table/plot: open-loop vs. closed-loop turn accuracy — done, see
-      `docs/turn_accuracy_data.md` (6 trials, closed-loop mean error
-      1.81°, open-loop mean error 22.98°, ~13x improvement) and the
-      summary table in §2 above
-- [ ] `Video_Task2`: scene + objects, onboard camera view, a timed move,
+      `docs/test_result/student_a_turn_accuracy_data.md` (the data file
+      actually in this repo — not `docs/turn_accuracy_data.md`, a path
+      this checklist used to cite that doesn't exist). **FINAL, 24
+      trials across 45°/90°/180°** (supersedes an earlier, methodology-
+      flawed 6-trial/90°-only write-up): closed-loop mean error
+      1.52–1.80° at every angle tested; open-loop achieves only
+      ~25–28% of whatever angle is commanded — see the summary table
+      and corrected methodology in §2 above
+- [x] Terrain traversal (optional advanced-requirement groundwork) —
+      done, `climb_stairs()`/`cross_rough_terrain()`/
+      `get_ground_height_below()` in `skills_real.py`, exercised by
+      `tools/visual_test_rough_terrain.py` (default: rubble only;
+      `stairs_gentle` completes cleanly, `stairs_steep` still ends
+      `stuck`/`edge_drift` on every real run so far) — see §2 above.
+      This is what Task 4's optional `blue_chair`-on-`stairs_gentle`
+      scenario builds on
+- [x] `Video_Task2`: scene + objects, onboard camera view, a timed move,
       a closed-loop turn with `[TURN]` visible — **not in this repo**;
       no video file found. `tools/visual_test_task2.py`'s choreography
       (forward/strafe/turn/crouch/stand) is a ready-made source clip for
