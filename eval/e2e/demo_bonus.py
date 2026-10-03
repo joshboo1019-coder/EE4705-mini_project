@@ -37,6 +37,11 @@ SEGMENTS = [
         ("what can you see?", END, 60, 2.5),
         ("turn right 45 degrees", END, 60, 1.0),
         ("is there a chair in front of you?", END, 60, 2.5)]),
+    # Segment 3's green-chair goto failed at close range in takes 1 and 2
+    # (navigation's frame-filling-chair C1 issue, docs/TEAM_HANDOFF.md C4); the
+    # until_see part worked. A ball-only variant (take 3) was aborted: it ends at
+    # the ball, and "go back to where you started" would then walk straight
+    # through the red stop-sign pole at (-1.3, 0). Kept as is; see MORNING_BRIEF.
     ("2 multi-goal mission", [
         ("go to the red chair, then the orange ball", END, 300, 2.5)]),
     ("3 until_see then goto", [

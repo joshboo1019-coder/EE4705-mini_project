@@ -39,7 +39,7 @@ def main():
               f"drawbox=x=0:y=0:w=iw:h=44:color=black@0.75:t=fill,"
               f"drawtext=fontfile={FONT}:text='{cap}':fontcolor=white:fontsize=22:x=14:y=11")
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(s.get("start", 0)), "-t", str(s["dur"]),
-                        "-i", s["clip"], "-an", "-vf", vf, "-r", "25", "-c:v", "libx264",
+                        "-i", str(Path(s["clip"]).expanduser()), "-an", "-vf", vf, "-r", "25", "-c:v", "libx264",
                         "-preset", "medium", "-crf", "23", "-pix_fmt", "yuv420p", str(part)], check=True)
         parts.append(part)
     lst = tmp / "list.txt"

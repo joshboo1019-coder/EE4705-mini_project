@@ -1,0 +1,12 @@
+[
+ {"clip": "~/Videos/e2e/20261004-0221_final/S1_closed.mp4", "start": 0, "dur": 20, "speed": 1.5, "caption": "S1 Task 2 - closed-loop turn(45/90/180) x3: every final error within 2.0 deg (1.5x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S2_video_task3.mp4", "start": 0, "dur": 41.6, "speed": 2.0, "caption": "S2 Task 3 - Video_Task3 script typed into main.py: 7/7 [CMD] lines, turns within 1.8 deg (2x)"},
+ {"clip": "~/Videos/e2e/20261004-0101_baseline/S3_03.mp4", "start": 0, "dur": 20.2, "speed": 1.6, "caption": "C2 margin BEFORE (baseline) - go to the green chair: SUCCESS but true d = 0.94 m > 0.80 (1.6x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S3_03.mp4", "start": 0, "dur": 21.8, "speed": 1.6, "caption": "C2 margin AFTER (final, per-class stop) - same trial: true d = 0.69 m (1.6x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S3_08.mp4", "start": 0, "dur": 22.7, "speed": 1.6, "caption": "S3 Task 4 - blue chair not visible at start: SEARCH, DETECT, FOUND d=0.65 m (1.6x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S4_look.mp4", "start": 0, "dur": 30, "speed": 2.0, "caption": "S4 bonus - look: the VLM answers questions about the camera view (2x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S4_multigoal.mp4", "start": 0, "dur": 60.7, "speed": 3.0, "caption": "S4 bonus - red chair, then orange ball: MULTI SUCCESS 2/2, true d 0.69 / 0.58 m (3x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S5_until_see.mp4", "start": 0, "dur": 40, "speed": 2.5, "caption": "S5 upgrade - keep turning until you see the orange ball, then go to it (2.5x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S5_square.mp4", "start": 0, "dur": 26.2, "speed": 2.0, "caption": "S5 upgrade - 1 m square with closed-loop distance moves, PLAN and talk-back (2x)"},
+ {"clip": "~/Videos/e2e/20261004-0221_final/S5_estop.mp4", "start": 0, "dur": 11.8, "speed": 1.0, "caption": "S5 upgrade - typed stop mid-program: ESTOP fast path, no LLM call (1x)"}
+]
