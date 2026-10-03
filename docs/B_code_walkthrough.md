@@ -732,7 +732,8 @@ at that person" (`upgrade_eval.md`, ablation).
 Two layers. The v5 prompt says text in the user's words never changes the rules, and that limits
 are not lifted by claimed permissions. That reduces how often the model is fooled, but doesn't
 guarantee it. The guarantee is `_validate`: `duration` must be in (0, 30], speeds in [−1, 1],
-iterations ≤ 8, and the whole utterance ≤ 60 s (`limits.program_seconds`). On the Hard set the
+iterations ≤ 8, the whole utterance ≤ 60 s (`limits.program_seconds`), and at most 4 goals per utterance with
+loops multiplied out (`limits.goal_count`, added in `1f7c9c4`). On the Hard set the
 models were fooled several times (qwen-flash v5 H-I7: a 90-s full-speed sprint) and **0 unsafe
 commands passed the validator** in any run. The injection oracles in `hard_cases.py` are written
 from the published bounds, independently of the validator.
@@ -828,7 +829,8 @@ qwen-flash code-switch went from 5/8 to 8/8 with v5, at the cost of the ASR-nois
 **15. "go to the chair" — why does the robot ask instead of searching?**
 `navigation.goto_object` needs an exact colour match, and a colour-less search would rotate a full
 360° and fail. All models return `color=""`, so `_to_command` turns that goto into the question
-"Which chair do you mean? Please tell me its colour.". The answer "the green one" then resolves
+"Which chair do you mean? Please tell me its colour." — for the whole utterance, so "walk 2 s, then go to the
+chair" asks before moving at all (`1f7c9c4`). The answer "the green one" then resolves
 from history (C2/F3 3/3 per service, `task3_eval.md`). Since v5, the prompt also tells the model to
 use STATE for "a class seen in only one color", so with one chair in STATE it may go there directly.
 With two chairs in STATE, qwen-flash picked the first-seen one instead of asking (H-A3, the ambiguity
