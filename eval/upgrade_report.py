@@ -182,6 +182,32 @@ def failures(have):
     return "\n".join(out)
 
 
+def ablation_table():
+    """json_object = the v5 Standard run restricted to the 33 v3 cases."""
+    from eval.ablation import V3_IDS
+    out = ["| Service | Mode | Accuracy (33 v3 cases) | Failures | Latency median (s) | Tokens in / out |",
+           "|---|---|---|---|---|---|"]
+    for s in ("qwen-flash", "gpt-5-nano"):
+        for mode in ("json_object", "json_schema", "tools"):
+            if mode == "json_object":
+                rows = [r for r in t3.load("v5", s) if r["id"] in V3_IDS]
+            else:
+                path = RES / "ablation" / mode / f"{s}.jsonl"
+                rows = [json.loads(l) for l in path.open()] if path.is_file() else []
+                if any(r.get("unsupported") for r in rows):
+                    out.append(f"| {s} | {mode} | not supported by the endpoint | | | |")
+                    continue
+            if not rows:
+                continue
+            lat = [r["latency_s"] for r in rows if r.get("latency_s")]
+            tin = [r["prompt_tokens"] for r in rows if r.get("prompt_tokens")]
+            tout = [r["completion_tokens"] for r in rows if r.get("completion_tokens")]
+            fails = " ".join(r["id"] for r in rows if r["ok"] is False)
+            out.append(f"| {s} | {mode} | {_pct(rows)} | {fails} | "
+                       f"{statistics.median(lat):.2f} | {statistics.mean(tin):.0f} / {statistics.mean(tout):.0f} |")
+    return "\n".join(out)
+
+
 def figure(have, path):
     import matplotlib
     matplotlib.use("Agg")
@@ -236,6 +262,8 @@ def main():
     print(detail_table(have, {"codeswitch", "numbers", "injection"}))
     print("\n## Hard-set failures\n")
     print(failures(have))
+    print("\n## Structured-output ablation\n")
+    print(ablation_table())
     print("\n## Re-scored with the fixed validator (as run -> re-scored)\n")
     print(rescore_flips(have))
     figure(have, RES / "hard" / "hard_by_category.png")

@@ -245,6 +245,7 @@ class BatchTrace:
     goals: List[Tuple[str, bool]] = field(default_factory=list)       # goto: (target, reached)
     sightings: List[Tuple[str, bool, int]] = field(default_factory=list)  # until_see: (target, seen, iters)
     skipped: int = 0                                 # actions skipped after a failed until_see
+    path_m: Optional[float] = None                   # path length (pose sampled after each step)
     notes: List[str] = field(default_factory=list)   # e.g. "nothing to undo"
 
 
@@ -255,7 +256,9 @@ def _motion_phrase(t: BatchTrace) -> Optional[str]:
     dist = math.hypot(p1.x - p0.x, p1.y - p0.y)
     turn = wrap_deg(p1.yaw_deg - p0.yaw_deg)
     parts = []
-    if dist >= 0.05:
+    if t.path_m is not None and t.path_m - dist > 0.2:
+        parts.append(f"walked about {t.path_m:.1f} m, ending {dist:.1f} m from where I began")
+    elif dist >= 0.05:
         parts.append(f"moved {dist:.1f} m")
     if abs(turn) >= 2.0:
         parts.append(f"net turn {abs(turn):.0f}° {'left' if turn > 0 else 'right'}")

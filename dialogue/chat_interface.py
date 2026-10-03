@@ -64,9 +64,12 @@ def _chat_loop(queue: CommandQueue) -> None:
         handle_utterance(user_text, history, queue)
 
 
+def _norm(text: str) -> str:
+    return " ".join(re.sub(r"[^a-z]+", " ", (text or "").lower()).split())
+
+
 def is_stop_word(text: str) -> bool:
-    norm = " ".join(re.sub(r"[^a-z]+", " ", (text or "").lower()).split())
-    return norm in STOP_WORDS
+    return _norm(text) in STOP_WORDS
 
 
 def handle_utterance(user_text: str, history: List[Dict[str, str]],
@@ -115,6 +118,10 @@ def say_rejection(result, user_text: str = "", queue=None) -> None:
     out-of-range request. Templates only; the suggestion is never executed.
     The rejection is also kept in the robot state ("why did you reject that?")."""
     suggestion = getattr(result, "suggestion", None)
+    if suggestion and _norm(suggestion) == _norm(user_text):
+        # "Did you mean <exactly what you typed>?" helps nobody (seen when a
+        # model rejected an English injection attempt as non-English)
+        suggestion = result.suggestion = None
     reply = talkback.reject_reply(result.reject_reason, suggestion)
     if reply:
         print(f"Robot: {reply}")

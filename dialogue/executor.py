@@ -168,6 +168,7 @@ class CommandExecutor:
         done = 0
         batch_id = self.state.new_batch()
         trace = talkback.BatchTrace(kinds=[kind(c) for c in batch], pose_before=self._pose())
+        self._path_m, self._path_pose = 0.0, trace.pose_before
         # Two or more goto_object actions in one utterance form a multi-goal
         # mission: each goal is reported, a goal that isn't reached is
         # skipped (the robot goes on to the next one), and a [MULTI] summary
@@ -216,6 +217,8 @@ class CommandExecutor:
         print(f"[DONE] actions={done} t={elapsed:.1f} s")
         trace.done = done
         trace.pose_after = self._pose()
+        self._track()
+        trace.path_m = self._path_m
         line = talkback.summary(trace)
         if line:
             print(f"Robot: {line}")
@@ -229,6 +232,14 @@ class CommandExecutor:
             return None
         self.state.update_pose(pose)
         return pose
+
+    def _track(self) -> None:
+        """Add the straight-line distance since the last sample to the
+        batch's path length (sampled after every step and distance slice)."""
+        p = self._pose()
+        if p is not None and getattr(self, "_path_pose", None) is not None:
+            self._path_m += math.hypot(p.x - self._path_pose.x, p.y - self._path_pose.y)
+        self._path_pose = p if p is not None else getattr(self, "_path_pose", None)
 
     def _log(self, batch_id, cmd, pose_before, completed, result=None) -> None:
         if kind(cmd) in NOT_LOGGED:
@@ -264,6 +275,13 @@ class CommandExecutor:
         """Runs one command; returns goto_object's result (True = reached),
         or (seen, iterations) for until_see. Steps inside a program are run
         through here too and log with their top-level action number."""
+        try:
+            return self._exec_step(cmd, i, n, trace)
+        finally:
+            if hasattr(self, "_path_m"):
+                self._track()
+
+    def _exec_step(self, cmd, i: int, n: int, trace=None):
         if isinstance(cmd, MoveCommand):
             print(f"[EXEC] action={i}/{n} move vx={cmd.vx} vy={cmd.vy} "
                   f"wz={cmd.wz} t={cmd.duration} s")
@@ -446,6 +464,8 @@ class CommandExecutor:
             p = self.skills.get_robot_pose()
             travelled = math.hypot(p.x - start.x, p.y - start.y)
             log.append((elapsed, travelled))
+            if hasattr(self, "_path_m"):
+                self._track()
             earlier = [d for t, d in log if t <= elapsed - self.DIST_STALL_WINDOW_S]
             if earlier and travelled - earlier[-1] < self.DIST_STALL_MIN_M:
                 status = " status=blocked"
