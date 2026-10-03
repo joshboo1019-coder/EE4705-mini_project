@@ -146,9 +146,12 @@ How to read the clip names: `~/Videos/e2e/<run>/<suite>_<scenario>.mp4` (not in 
   labelled `bed` (conf 0.18) in the stop frame → `[TRACK] final label conflict not confirmed by target history` →
   `[MISSION] status=FAIL reason=stop_verification` (`eval/e2e/results/20261004-0206_final/S4_multigoal.log`);
   S3 scenario 4 fails the same way. So the margin trades C2 violations (true 0.84–0.96 m) for occasional C1 misses
-  at ~0.6 m. **Proposal:** verify C1 on the last frame where the target was still confidently tracked before the
-  final step, or let the tracker's identity (`recover_target`, score ≥ 0.9 seen in these logs) confirm a
-  frame-filling target. **Time:** 1 h + re-run S3.
+  at ~0.6 m. Successful chair stops were at true 0.65–0.74 m; the failures at 0.57–0.63 m came from the last
+  approach step overshooting (S3_04: a 0.11 m step command moved the robot 0.19 m). **Options for C:** (a) smaller
+  final steps near the stop (less overshoot); (b) a slightly larger chair stop (0.60 instead of 0.56: true ≈ 0.76 m
+  on average, but the 95 % bound becomes ~0.84 m); (c) verify C1 on the last frame where the target was still
+  confidently tracked before the final step. The tracker's template match (`recover_target`) is unlikely to rescue
+  a frame-filling view on its own (templates come from farther away). **Time:** 1 h + re-run S3.
 
 ### C5. Tests that need C's intent
 - `test_recenter_time_counts_toward_four_second_recovery` (xfail on `chore/cli-tests`), the above-camera
