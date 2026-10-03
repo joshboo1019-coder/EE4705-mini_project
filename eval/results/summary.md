@@ -1,4 +1,4 @@
-Test set: 41 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
+Test set: 45 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 and multi-goal G1-G4 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
 
 ### Prompt v1
 
@@ -8,11 +8,11 @@ Test set: 41 utterances; each prompt is scored on the cases it was run on (C2 an
 | gemini-3.8-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 1.81 / 2.41 | 1013 / 31 | 0.874 |
 | gpt-5-nano | 93.5% (29/31) | 93.5% (29/31) | 90.3% (28/31) | **92.5% (86/93)** | 0 | 0.93 / 1.22 | 967 / 39 | 0.064 |
 
-| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | invalid |
-|---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% | 100.0% | 87.5% | 0.0% | 100.0% | 100.0% | – | 100.0% |
-| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | 100.0% |
-| gpt-5-nano | 100.0% | 100.0% | 87.5% | 55.6% | 100.0% | 100.0% | – | 100.0% |
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | multi-goal | invalid |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 87.5% | 0.0% | 100.0% | 100.0% | – | – | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 87.5% | 55.6% | 100.0% | 100.0% | – | – | 100.0% |
 
 Failures (v1):
 
@@ -46,11 +46,11 @@ Failures (v1):
 | gemini-3.8-flash | 100.0% (31/31) | 100.0% (31/31) | 100.0% (31/31) | **100.0% (93/93)** | 0 | 2.03 / 2.34 | 1201 / 31 | 1.017 |
 | gpt-5-nano | 100.0% (31/31) | 96.8% (30/31) | 96.8% (30/31) | **97.8% (91/93)** | 0 | 1.02 / 1.23 | 1150 / 39 | 0.073 |
 
-| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | invalid |
-|---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | 100.0% |
-| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | 100.0% |
-| gpt-5-nano | 100.0% | 100.0% | 91.7% | 100.0% | 100.0% | 100.0% | – | 100.0% |
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | multi-goal | invalid |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 91.7% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
 
 Failures (v2):
 
@@ -67,11 +67,11 @@ Failures (v2):
 | gemini-3.8-flash | 100.0% (33/33) | – | – | **100.0% (33/33)** | 0 | 1.96 / 2.27 | 1240 / 31 | 1.045 |
 | gpt-5-nano | 100.0% (33/33) | 100.0% (33/33) | 100.0% (33/33) | **100.0% (99/99)** | 0 | 1.09 / 1.38 | 1189 / 39 | 0.075 |
 
-| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | invalid |
-|---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | 100.0% |
-| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | 100.0% |
-| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | 100.0% |
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | multi-goal | invalid |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | – | – | 100.0% |
 
 Failures (v3):
 
@@ -82,15 +82,15 @@ Failures (v3):
 
 | Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
 |---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% (41/41) | – | – | **100.0% (41/41)** | 0 | 0.29 / 0.49 | 1414 / 27 | 0.082 |
-| gemini-3.8-flash | 100.0% (41/41) | – | – | **100.0% (41/41)** | 0 | 2.14 / 2.73 | 1462 / 27 | 1.199 |
-| gpt-5-nano | 95.1% (39/41) | – | – | **95.1% (39/41)** | 0 | 1.13 / 1.45 | 1396 / 37 | 0.085 |
+| qwen-flash | 100.0% (45/45) | – | – | **100.0% (45/45)** | 0 | 0.31 / 0.53 | 1415 / 29 | 0.083 |
+| gemini-3.8-flash | 100.0% (45/45) | – | – | **100.0% (45/45)** | 0 | 2.14 / 2.73 | 1462 / 30 | 1.208 |
+| gpt-5-nano | 95.6% (43/45) | – | – | **95.6% (43/45)** | 0 | 1.13 / 1.47 | 1396 / 39 | 0.085 |
 
-| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | invalid |
-|---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
-| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
-| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 75.0% | 100.0% |
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | multi-goal | invalid |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 75.0% | 100.0% | 100.0% |
 
 Failures (v4):
 
@@ -128,11 +128,11 @@ Failures (v4):
 
 - qwen-flash v2: $0.0065
 - qwen-flash v3: $0.0073
-- qwen-flash v4: $0.0034
+- qwen-flash v4: $0.0038
 - gemini-3.8-flash v1: $0.0813
 - gemini-3.8-flash v2: $0.0945
 - gemini-3.8-flash v3: $0.0355
-- gemini-3.8-flash v4: $0.0503
+- gemini-3.8-flash v4: $0.0555
 - gpt-5-nano v2: $0.0068
 - gpt-5-nano v3: $0.0077
-- gpt-5-nano v4: $0.0036
+- gpt-5-nano v4: $0.0039

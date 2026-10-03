@@ -199,6 +199,15 @@ CASES = [
     ("V6", "look", [], "watch out!", no_look()),
     ("V7", "look", [], "heads up, there's a wall", no_look()),
     ("V8", "look", [], "careful, stop there", no_look()),
+    # --- multi-goal missions (Part 3; added after v4 was frozen, none is a prompt example) ---
+    ("G1", "multi-goal", [], "go to the orange ball, then the green chair",
+     cmds(goto("sports ball", "orange"), goto("chair", "green"))),
+    ("G2", "multi-goal", [], "visit the red chair, the green chair and then the orange ball",
+     cmds(goto("chair", "red"), goto("chair", "green"), goto("sports ball", "orange"))),
+    ("G3", "multi-goal", [], "first find the green chair and after that go to the red one",
+     cmds(goto("chair", "green"), goto("chair", "red"))),
+    ("G4", "multi-goal", [], "go to the green chair, then turn around and go to the orange ball",
+     cmds(goto("chair", "green"), turn(180, sign_free=True), goto("sports ball", "orange"))),
     # --- invalid / out of scope ---
     ("X1", "invalid", [], "fly to the roof", rejected()),
     ("X2", "invalid", [], "avancez tout droit", rejected()),
@@ -390,7 +399,7 @@ def _got(r):
 
 def report(services, prompts=("v1", "v2", "v3", "v4")) -> str:
     out = [f"Test set: {len(CASES)} utterances; each prompt is scored on the cases it was run on "
-           "(C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors "
+           "(C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 and multi-goal G1-G4 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors "
            "(calls that still failed after back-off), which are counted separately.", ""]
     for prompt in prompts:
         out += [f"### Prompt {prompt}", "",

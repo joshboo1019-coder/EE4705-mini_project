@@ -264,3 +264,112 @@ def test_vlm_error_is_caught_and_the_loop_goes_on(tmp_path, capsys):
     assert "[EXEC] action=1/1 failed reason=APITimeoutError" in out
     assert "[DONE] actions=0" in out
     assert "[EXEC] action=1/1 turn angle=90.0 deg" in out and "[DONE] actions=1" in out
+
+
+# ---------------------------------------------------------------------------
+# Part 3: multi-goal missions (executor side; navigation is faked)
+# ---------------------------------------------------------------------------
+
+def _mission_executor(results):
+    """Executor whose goto_object returns the given results in order."""
+    from core.schema import GotoObjectCommand  # noqa: F401
+    from dialogue.executor import CommandExecutor
+    from perception.perception_mock import MockPerception
+    from skills.skills_mock import MockSkills
+
+    calls = []
+    it = iter(results)
+
+    def fake_goto(object_class, color, skills, perception):
+        calls.append(f"{color} {object_class}")
+        return next(it)
+
+    queue = CommandQueue()
+    ex = CommandExecutor(MockSkills(), MockPerception(), queue, goto_object_fn=fake_goto)
+    return ex, queue, calls
+
+
+def _run(ex, queue, cmds):
+    queue.push_many(cmds[1:])
+    ex._run_batch_starting_with(cmds[0])
+
+
+def test_mission_all_goals_reached(capsys):
+    from core.schema import GotoObjectCommand
+    ex, queue, calls = _mission_executor([True, True, True])
+    _run(ex, queue, [GotoObjectCommand("sports ball", "orange"), GotoObjectCommand("chair", "green"),
+                     GotoObjectCommand("chair", "red")])
+    out = capsys.readouterr().out
+    assert calls == ["orange sports ball", "green chair", "red chair"]
+    assert "[GOAL] 1/3 orange sports ball status=REACHED" in out
+    assert "[GOAL] 3/3 red chair status=REACHED" in out
+    assert "[MULTI] status=SUCCESS reached=3/3 t=" in out
+    assert "[DONE] actions=3" in out
+
+
+def test_mission_skips_a_missed_goal_and_continues(capsys):
+    from core.schema import GotoObjectCommand
+    ex, queue, calls = _mission_executor([True, False, True])
+    _run(ex, queue, [GotoObjectCommand("sports ball", "orange"), GotoObjectCommand("chair", "green"),
+                     GotoObjectCommand("chair", "red")])
+    out = capsys.readouterr().out
+    assert calls == ["orange sports ball", "green chair", "red chair"]   # goal 3 still attempted
+    assert "[GOAL] 2/3 green chair status=NOT_REACHED" in out
+    assert "[MULTI] status=PARTIAL reached=2/3 missed=green_chair t=" in out
+
+
+def test_mission_with_no_goal_reached_fails(capsys):
+    from core.schema import GotoObjectCommand
+    ex, queue, _ = _mission_executor([False, False])
+    _run(ex, queue, [GotoObjectCommand("chair", "green"), GotoObjectCommand("chair", "red")])
+    assert "[MULTI] status=FAIL reached=0/2 missed=green_chair,red_chair" in capsys.readouterr().out
+
+
+def test_mission_mixed_with_a_turn(capsys):
+    from core.schema import GotoObjectCommand
+    ex, queue, calls = _mission_executor([True, True])
+    _run(ex, queue, [GotoObjectCommand("chair", "green"), TurnCommand(180.0),
+                     GotoObjectCommand("sports ball", "orange")])
+    out = capsys.readouterr().out
+    assert "[EXEC] action=2/3 turn angle=180.0 deg" in out
+    assert "[GOAL] 2/2 orange sports ball status=REACHED" in out
+    assert "[MULTI] status=SUCCESS reached=2/2" in out
+
+
+def test_mission_error_counts_remaining_goals_as_not_attempted(capsys):
+    from core.schema import GotoObjectCommand
+    from dialogue.executor import CommandExecutor
+    from perception.perception_mock import MockPerception
+    from skills.skills_mock import MockSkills
+
+    def goto(object_class, color, skills, perception):
+        if color == "green":
+            raise RuntimeError("camera frame timeout")
+        return True
+
+    queue = CommandQueue()
+    ex = CommandExecutor(MockSkills(), MockPerception(), queue, goto_object_fn=goto)
+    _run(ex, queue, [GotoObjectCommand("sports ball", "orange"), GotoObjectCommand("chair", "green"),
+                     GotoObjectCommand("chair", "red")])
+    out = capsys.readouterr().out
+    assert "[EXEC] action=2/3 failed reason=RuntimeError: camera frame timeout" in out
+    assert "[MULTI] status=PARTIAL reached=1/3 not_attempted=2" in out
+
+
+def test_single_goto_prints_no_mission_lines(capsys):
+    from core.schema import GotoObjectCommand
+    ex, queue, _ = _mission_executor([True])
+    _run(ex, queue, [GotoObjectCommand("chair", "green")])
+    out = capsys.readouterr().out
+    assert "[GOAL]" not in out and "[MULTI]" not in out
+
+
+def test_parser_keeps_goal_order():
+    raw = json.dumps({"actions": [
+        {"action": "goto_object", "class": "chair", "color": "red"},
+        {"action": "goto_object", "class": "chair", "color": "green"},
+        {"action": "goto_object", "class": "sports ball", "color": "orange"}]})
+    r = llm_parser._to_parse_result(raw)
+    assert r.accepted
+    assert [(c.object_class, c.color) for c in r.commands] == [
+        ("chair", "red"), ("chair", "green"), ("sports ball", "orange")]
