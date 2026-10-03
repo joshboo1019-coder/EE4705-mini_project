@@ -1,0 +1,51 @@
+# mock_main.py, 'go to the green chair, then the orange ball'. Collapsed: 16321016 alternating mock re-centring lines
+# ([DETECT] fixed green-chair bbox / [TURN] target=5.0 deg; the mock bbox never centres, see eval/task3_eval.md) were dropped.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=chair, color=green), goto_object(class=sports ball, color=orange) n=2
+User: [EXEC] action=1/2 goto_object class=chair color=green
+[MISSION] status=FAIL reason=timeout
+[MOCK stop]
+[GOAL] 1/2 green chair status=NOT_REACHED t=180.0 s
+[EXEC] action=2/2 goto_object class=sports ball color=orange
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[x5] [DETECT] class=chair color=green conf=0.83 bbox=[150, 120, 260, 340]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[MISSION] status=FAIL reason=target_not_found
+[MOCK stop]
+[GOAL] 2/2 orange sports ball status=NOT_REACHED t=180.0 s
+[MULTI] status=FAIL reached=0/2 missed=green_chair,orange_sports_ball t=180.0 s
+[DONE] actions=2 t=180.0 s
