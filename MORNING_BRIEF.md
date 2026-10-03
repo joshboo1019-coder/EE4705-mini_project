@@ -80,6 +80,8 @@ back", Mandarin "向前走三秒" (rejected by whisper's language ID before any 
 - e2e numbers are n = 1 per scenario per run except S3 (n = 3 per side); S3 varied 5–6/10 between identical-code runs.
 - Known limits: an e-stop can't interrupt a running closed-loop `turn()` chunk (≤ 120°); two utterances typed during
   a long batch run as one batch; `goto_object` has no obstacle avoidance (scenario 2 brushes a sign pole).
+- `eval/e2e/results/` adds 23 MB to the repo (mostly ground-truth traces); leave it out of the submission zip if size
+  matters (`tools/make_submission_zip.sh` only drops single files > 5 MB). A secrets scan of every branch found nothing.
 - Left on disk (outside the repo, not deleted per your rule): fresh-clone venvs (~13 GB) under the session
   scratchpad, `/tmp/himloco_runtime_ui_*` Chrome profiles created by the platform's panel, `/tmp/minilab_scenario_*`
   scene files.
