@@ -31,6 +31,11 @@ coordinates read directly out of custom_scene.xml:
      of flat ground or discrete steps -- the "rough terrain" half of this
      script's name, distinct from the two staircases.
 
+This script's DEFAULT (no --feature given) now runs RUBBLE ONLY -- the
+genuinely "rough terrain" feature the script is named for -- not either
+staircase. Both staircases are still here and still runnable, just not by
+default; see --feature below.
+
 None of these three is a target by itself, but there is a FOURTH terrain
 geom in the scene, between stairs_gentle and stairs_steep/rubble, that
 this script does NOT target or test directly -- a single tilted plate at
@@ -126,7 +131,7 @@ recenter_gain (pass it through climb_stairs()); if it visibly zig-zags
 or loses forward progress instead, lower it.
 
 RUN (from the project root):
-    python tools/visual_test_rough_terrain.py                     # DEFAULT: stairs_gentle + rubble only (see below)
+    python tools/visual_test_rough_terrain.py                     # DEFAULT: rubble (rough terrain) only -- see below
     python tools/visual_test_rough_terrain.py --feature stairs_gentle
     python tools/visual_test_rough_terrain.py --feature stairs_steep
     python tools/visual_test_rough_terrain.py --feature rubble
@@ -134,18 +139,22 @@ RUN (from the project root):
     python tools/visual_test_rough_terrain.py --native             # native MuJoCo window instead of the browser panel
 
 --feature takes one or more names (or "all"). The DEFAULT, with no
---feature given, is now stairs_gentle and rubble ONLY -- stairs_steep is
-deliberately excluded from the default run, since every real run of its
-own climb so far has ended "stuck" or "edge_drift" (see skills_real.py's
-climb_stairs() for the latest attempts at fixing that) and there is no
-value in a default run stopping there every time rather than exercising
-the two features that already work. Pass --feature stairs_steep to still
-test it on its own (starting fresh from spawn, independent of the other
-two), or --feature all to run the full original three-feature sequence
-(stairs_gentle, then stairs_steep, then rubble) in one process the way
-this script did before this change -- any selection other than "all"
-still runs in FEATURES' own canonical order regardless of the order typed
-on the command line, not the order given.
+--feature given, is now rubble ONLY -- the genuinely "rough terrain"
+feature this script is named for, as distinct from either staircase (see
+RUBBLE_PATCH above). Both staircases are excluded from the default run:
+stairs_gentle because this default is specifically about exercising rough,
+continuously-uneven terrain rather than discrete steps, and stairs_steep
+additionally because every real run of its own climb so far has ended
+"stuck" or "edge_drift" (see skills_real.py's climb_stairs() for the latest
+attempts at fixing that) and there is no value in a default run stopping
+there every time. Pass --feature stairs_gentle and/or --feature
+stairs_steep explicitly to still test either staircase on its own
+(starting fresh from spawn, independent of rubble), or --feature all to
+run the full original three-feature sequence (stairs_gentle, then
+stairs_steep, then rubble) in one process the way this script did before
+this change -- any selection other than "all" still runs in FEATURES' own
+canonical order regardless of the order typed on the command line, not the
+order given.
 
 `--gui`/`--native` are mutually exclusive, same convention as every other
 tools/visual_test_task*.py script; `--gui` (the browser panel) is the
@@ -254,16 +263,32 @@ FEATURES = {
         #   (0.0, 6.0):  x=0.0 stays clear of the plate (x<=3.5) and
         #                stairs_steep (x>=1.4) the whole way north to
         #                y=6.0, and clear of rubble (x<=-0.43) throughout.
-        # Only matters for --feature all/when run after stairs_gentle;
-        # run alone (--feature stairs_steep) the robot starts at spawn
-        # (0,0) and never gets near any of this, so the detour is just
-        # harmless extra distance either way. The y=5.0 crossing leg has
-        # the tightest margins here (0.25 m each side, a real structural
-        # gap between the plate and stairs_steep, not a guess) -- if a
-        # future run still catches an edge there, the fix is routing
-        # around at larger x (east of stairs_steep too) rather than
-        # trying to thread an even narrower gap.
+        # ONLY safe when actually coming from stairs_gentle's own end
+        # point (~6.3, 2.0) -- see run_feature()'s near_spawn check below.
+        # A real run proved the naive "run alone from spawn, so it's a
+        # harmless no-op" assumption this comment used to make is WRONG:
+        # the straight line from spawn (0,0) to this route's own first
+        # waypoint (6.4, 4.2) passes through x=[1.524, 4.571] while
+        # y=[1.0, 3.0] -- squarely inside stairs_gentle's own strip
+        # (x [1.0,5.9], y [1.0,3.0]) -- so starting this detour from
+        # spawn walks the robot diagonally across the real staircase
+        # risers via cross_rough_terrain(), which has no step handling.
+        # (See "approach_via_from_spawn" below for the route actually
+        # used when starting near spawn.) The y=5.0 crossing leg here
+        # still has the tightest margins (0.25 m each side, a real
+        # structural gap between the plate and stairs_steep, not a
+        # guess) -- if a future run still catches an edge there, the fix
+        # is routing around at larger x (east of stairs_steep too)
+        # rather than trying to thread an even narrower gap.
         "approach_via": [(6.4, 4.2), (6.4, 5.0), (0.0, 5.0), (0.0, 6.0)],
+        # Used instead of "approach_via" above when the robot is still
+        # at/near spawn (no prior feature has moved it east yet). Just
+        # one hop: x=0.0 the whole way north clears stairs_gentle
+        # (x>=1.0), the tilted plate (x>=0.5) and stairs_steep (x>=1.4)
+        # throughout, landing at (0.0, 6.0); the short final hop east to
+        # the actual approach point (0.9, 6.0) then stays at y=6.0,
+        # clear of the plate (y<=4.75) the whole way.
+        "approach_via_from_spawn": [(0.0, 6.0)],
     },
     # custom_scene.xml ~lines 184-320: ~70 boxes with small random
     # roll/pitch, forming a continuously uneven patch rather than discrete
@@ -277,26 +302,37 @@ FEATURES = {
         "clear": (-2.6, 7.1),
         "description": "~1.9x1.8 m randomly-tilted rubble patch "
                         "(x [-2.32,-0.43], y [5.17,6.90])",
-        # Only matters when rubble is run right after stairs_gentle with
-        # stairs_steep SKIPPED (e.g. --feature stairs_gentle rubble) --
-        # a straight line from stairs_gentle's own end point (~6.3, 2.0)
-        # to rubble's approach point (0.0, 5.0) cuts back through BOTH
-        # stairs_gentle's own strip (grazes y=3.0 at x~4.3) and the
-        # tilted plate (grazes its x=0.5 edge at y~4.75) -- the same
-        # "diagonal cut-back through terrain already crossed" problem
-        # stairs_steep's own approach_via was written to avoid (see its
-        # comment above). Reuses the first two legs of that ALREADY
-        # real-run-verified route (east at x=6.4, clear of stairs_gentle/
-        # the plate/stairs_steep regardless of y, then across to y=5.0
-        # through the one real gap between the plate and stairs_steep) --
-        # the second waypoint (6.4, 5.0) is a short, already-proven-safe
-        # final hop from rubble's own approach point (0.0, 5.0), so no
-        # new unverified geometry is introduced here. If rubble instead
-        # runs after a (future, successful) stairs_steep crossing, this
-        # detour is just some extra but still-safe distance, not a
-        # problem -- x=6.4 and y=5.0 stay clear of every known geom
-        # regardless of where stairs_steep itself left the robot.
+        # ONLY safe when actually coming from stairs_gentle's own end
+        # point (~6.3, 2.0) or stairs_steep's -- see run_feature()'s
+        # near_spawn check below. A real run proved the naive "run alone
+        # from spawn, so this detour is a harmless no-op" assumption
+        # this comment used to make is WRONG, same mistake as
+        # stairs_steep's own approach_via (see its comment for the exact
+        # geometry): the first leg here, spawn (0,0) -> (6.4, 4.2), cuts
+        # diagonally through x=[1.524, 4.571] while y=[1.0, 3.0] --
+        # inside stairs_gentle's own strip -- so a rubble-only run
+        # starting from spawn walked the robot across the real
+        # staircase risers instead of around them (trunk_z bouncing
+        # between 0.245 and ~0.67 m and yaw wandering 17-35 deg on what
+        # should have been flat ground in that first "Detouring via
+        # (6.4, 4.2)" leg is exactly what that looks like).
+        #
+        # When run right after stairs_gentle (ending ~6.3, 2.0) or after
+        # stairs_steep (ending ~5.0, 6.0), this route is still the
+        # already-real-run-verified one: east at x=6.4 (clear of
+        # stairs_gentle/the plate/stairs_steep regardless of y), then
+        # across to y=5.0 through the one real gap between the plate and
+        # stairs_steep, landing a short, safe final hop from rubble's own
+        # approach point (0.0, 5.0).
         "approach_via": [(6.4, 4.2), (6.4, 5.0)],
+        # Used instead of "approach_via" above when the robot is still
+        # at/near spawn. No detour needed at all here -- rubble's own
+        # approach point (0.0, 5.0) is a straight x=0.0 line from spawn,
+        # which clears stairs_gentle (x>=1.0), the tilted plate (x>=0.5)
+        # and stairs_steep (x>=1.4) the entire way, so this is simply
+        # empty (cross_rough_terrain() goes straight to "approach" with
+        # no via waypoint at all).
+        "approach_via_from_spawn": [],
     },
 }
 
@@ -312,14 +348,29 @@ def run_feature(skills: RealSkills, name: str) -> dict:
     # (see "approach_via" in FEATURES -- stairs_steep's own comment above
     # explains why) rather than one straight line from wherever the
     # previous feature left the robot, which can cut back through
-    # terrain already crossed. Walk each via-waypoint first, same engine
-    # as the final approach leg; the first one that doesn't actually
-    # finish aborts the whole approach (same handling as the final leg
-    # below), since continuing past an unfinished detour leg is exactly
-    # the "chain forward from a bad state" problem this script no longer
-    # does.
+    # terrain already crossed. That east-side detour ("approach_via") is
+    # only verified safe when coming FROM another feature (stairs_gentle/
+    # stairs_steep's own end point, east of x=5) -- its own first leg
+    # cuts straight through stairs_gentle's strip when started from
+    # spawn instead (confirmed by a real run -- see stairs_steep's and
+    # rubble's own approach_via comments in FEATURES for the exact
+    # geometry). So when the robot hasn't actually moved from spawn yet
+    # (no earlier feature ran this process), use each feature's own
+    # "approach_via_from_spawn" route instead, which is written to be
+    # safe starting from (0, 0) specifically.
+    initial_pose = skills.get_robot_pose()
+    near_spawn = abs(initial_pose.x) < 1.0 and abs(initial_pose.y) < 1.0
+    via_key = "approach_via_from_spawn" if near_spawn else "approach_via"
+    if near_spawn and "approach_via_from_spawn" in spec:
+        print(f"  (starting near spawn -- using {name}'s from-spawn route)")
+
+    # Walk each via-waypoint first, same engine as the final approach
+    # leg; the first one that doesn't actually finish aborts the whole
+    # approach (same handling as the final leg below), since continuing
+    # past an unfinished detour leg is exactly the "chain forward from a
+    # bad state" problem this script no longer does.
     approach_outcome = "completed"
-    for via_x, via_y in spec.get("approach_via", []):
+    for via_x, via_y in spec.get(via_key, []):
         print(f"  Detouring via ({via_x}, {via_y})...")
         approach_outcome = skills.cross_rough_terrain(via_x, via_y, segment_len=0.5)
         if approach_outcome != "completed":
@@ -443,20 +494,25 @@ def _wrap_deg(angle_deg: float) -> float:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--feature", nargs="+", choices=list(FEATURES) + ["all"],
-                     default=["stairs_gentle", "rubble"],
+                     default=["rubble"],
                      help="which terrain feature(s) to test -- one or more "
                           "names, or 'all'. DEFAULT (no --feature given) is "
-                          "now just stairs_gentle and rubble, in that order "
-                          "-- stairs_steep is EXCLUDED from the default run "
-                          "since its own climb is still unresolved (every "
-                          "real run so far has ended 'stuck' or "
-                          "'edge_drift' -- see skills_real.py's "
-                          "climb_stairs() for the latest state of that). "
-                          "Pass --feature stairs_steep explicitly to still "
-                          "test it on its own, or --feature all to run the "
-                          "full canonical three (stairs_gentle, "
-                          "stairs_steep, rubble) in one process the way "
-                          "this script originally did.")
+                          "rubble ONLY -- the genuinely 'rough terrain' "
+                          "feature this script is named for, as opposed to "
+                          "either staircase. Both staircases are excluded "
+                          "from the default run: stairs_gentle because the "
+                          "default is specifically about rough/uneven "
+                          "terrain rather than discrete steps, and "
+                          "stairs_steep additionally because its own climb "
+                          "is still unresolved (every real run so far has "
+                          "ended 'stuck' or 'edge_drift' -- see "
+                          "skills_real.py's climb_stairs() for the latest "
+                          "state of that). Pass --feature stairs_gentle "
+                          "and/or --feature stairs_steep explicitly to "
+                          "still test either staircase on its own, or "
+                          "--feature all to run the full canonical three "
+                          "(stairs_gentle, stairs_steep, rubble) in one "
+                          "process the way this script originally did.")
     ap.add_argument("--native", action="store_true",
                      help="open the native MuJoCo window instead of the "
                           "browser panel (see module docstring)")
