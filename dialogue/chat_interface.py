@@ -4,14 +4,36 @@ chat_interface.py — STUDENT B OWNS THIS FILE. Part of Task 3 (60%).
 Runs the terminal chat loop in its own thread so the simulation (main
 thread, via executor.run_forever) never blocks on input() or the LLM call.
 Maintains dialogue history and rejects/flags non-English input.
+
+Safety reflex — the stop fast path. An utterance that is exactly a stop
+word (STOP_WORDS; case, punctuation and extra spaces ignored: "stop",
+"Stop!", "halt", "freeze", "stop now", "emergency stop", "abort", ...)
+never waits for the LLM: right here on the chat thread it sets the
+executor's abort flag, calls skills.stop() and clears the queue
+(executor.emergency_stop), then prints `[ESTOP] latency=<ms> ms`. This
+works while the executor thread is busy mid-program; the program ends at
+its next step boundary (see executor.py for exactly what is interrupted).
+Every other utterance — including stop-ish phrases that are not exact
+stop words, e.g. "careful, stop there" — still goes through the LLM, which
+maps them to the ordinary stop action as before. The fast path is only
+active when an executor is bound to the queue (dialogue/runtime.py), i.e.
+in main.py's real loop.
 """
 
+import re
 import threading
+import time
 from typing import List, Dict
 
 from core import config
-from core.schema import CommandQueue
-from dialogue import llm_parser, talkback
+from core.schema import CommandQueue, ParseResult, StopCommand
+from dialogue import llm_parser, runtime, talkback
+
+STOP_WORDS = frozenset({
+    "stop", "halt", "freeze", "abort", "stop now", "halt now", "freeze now",
+    "stop it", "stop stop", "stop stop stop", "stop right now", "stop right there",
+    "please stop", "stop please", "emergency stop", "e stop", "estop", "abort abort",
+})
 
 
 def start_chat_thread(queue: CommandQueue) -> threading.Thread:
@@ -42,11 +64,20 @@ def _chat_loop(queue: CommandQueue) -> None:
         handle_utterance(user_text, history, queue)
 
 
+def is_stop_word(text: str) -> bool:
+    norm = " ".join(re.sub(r"[^a-z]+", " ", (text or "").lower()).split())
+    return norm in STOP_WORDS
+
+
 def handle_utterance(user_text: str, history: List[Dict[str, str]],
                      queue: CommandQueue):
     """Parse one utterance against the PREVIOUS turns, queue the accepted
     commands, then record the exchange in `history` (trimmed to the last
     config.LLM_HISTORY_TURNS exchanges). Returns the ParseResult."""
+    t0 = time.perf_counter()
+    executor = runtime.executor_for(queue)
+    if executor is not None and is_stop_word(user_text):
+        return _emergency_stop(executor, user_text, history, t0)
     result = llm_parser.parse_command(user_text, history)
     if not result.accepted:
         if (result.reject_reason == "non-English" and getattr(result, "precheck", False)
@@ -82,3 +113,15 @@ def say_rejection(result) -> None:
     reply = talkback.reject_reply(result.reject_reason, getattr(result, "suggestion", None))
     if reply:
         print(f"Robot: {reply}")
+
+
+def _emergency_stop(executor, user_text: str, history: List[Dict[str, str]],
+                    t0: float) -> ParseResult:
+    """The stop fast path (module docstring). No LLM call, nothing queued."""
+    was_running = executor.emergency_stop()
+    print(f"[ESTOP] latency={(time.perf_counter() - t0) * 1000:.1f} ms")
+    if not was_running:
+        print("Robot: Stopped.")
+    result = ParseResult(accepted=True, commands=[StopCommand()])
+    remember(user_text, result, history)
+    return result

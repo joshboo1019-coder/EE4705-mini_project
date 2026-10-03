@@ -31,6 +31,11 @@ def _g(x: float) -> str:
     return f"{x:g}"
 
 
+def _n(x: float, unit: str) -> str:
+    """'1 second', '2.5 seconds'."""
+    return f"{_g(x)} {unit}{'' if x == 1 else 's'}"
+
+
 def _move_verb(vx: float, vy: float, wz: float) -> str:
     fwd = "forward" if vx >= 0.05 else "backward" if vx <= -0.05 else ""
     side = "left" if vy >= 0.05 else "right" if vy <= -0.05 else ""
@@ -71,19 +76,19 @@ def words(c, say: bool = False) -> str:
     if k == "move":
         verb = _move_verb(c.vx, c.vy, c.wz)
         if say:
-            return f"{verb}{_adverb(c.vx, c.vy, c.wz)} for {_g(c.duration)} seconds"
+            return f"{verb}{_adverb(c.vx, c.vy, c.wz)} for {_n(c.duration, 'second')}"
         return f"{verb} {_g(c.duration)} s at {_g(_speed(c.vx, c.vy, c.wz))}"
     if k == "move_distance":
         s = -1.0 if c.distance_m < 0 else 1.0
         verb = _move_verb(c.vx * s, c.vy * s, c.wz)
         d = abs(c.distance_m)
         if say:
-            return f"{verb}{_adverb(c.vx, c.vy, c.wz)} {_g(round(d, 2))} metres"
+            return f"{verb}{_adverb(c.vx, c.vy, c.wz)} {_n(round(d, 2), 'metre')}"
         return f"{verb} {_g(round(d, 2))} m at {_g(_speed(c.vx, c.vy, c.wz))}"
     if k == "turn":
         a = c.angle_deg
         side = "left" if a >= 0 else "right"
-        return f"turn {side} {_g(abs(a))} degrees" if say else f"turn {side} {_g(abs(a))}°"
+        return f"turn {side} {_n(abs(a), 'degree')}" if say else f"turn {side} {_g(abs(a))}°"
     if k == "goto_object":
         return f"go to the {target_words(c.object_class, c.color)}"
     if k == "stop":
@@ -273,8 +278,11 @@ def summary(t: BatchTrace) -> Optional[str]:
     else:
         clauses.append("Done")
     for target, seen, iters in t.sightings:
-        clauses.append(f"saw the {target} after {iters} tr{'y' if iters == 1 else 'ies'}" if seen
-                       else f"never saw the {target} ({iters} tries)")
+        if seen:
+            clauses.append(f"saw the {target} straight away" if iters == 0 else
+                           f"saw the {target} after {iters} tr{'y' if iters == 1 else 'ies'}")
+        else:
+            clauses.append(f"never saw the {target} ({iters} tries)")
     if len(t.goals) == 1:
         target, ok = t.goals[0]
         clauses.append(f"reached the {target}" if ok else f"did not reach the {target}")

@@ -28,8 +28,10 @@ from core.schema import (
     StopCommand, ChatCommand,
 )
 from core import config
-from dialogue import talkback
-from dialogue.commands import LookCommand
+from dialogue import limits, talkback
+from dialogue.commands import (
+    LookCommand, DistanceMoveCommand, RepeatCommand, UntilSeeCommand,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -225,6 +227,11 @@ COCO_CLASSES = {
 }
 
 
+class _NeedColour(Exception):
+    """A goto_object without a colour inside a program: the whole utterance
+    becomes the clarifying question (a program can't contain a chat)."""
+
+
 class _Invalid(Exception):
     """Validation failure; args[0] is the reject reason. out_of_bounds: a
     finite number outside its range (talk-back can suggest a clamp)."""
@@ -382,6 +389,15 @@ def _command_to_dict(c) -> Dict:
         return {"action": "chat", "reply": c.reply}
     if isinstance(c, LookCommand):
         return {"action": "look", "question": c.question}
+    if isinstance(c, DistanceMoveCommand):
+        return {"action": "move", "vx": c.vx, "vy": c.vy, "wz": c.wz,
+                "distance_m": c.distance_m}
+    if isinstance(c, RepeatCommand):
+        return {"action": "repeat", "times": c.times,
+                "actions": [_command_to_dict(x) for x in c.actions]}
+    if isinstance(c, UntilSeeCommand):
+        return {"action": "until_see", "class": c.object_class, "color": c.color,
+                "do": [_command_to_dict(x) for x in c.actions], "max_iter": c.max_iter}
     raise TypeError(f"unknown command {c!r}")
 
 
@@ -434,17 +450,38 @@ def _validate(raw_json: str) -> ParseResult:
         if not actions:
             raise _Invalid("empty_actions")
         commands = [_to_command(a) for a in actions]
+        total = limits.program_seconds(commands)
+        if total > limits.MAX_PROGRAM_S:
+            raise _Invalid(f"program_too_long:{total:.0f}s", out_of_bounds=True)
     except _Invalid as e:
         return _rejected(e.args[0], e.suggestion)
+    except _NeedColour as e:
+        return ParseResult(accepted=True, commands=[ChatCommand(_which(e.args[0]))])
     return ParseResult(accepted=True, commands=commands)
 
 
-def _to_command(a):
+def _which(cls: str) -> str:
+    return f"Which {cls} do you mean? Please tell me its colour."
+
+
+# What a program body (repeat.actions / until_see.do) may contain: motion
+# only. look (a VLM call per iteration), chat, stop and the code-computed
+# motions stay top-level.
+_PROGRAM_BODY = {"move", "turn", "goto_object", "repeat", "until_see"}
+_KNOWN = _PROGRAM_BODY | {"stop", "chat", "look"}
+
+
+def _to_command(a, depth: int = 0):
+    """One action dict -> command. depth = how many programs enclose it."""
     if not isinstance(a, dict):
         raise _Invalid("invalid_field:action")
     kind = a.get("action")
     if not isinstance(kind, str):
         raise _Invalid("invalid_field:action")
+    if depth > 0 and kind in _KNOWN - _PROGRAM_BODY:
+        raise _Invalid(f"invalid_in_program:{kind}")
+    if kind == "move" and a.get("distance_m") is not None:
+        return _distance_move(a)
     if kind == "move":
         try:
             vx = _number(a, "vx", -1.0, 1.0)
@@ -468,8 +505,12 @@ def _to_command(a):
         if not color:
             # navigation needs an exact colour match, so ask instead of
             # sending the robot on a search that can't succeed.
-            return ChatCommand(f"Which {cls} do you mean? Please tell me its colour.")
+            if depth > 0:
+                raise _NeedColour(cls)
+            return ChatCommand(_which(cls))
         return GotoObjectCommand(cls, color)
+    if kind in ("repeat", "until_see"):
+        return _program(a, kind, depth)
     if kind == "stop":
         return StopCommand()
     if kind == "chat":
@@ -480,6 +521,84 @@ def _to_command(a):
             raise _Invalid("invalid_field:question")
         return LookCommand(question)
     raise _Invalid(f"unknown_action:{kind}")
+
+
+def _distance_move(a: Dict) -> DistanceMoveCommand:
+    """A move with distance_m (signed metres along (vx, vy); a duration, if
+    also given, is ignored). Its time estimate |d| / |(vx, vy)| must fit in
+    one move (limits.MAX_MOVE_S)."""
+    try:
+        vx = _number(a, "vx", -1.0, 1.0)
+        vy = _number(a, "vy", -1.0, 1.0)
+        wz = _number(a, "wz", -1.0, 1.0)
+    except _Invalid as e:
+        if e.out_of_bounds:
+            vals = [_lenient(a, f) for f in ("vx", "vy", "wz", "distance_m")]
+            if None not in vals and vals[3] != 0.0:
+                vx, vy, wz = (_clamp(v, -1.0, 1.0) for v in vals[:3])
+                e.suggestion = _clamped_distance_words(vx, vy, wz, vals[3])
+        raise
+    d = _number(a, "distance_m")
+    if d == 0.0 or math.hypot(vx, vy) < limits.MIN_TRANSLATION:
+        raise _Invalid("invalid_field:distance_m")
+    if limits.distance_seconds(vx, vy, d) > limits.MAX_MOVE_S:
+        raise _Invalid("out_of_range:distance_m", out_of_bounds=True,
+                       suggestion=_clamped_distance_words(vx, vy, wz, d))
+    return DistanceMoveCommand(vx, vy, wz, d)
+
+
+def _clamped_distance_words(vx, vy, wz, d) -> Optional[str]:
+    speed = math.hypot(vx, vy)
+    if speed < limits.MIN_TRANSLATION:
+        return None
+    reach = round(limits.MAX_MOVE_S * speed, 1)
+    d = math.copysign(min(abs(d), reach), d)
+    return talkback.words(DistanceMoveCommand(vx, vy, wz, d), say=True)
+
+
+def _program(a: Dict, kind: str, depth: int):
+    """repeat / until_see. Depth, iteration and body checks; the total time
+    is checked once for the whole utterance in _validate."""
+    if depth + 1 > limits.MAX_NESTING:
+        raise _Invalid("nesting_too_deep", out_of_bounds=True)
+    body_key = "actions" if kind == "repeat" else "do"
+    count_key = "times" if kind == "repeat" else "max_iter"
+    if kind == "until_see":
+        cls = _string(a, "class").strip().lower()
+        if cls not in COCO_CLASSES:
+            raise _Invalid(f"unknown_class:{cls}")
+        color = a.get("color") or ""
+        if not isinstance(color, str):
+            raise _Invalid("invalid_field:color")
+        color = color.strip().lower()
+    n = _count(a, count_key, default=None if kind == "repeat" else limits.MAX_ITER)
+    body = a.get(body_key)
+    if not isinstance(body, list) or not body:
+        raise _Invalid(f"invalid_field:{body_key}")
+    if n > limits.MAX_ITER:
+        suggestion = None
+        if kind == "repeat":
+            try:
+                cmds = [_to_command(x, depth + 1) for x in body]
+                suggestion = talkback.words(RepeatCommand(limits.MAX_ITER, cmds), say=True)
+            except (_Invalid, _NeedColour):
+                pass
+        raise _Invalid(f"too_many_iterations:{n}", out_of_bounds=True, suggestion=suggestion)
+    cmds = [_to_command(x, depth + 1) for x in body]
+    if kind == "repeat":
+        return RepeatCommand(n, cmds)
+    return UntilSeeCommand(cls, color, cmds, n)
+
+
+def _count(a: Dict, name: str, default: Optional[int]) -> int:
+    v = a.get(name)
+    if v is None and default is not None:
+        return default
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        raise _Invalid(f"invalid_field:{name}")
+    if v != int(v) or v < 1:
+        raise _Invalid(f"invalid_field:{name}")
+    return int(v)
 
 
 def _number(a: Dict, name: str, lo: Optional[float] = None,
@@ -591,4 +710,12 @@ def _describe(c) -> str:
         return "chat"
     if isinstance(c, LookCommand):
         return f'look("{c.question}")'
+    if isinstance(c, DistanceMoveCommand):
+        extra = "".join(f", {k}={_fmt(v)}" for k, v in (("vy", c.vy), ("wz", c.wz)) if v)
+        return f"move(vx={_fmt(c.vx)}{extra}, {c.distance_m:.1f} m)"
+    if isinstance(c, RepeatCommand):
+        return f"repeat({c.times}x: {', '.join(_describe(x) for x in c.actions)})"
+    if isinstance(c, UntilSeeCommand):
+        return (f"until_see(class={c.object_class}, color={c.color or '-'}, max_iter={c.max_iter}: "
+                f"{', '.join(_describe(x) for x in c.actions)})")
     return str(c)
