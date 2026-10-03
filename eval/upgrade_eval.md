@@ -392,7 +392,7 @@ they are still recorded (YOLO only).
 | mock end-to-end runs (4 × ~12 qwen-flash calls; not logged, estimated from token counts) | ~$0.0075 |
 | **total** | **~$0.386** (budget US$0.90; stop at US$0.80) |
 
-## Real-sim demo script (for whoever records it; untested on the real sim)
+## Real-sim demo script (similar scenarios passed in the S5 real-sim run; this exact sequence is untested)
 
 Fresh launch (`eval/run_env.sh main.py --gui`; the robot spawns at the origin facing +x, the
 rough-terrain track starts at x ≈ 1.5 m ahead, the red stop sign is at (−1.3, 0) behind). Type
