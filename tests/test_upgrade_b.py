@@ -898,6 +898,46 @@ def test_v4_stays_frozen():
         "00d843d96765e6e9f12aef63fb856f1f57dccc638ff15bc80c1f2979ac4da29d"
 
 
+def test_v5_stays_frozen():
+    from eval.prompt_v5 import SYSTEM_PROMPT_V5
+    assert hashlib.sha256(SYSTEM_PROMPT_V5.encode()).hexdigest() == \
+        "9e23df0580f8e63ece687ec59541cfde62013aeb58153496356046e1acb45c03"
+
+
+def test_v5_1_is_v5_plus_one_language_rule():
+    """v5.1 changes nothing in v5 but adds the misspelt-English rule."""
+    from eval.prompt_v5 import SYSTEM_PROMPT_V5
+    v51 = llm_parser.SYSTEM_PROMPT
+    start = v51.index("- Misspelt, misheard or garbled ENGLISH")
+    end = v51.index("- Limits:", start)
+    assert v51[:start] + v51[end:] == SYSTEM_PROMPT_V5
+
+
+def _norm(text):
+    return " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split())
+
+
+def test_noise_set_is_novel():
+    """Set N (eval/noise_cases.py) shares no phrasing with the Hard set,
+    the Standard set or any prompt's few-shot examples, and no N utterance
+    occurs in any prompt (v1-v5.1)."""
+    from eval.noise_cases import NOISE_CASES
+    from eval.hard_cases import HARD_CASES
+    from eval import task3_eval
+    seen = set()
+    for _, _, setup, text, _ in list(HARD_CASES) + list(task3_eval.CASES):
+        seen.add(_norm(text))
+        seen.update(_norm(s[0] if isinstance(s, tuple) else s) for s in setup)
+    prompts = [_norm(p) for p in task3_eval.PROMPTS.values()]
+    for p in task3_eval.PROMPTS.values():
+        if "Examples:" in p:
+            seen.update(_norm(u.split("\n")[-1]) for u, _ in _prompt_examples(p))
+    assert len(NOISE_CASES) == 24
+    for cid, _, _, text, _ in NOISE_CASES:
+        assert _norm(text) not in seen, cid
+        assert not any(_norm(text) in p for p in prompts), cid
+
+
 def test_v5_examples_validate():
     for user, reply in _prompt_examples(llm_parser.SYSTEM_PROMPT):
         r = llm_parser._validate(reply)

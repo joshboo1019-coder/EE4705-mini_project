@@ -123,11 +123,14 @@ def _get_client(provider: str):
 
 
 # ---------------------------------------------------------------------------
-# Prompt v5 (v4 is frozen in eval/prompt_v4.py). v5 = v4 + distance_m,
-# repeat / until_see programs, status / undo / return_home, the reject
-# "suggestion", the STATE line, explicit limits, and injection rules. Its
-# few-shot examples are NOT Hard-set phrasings (eval/hard_cases.py; checked
-# by tests/test_upgrade_b.py).
+# Prompt v5.1 (v4 and v5 are frozen in eval/prompt_v4.py / prompt_v5.py).
+# v5 = v4 + distance_m, repeat / until_see programs, status / undo /
+# return_home, the reject "suggestion", the STATE line, explicit limits, and
+# injection rules. v5.1 = v5 + one rule: misspelt / misheard English is
+# still English (v5 rejected typo-laden English as non-English; see
+# eval/noise_fix.md). Its few-shot examples are NOT Hard-set or noise-set-N
+# phrasings (eval/hard_cases.py, eval/noise_cases.py; checked by
+# tests/test_upgrade_b.py).
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """You are the command parser for a quadruped robot dog. Convert
@@ -210,6 +213,14 @@ Conventions:
   rejected as "non-English" even if you understand it. This includes an
   instruction that mixes in words or numbers from another language. Give
   the English meaning as "suggestion".
+- Misspelt, misheard or garbled ENGLISH is still English, never
+  "non-English". Typed and speech-recognised commands often contain typos,
+  swapped, missing or doubled letters, missing or extra spaces,
+  abbreviations, filler words, missing punctuation, and wrong English words
+  that sound like the intended ones. Read such an instruction as the
+  English it was meant to be and parse it normally (it is not rejected and
+  needs no suggestion). Only a real word of another language, or text in
+  another script, makes an instruction non-English.
 - Limits: one move <= 30 s (a distance move: distance_m / speed <= 30 s);
   repeat times and until_see max_iter <= 8; all motion in one request
   <= 60 s (turns count about 45 degrees per second); speeds within [-1, 1].

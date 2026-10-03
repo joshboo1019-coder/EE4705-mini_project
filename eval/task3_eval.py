@@ -233,7 +233,8 @@ CASES = [
 # ---------------------------------------------------------------------------
 
 PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": SYSTEM_PROMPT_V3,
-           "v4": SYSTEM_PROMPT_V4, "v5": SYSTEM_PROMPT_V5}
+           "v4": SYSTEM_PROMPT_V4, "v5": SYSTEM_PROMPT_V5,
+           "v5.1": llm_parser.SYSTEM_PROMPT}   # the current prompt
 
 
 class QuotaExhausted(Exception):
@@ -647,7 +648,7 @@ def main():
     if args.set == "standard" and not args.out and (args.report or args.services):
         services = [s for s in llm_parser.SERVICES
                     if any((RESULTS_DIR / p / f"{s}.jsonl").is_file() for p in PROMPTS)]
-        md = report(services, prompts=("v1", "v2", "v3", "v4", "v5"))
+        md = report(services, prompts=("v1", "v2", "v3", "v4", "v5", "v5.1"))
         (RESULTS_DIR / "summary.md").write_text(md + "\n")
         print("\n" + md)
 
