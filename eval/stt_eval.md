@@ -44,3 +44,29 @@ Scoring: English rows pass if the parsed command passes the typed-eval checker; 
   rather than a robust path for a 3-word phrase.
 - **Latency is dominated by the LLM**, not STT: whisper small on the GPU takes about 0.1 s, the parse about
   0.4–0.8 s more. A user also waits for the recorder's 1 s silence timeout after speaking.
+
+## Follow-up: `initial_prompt` with the command vocabulary (adopted)
+
+After the session above, faster-whisper's `initial_prompt` was set to a short command vocabulary
+(`speech_input.WHISPER_PROMPT`: walk, turn, left, right, forward, back, sidestep, shuffle, seconds, degrees,
+chair, ball, stop sign, green, red, orange). The same 12 saved WAVs were re-transcribed offline: no
+re-recording and no LLM calls, the same model and decoding settings, and only `initial_prompt` changed. The
+tables above are the original run, without the prompt.
+
+| Id | Without prompt | With prompt | WER before → after | lang / p (both) |
+|---|---|---|---|---|
+| L1 | Side step to a left for two seconds | sidestep to a left for 2 seconds | 43% → 14% | en / 0.98 |
+| L2 | Shuffle rights for one second | shuffle right for one second | 20% → **0%** | en / 0.95 |
+| X2 (French) | Avian's Toad droid | avians toward droids | n/a | en / **0.56** (unchanged) |
+| the other 9 | same words; only the casing, punctuation and number format differ (M3 "two" → "2") | | 0% → 0% | unchanged |
+
+- **Pooled English WER: 6.9% → 1.7%** (4 → 1 word errors / 58). The one error left is L1's "to a left" vs
+  "to your left". No utterance got worse. STT latency is unchanged (about 0.1 s).
+- **L2:** the transcript is now exactly the reference. The parser accepted this string ("Shuffle right for one
+  second") 2 of 2 times in the earlier offline retries, so L2 should now pass end-to-end. That wasn't re-run
+  here, because this check was offline only.
+- **Language probabilities are identical** for all 12 clips. faster-whisper detects the language before
+  decoding, and that step doesn't use the prompt. So the French clip is still identified as English
+  (p = 0.56), and its rejection still relies on the LLM. The prompt doesn't fix that weak path.
+- Caveat: a vocabulary prompt can bias Whisper towards those words on noise or near-silence. The VAD filter
+  limits that, but this 12-clip set from one speaker doesn't test it.

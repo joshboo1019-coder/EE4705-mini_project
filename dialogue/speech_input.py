@@ -34,6 +34,10 @@ SKIP_START_S = 0.5             # the device "pops" for ~0.5 s when opened
 SPEECH_DBFS = -32.0            # frame counts as speech above this (room noise is ~-41 dBFS)
 NON_EN_MIN_PROB = 0.5          # reject only if non-English with at least this confidence
 WHISPER_MODEL = "small"        # multilingual
+# Biases decoding towards the command words (eval/stt_eval.md, "initial_prompt").
+# Language ID runs before decoding and does not see it.
+WHISPER_PROMPT = ("walk, turn, left, right, forward, back, sidestep, shuffle, seconds, degrees, "
+                  "chair, ball, stop sign, green, red, orange")
 
 Transcript = Tuple[str, str, float]   # text, language code, language probability
 
@@ -124,7 +128,8 @@ class WhisperTranscriber:
         if self._model is None:
             self._load()
         segments, info = self._model.transcribe(
-            audio, beam_size=5, vad_filter=True, condition_on_previous_text=False)
+            audio, beam_size=5, vad_filter=True, condition_on_previous_text=False,
+            initial_prompt=WHISPER_PROMPT)
         text = " ".join(s.text.strip() for s in segments).strip()
         return text, info.language, float(info.language_probability)
 
