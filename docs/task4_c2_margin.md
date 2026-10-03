@@ -88,3 +88,20 @@ n = 1 trial per scenario per run; the final e2e run (P4) repeats S3 once more wi
 (`_target_center_world_height`, `data.xpos`), i.e. ground truth in the control path — see docs/TEAM_HANDOFF.md.
 
 Regenerate: `python tools/c2_margin_analysis.py eval/e2e/results/20261004-0101_baseline eval/e2e/results/20261004-0111_p2a_task4_via_main --json docs/report_assets/c2_margin/before_range_errors.json --plot docs/report_assets/c2_margin/before_range_errors.png`
+
+## Repeated runs: n = 3 per scenario (added 2026-10-04 03:30)
+
+Two more S3 runs on each side, fresh launch each (baseline = merged-main code; final = `b/overnight-all`, which
+includes this branch). Full table: `eval/e2e/S3_n3.md` / `eval/e2e/COMPARISON.md` on `b/overnight-all`.
+
+| Class | Baseline (3 runs) | Final (3 runs) |
+|---|---|---|
+| chair (scenarios 1, 3, 4, 8) | strict **0/12**: all 12 "SUCCESS" at true 0.83–0.99 m (mean 0.89) | strict **7/12**: 9 SUCCESS at mean 0.76 m (2 still > 0.80 m: scenario 1 after a re-acquire), 3 `stop_verification` (all scenario 4) |
+| sports ball (2, 7) | 6/6, mean 0.66 m | 6/6, mean 0.64 m |
+| stop sign (5, 6, 9) | 0/9 (never detected) | 0/9 (never detected) |
+| **all (incl. 10, absent target)** | **9/30 (30 %)** | **16/30 (53 %)** |
+
+Scenario 3 (green chair) and 8 (blue chair) went from 0/3 to 3/3. Scenario 4 (red chair approached from the side,
+"walk over to the red chair") went from three far "SUCCESS" stops (0.84–0.88 m) to three `stop_verification`
+failures at 0.57–0.60 m: the last step overshoots and the frame-filling chair isn't confirmed in the stop frame.
+That case needs C's verification or step-size change (docs/TEAM_HANDOFF.md, C4), not a different margin.
