@@ -22,10 +22,10 @@
 | P2g Video_Task4 candidates | ✅ 3 takes via `main.py --scenario`, true d 0.60–0.70 m | `~/Videos/candidates/` |
 | P3 B upgrades | ✅ talk-back, repeat/until_see, distance_m, bounds, e-stop fast path, state/status/undo/return_home, v5; Hard set (71, held out) qwen 86 %, gemini 100 %, nano 70 %; injection: **0** unsafe passed; `if_see` not done | `b/upgrade`, `eval/upgrade_eval.md` |
 | P4 integrate + final e2e | ✅ S1 same, S2 7/7, **S3 5/10**, S4 3/3 + 2/2 strict, **S5 7/7**; one v5 regression found by S2 and fixed | `eval/e2e/COMPARISON.md` |
-| P5 typed demo | DEMO_STATUS | `~/Videos/Video_Bonus_typed_auto.mp4` |
+| P5 typed demo | ⚠️ recorded (288 s, 8 segments, frames checked); segment 3's `until_see` works but the green-chair goto failed at close range in both takes (take 1 = primary; take 2 also kept) | `~/Videos/Video_Bonus_typed_auto.mp4` |
 | P6 docs | ✅ `docs/B_code_walkthrough.md` (+15 viva Q&A), `docs/TEAM_HANDOFF.md`, this brief | `b/overnight-all` |
 | Extra: v5 noise fix | ❌ v5.1 trades rejections for typo tolerance → keep v5; branch unmerged | `b/v5-noise`, `eval/noise_fix.md` |
-| Stretch: hard scene | S6_STATUS | `assist/hard-scene`, `docs/hard_scene.md` |
+| Stretch: hard scene | ✅ built + run: S6 3/6 (two green chairs → timeout; red box → 0.88 m; occluded sign not found as expected) | `assist/hard-scene`, `docs/hard_scene.md`, COMPARISON.md |
 
 ## Decisions for you (my recommendation first)
 
@@ -49,7 +49,7 @@
 · `chore/cli-tests` · `chore/repro-zip` · `docs/b-walkthrough` · not merged: `assist/stopsign`, `b/v5-noise`,
 `assist/hard-scene`.
 
-## API spend: SPEND_TOTAL of US$2.00 (cap 1.80) — breakdown in STATUS.md
+## API spend: ≈ US$0.55 of US$2.00 (cap 1.80) — breakdown in STATUS.md
 
 ## Videos (none in the repo)
 
@@ -59,7 +59,9 @@
 - Video_Task4 candidates: `~/Videos/candidates/Video_Task4_candidate_{a,b,c}.mp4` — (a) blue chair hidden at
   start → `[SEARCH]` → `[FOUND] class=chair color=blue … d=0.70 m`; (b) green chair among red/blue →
   `[FOUND] … d=0.68 m`; (c) "please head over to the orange ball" → `[FOUND] … d=0.60 m`.
-- Typed bonus demo: `~/Videos/Video_Bonus_typed_auto.mp4` (8 segments, frames + timings next to it).
+- Typed bonus demo: `~/Videos/Video_Bonus_typed_auto.mp4` (= take 1; 8 segments; per-segment frames, timings and the
+  terminal log as `Video_Bonus_typed_auto_take1_*`); take 2 next to it; take 3 aborted (its return-home path would
+  have crossed the red sign pole).
 
 ## Cue sheets (full versions in `eval/video_bonus.md`)
 

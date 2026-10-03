@@ -10,7 +10,11 @@ Updated at least hourly on `b/overnight-all`. Times are SGT.
 | P2b runs (2 × S3) + stopsign S3 | ~0.002 | |
 | P3 (b/upgrade) evals, incl. Gemini Hard | ~0.386 | eval/upgrade_eval.md spend table |
 | e2e S5 dry run + P5 dry run (~25 calls) | ~0.003 | |
-| **Total so far** | **~0.40** | updated 02:10 (cap 1.80) |
+| B fixes re-checks (snapfix + walkthrough fixes: Standard + Hard qwen) | ~0.036 | eval/results/snapfix, eval/results/fixes |
+| v5 noise fix (agent) | ~0.081 | eval/noise_fix.md |
+| all e2e runs + demo takes since 02:10 (~250 parser calls, ~25 VLM) | ~0.04 | estimate |
+| **Total so far** | **~0.55** | updated 03:05 (cap 1.80) |
+| Extra: S3 repetitions ×4 (n=3 per side) | in progress | |
 
 ## Items
 
@@ -27,9 +31,9 @@ Updated at least hourly on `b/overnight-all`. Times are SGT.
 | P2f stop sign | done; **not merged** | assist/stopsign | detection 7/387 → 228/387, but e2e S3 5/10 vs 6/10 without (chair lost near signs → collision; elevated range uncalibrated). Documented on the branch. |
 | P2g Video_Task4 candidates | done 01:37 | – | ~/Videos/candidates/Video_Task4_candidate_{a,b,c}.mp4 (= S3 v2 clips 08/03/07: search→blue chair 0.70 m; green chair among red/blue 0.68 m; orange ball paraphrase 0.60 m) |
 | P3 B upgrades | done 02:00 (agent) | b/upgrade | talk-back, repeat/until_see, closed-loop distance_m, bounds, stop fast path, state/status/undo/return_home, prompt v5; Standard v4→v5: qwen 45/45→45/45, nano 43→42, gemini 45→45; Hard (71, held out): qwen 86 %, nano 70 %, gemini 100 %, v4-qwen 83 %; injection: 0 unsafe passed the validator. Regression: noise (typos) 8/8→4/8 on qwen (fix attempt on b/v5-noise). S5 dry run on the real sim 7/7. 250 tests pass on b/overnight-all. |
-| P4 integrate + full e2e | final run in progress (02:06) | b/overnight-all | merged: cli-tests, task4-via-main, c2-margin, task2-evidence, repro-zip, b/upgrade (not stopsign): 250 passed + 1 xfail |
-| P5 typed demo | dry run OK (282 s, 8 segments) | – | final take after the P4 run |
-| P6 documents | in progress | b/overnight-all | TEAM_HANDOFF draft committed; B_code_walkthrough by agent (docs/b-walkthrough) |
+| P4 integrate + full e2e | done 02:37 | b/overnight-all | final `20261004-0221_final`: S1 same, S2 7/7, S3 5/10 (baseline 3/10), S4 look 3/3 + multi-goal 2/2 strict, S5 7/7; first final run found a v5 STATE regression (S2 step e) → fixed `e06968e`; walkthrough fixes `1f7c9c4` + delta run S2 7/7, S5 8/8; COMPARISON.md; highlights.mp4 (151 s) |
+| P5 typed demo | done 03:00 | – | ~/Videos/Video_Bonus_typed_auto.mp4 (take 1; segment 3 goto failed at close range in both takes) |
+| P6 documents | done (final polish pending) | b/overnight-all | B_code_walkthrough.md (846 lines, 15 viva Q&A), TEAM_HANDOFF.md, MORNING_BRIEF.md |
 
-| Extra: v5 noise fix | in progress (agent) | b/v5-noise | new held-out noise set first, then a general rule fix; not merged |
-| Extra: hard scene (stretch) | in progress (agent) | assist/hard-scene | scene + S6 plumbing offline; recorded S6 later |
+| Extra: v5 noise fix | done, **not recommended** | b/v5-noise | new held-out set N first; v5.1 noise 31→38/42 but non-English executed 6→12/30 (qwen) → keep v5 |
+| Extra: hard scene (stretch) | done | assist/hard-scene | S6 3/6; default vs hard table in COMPARISON.md |
