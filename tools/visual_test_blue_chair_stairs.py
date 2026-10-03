@@ -33,11 +33,15 @@ already done. This version instead:
      _estimated_target_position, imported directly rather than
      reimplemented), so these numbers are computed exactly the same way
      Task 4's own [RANGE] logging works everywhere else.
-  3. Once at the peak, hands off to navigation.goto_object() for the final
-     centered approach/stop/[FOUND] check -- the same state machine used
-     for every other graded object, so the actual detection-to-stop
-     behavior this is graded on still runs for real at the end, it just
-     isn't the only point in the run where detection happens.
+  3. Stops just short of the peak (2.9, 2.0), NOT at blue_chair's own
+     (3.45, 2.0) -- see CLIMB_WAYPOINTS' own comment below for why a real
+     run climbing straight to the chair's exact coordinates got the robot
+     physically wedged against its collision geometry. From there, hands
+     off to navigation.goto_object() for the final centered approach/
+     stop/[FOUND] check -- the same state machine used for every other
+     graded object, so the actual detection-to-stop behavior this is
+     graded on still runs for real at the end, it just isn't the only
+     point in the run where detection happens.
 
 climb_stairs() itself is unchanged/untouched -- this only calls it more
 than once, at shorter intervals, instead of once straight to the peak.
@@ -77,8 +81,23 @@ WIDTH_LIMIT = 0.8
 # enough that each climb_stairs() call covers a couple of risers at most --
 # this is what makes "track distance while climbing" possible at all,
 # since climb_stairs() itself is a single blocking call with no per-step
-# callback. The last waypoint IS the peak, where blue_chair sits.
-CLIMB_WAYPOINTS = [(1.5, 2.0), (2.5, 2.0), (3.45, 2.0)]
+# callback.
+#
+# IMPORTANT: the last waypoint is deliberately (2.9, 2.0), NOT (3.45, 2.0)
+# -- blue_chair's own body is placed at EXACTLY (3.45, 2.0, 0.4) (see
+# custom_scene.xml's <body name="blue_chair" pos="3.45 2.0 0.4">). A real
+# run climbing straight to (3.45, 2.0) walked the robot directly into the
+# chair's own solid collision geometry and got it physically wedged there
+# -- trunk_z held steady around 0.70-0.72 m (not collapsing, so not a
+# fall) while "dist remaining" stuck at 0.47 m for 3 segments running,
+# which is climb_stairs()'s own stuck-detection correctly catching a robot
+# jammed against something solid, not a locomotion failure. Stopping at
+# (2.9, 2.0) instead leaves ~0.55 m of clearance before the chair's own
+# footprint, and goto_object() below -- which already stops on its own at
+# config.FOUND_DISTANCE_M (0.8 m) -- handles closing the remaining
+# distance safely instead of climb_stairs() trying to drive through the
+# object it's supposed to stop in front of.
+CLIMB_WAYPOINTS = [(1.5, 2.0), (2.5, 2.0), (2.9, 2.0)]
 
 
 def _log_blue_chair_range(stage: str, skills, perception) -> None:
@@ -190,8 +209,8 @@ def main() -> None:
                 return
             _log_blue_chair_range(f"at_{waypoint}", skills, perception)
 
-        print("\n>>> At the peak -- handing off to goto_object() for the "
-              "final centered approach/stop...\n")
+        print("\n>>> Just short of the chair -- handing off to goto_object() "
+              "for the final centered approach/stop...\n")
         success = navigation.goto_object("chair", "blue", skills, perception)
 
         print(f"\ngoto_object returned success={success}")
