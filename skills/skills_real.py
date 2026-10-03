@@ -593,6 +593,26 @@ class RealSkills(SkillsAPI):
         the way set_height()'s own [HEIGHT] print does."""
         return float(self._data.qpos[2])
 
+    def get_ground_height_below(self, x: float = None,
+                             y: float = None) -> float:
+        """Diagnostic helper: the world-frame z of the ground/terrain
+        surface directly below world point (x, y) -- defaults to the
+        robot's own current (x, y) -- found via a real downward MuJoCo
+        raycast (mujoco.mj_ray), NOT assumed to be 0.0.
+        """
+        if x is None or y is None:
+            x, y = float(self._data.qpos[0]), float(self._data.qpos[1])
+        origin = np.array([x, y, 50.0])        # comfortably above any terrain
+        direction = np.array([0.0, 0.0, -1.0])  # straight down
+        geomid = np.zeros(1, dtype=np.int32)
+        dist = mujoco.mj_ray(
+            self._model, self._data, origin, direction,
+            None, 1, -1, geomid,
+        )
+        if dist < 0 or geomid[0] < 0:
+            return float("nan")
+        return float(origin[2] - dist)
+
     # ------------------------------------------------------------------
     # Terrain traversal (stairs / rough terrain). Not part of core.
     # interfaces.SkillsAPI, same reasoning as crouch()/stand()/
