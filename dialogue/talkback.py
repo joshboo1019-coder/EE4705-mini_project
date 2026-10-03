@@ -130,13 +130,13 @@ MOTION_KINDS = {"move", "move_distance", "turn", "goto_object", "stop", "repeat"
 
 def plan_line(commands) -> Optional[str]:
     """The [PLAN] line for a parsed batch: any batch with a move (timed,
-    distance, or inside a program) or with two or more actions, plus the
-    code-computed motions undo / return_home. None otherwise."""
+    distance, or inside a program) or with two or more actions. None
+    otherwise. undo / return_home get a second, concrete [PLAN] from the
+    executor when they run (computed from the action log / home pose)."""
     kinds = {kind(c) for c in commands}
-    if len(commands) >= 2 or kinds & {"move", "move_distance", "repeat", "until_see", "undo",
-                                      "return_home"}:
+    if len(commands) >= 2 or kinds & {"move", "move_distance", "repeat", "until_see"}:
         return f"[PLAN] {join(commands)}"
-    return None
+    return None     # a lone undo / return_home: the executor prints the computed [PLAN]
 
 
 # ---------------------------------------------------------------------------

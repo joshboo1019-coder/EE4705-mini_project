@@ -51,3 +51,30 @@ class UntilSeeCommand:
     actions: list
     max_iter: int
     kind: str = "until_see"
+
+
+# ---------------------------------------------------------------------------
+# Task 3 upgrade: state and repair. The LLM only SELECTS these; the executor
+# answers / computes the motion from dialogue/state.py.
+# ---------------------------------------------------------------------------
+
+STATUS_TOPICS = ("last_action", "home", "last_reject", "seen", "general")
+
+
+@dataclass
+class StatusCommand:
+    """Answer a question about the robot's own state, from the state store."""
+    topic: str = "general"
+    kind: str = "status"
+
+
+@dataclass
+class UndoCommand:
+    """Invert the last motion in the executed-action log."""
+    kind: str = "undo"
+
+
+@dataclass
+class ReturnHomeCommand:
+    """Turn to face the start, walk there closed-loop, turn to its heading."""
+    kind: str = "return_home"

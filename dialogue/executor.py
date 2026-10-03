@@ -43,8 +43,10 @@ from perception import navigation
 from dialogue import limits, runtime, talkback, vlm
 from dialogue.commands import (
     LookCommand, DistanceMoveCommand, RepeatCommand, UntilSeeCommand,
+    StatusCommand, UndoCommand, ReturnHomeCommand,
 )
-from dialogue.limits import kind
+from dialogue.limits import kind, wrap_deg
+from dialogue.state import ActionRecord, RecordingPerception, RobotState, NOT_LOGGED
 
 
 class ExecutionAborted(Exception):
@@ -91,7 +93,10 @@ class CommandExecutor:
                  vlm_fn: Callable = vlm.ask,
                  save_frame_fn: Callable = vlm.save_frame):
         self.skills = skills
-        self.perception = perception
+        # every detection anyone makes through this executor (navigation,
+        # look, until_see) is recorded in the state store — YOLO only
+        self.state = RobotState()
+        self.perception = RecordingPerception(perception, self.state, self._pose)
         self.queue = queue
         self.goto_object_fn = goto_object_fn
         self.vlm_fn = vlm_fn
@@ -101,6 +106,7 @@ class CommandExecutor:
         self._batch_estop = 0       # _estop_count when the running batch started
         self._busy = False
         self._motion = _AbortableSkills(skills, self._aborted)
+        self._pose()              # the first pose seen is "home"
         runtime.bind(queue, self)
 
     # ------------------------------------------------------------------
@@ -160,6 +166,7 @@ class CommandExecutor:
         t0 = time.time()
         n = len(batch)
         done = 0
+        batch_id = self.state.new_batch()
         trace = talkback.BatchTrace(kinds=[kind(c) for c in batch], pose_before=self._pose())
         # Two or more goto_object actions in one utterance form a multi-goal
         # mission: each goal is reported, a goal that isn't reached is
@@ -170,18 +177,22 @@ class CommandExecutor:
         for i, cmd in enumerate(batch, start=1):
             # This runs on the main thread: a skill or navigation error must
             # not kill the program, so it ends this batch and nothing more.
+            pose_before = self._pose()
             try:
                 self._check_abort()
-                reached = self._exec_one(cmd, i, n)
+                reached = self._exec_one(cmd, i, n, trace)
             except ExecutionAborted:
                 print(f"[EXEC] action={i}/{n} aborted reason=emergency_stop")
                 trace.aborted_at = i
+                self._log(batch_id, cmd, pose_before, completed=False)
                 break
             except Exception as e:
                 print(f"[EXEC] action={i}/{n} failed reason={_short_error(e)}")
                 self._safe_stop()
                 trace.failed = (i, _short_error(e, limit=40))
+                self._log(batch_id, cmd, pose_before, completed=False)
                 break
+            self._log(batch_id, cmd, pose_before, completed=True, result=reached)
             done += 1
             if isinstance(cmd, GotoObjectCommand):
                 trace.goals.append((_target(cmd), bool(reached)))
@@ -210,11 +221,23 @@ class CommandExecutor:
             print(f"Robot: {line}")
 
     def _pose(self):
-        """Pose for the talk-back trace; None if the skills can't say."""
+        """Current pose (also kept in the state store); None if the skills
+        can't say."""
         try:
-            return self.skills.get_robot_pose()
+            pose = self.skills.get_robot_pose()
         except Exception:
             return None
+        self.state.update_pose(pose)
+        return pose
+
+    def _log(self, batch_id, cmd, pose_before, completed, result=None) -> None:
+        if kind(cmd) in NOT_LOGGED:
+            return
+        if isinstance(cmd, UndoCommand) and getattr(cmd, "_undid", None) is None:
+            return            # nothing was undone, nothing moved
+        self.state.record_action(ActionRecord(
+            batch=batch_id, command=cmd, pose_before=pose_before, pose_after=self._pose(),
+            completed=completed, result=result, is_undo=isinstance(cmd, UndoCommand)))
 
     def _look(self, question: str) -> None:
         """Visual QA on ONE frame: YOLO's [DETECT] lines and the VLM answer
@@ -237,7 +260,7 @@ class CommandExecutor:
         except Exception as e:
             print(f"[EXEC] stop after failure also failed reason={_short_error(e)}")
 
-    def _exec_one(self, cmd, i: int, n: int):
+    def _exec_one(self, cmd, i: int, n: int, trace=None):
         """Runs one command; returns goto_object's result (True = reached),
         or (seen, iterations) for until_see. Steps inside a program are run
         through here too and log with their top-level action number."""
@@ -276,6 +299,17 @@ class CommandExecutor:
                     self._exec_one(c, i, n)
         elif isinstance(cmd, UntilSeeCommand):
             return self._until_see(cmd, i, n)
+        elif isinstance(cmd, StatusCommand):
+            print(f"[EXEC] action={i}/{n} status topic={cmd.topic}")
+            print(f"Robot: {self.state.answer(cmd.topic)}")
+        elif isinstance(cmd, UndoCommand):
+            self._undo(cmd, i, n, trace)
+        elif isinstance(cmd, ReturnHomeCommand):
+            home = self.state.home
+            print(f"[EXEC] action={i}/{n} return_home")
+            if home is None:
+                raise RuntimeError("no home pose recorded")
+            self._go_to_pose(home, "return home")
         else:
             print(f"[EXEC] action={i}/{n} unknown command skipped: {cmd}")
 
@@ -305,6 +339,81 @@ class CommandExecutor:
                 self._exec_one(c, i, n)
         print(f"[UNTIL] not seen after {cmd.max_iter} iteration(s)")
         return False, cmd.max_iter
+
+    # ------------------------------------------------------------------
+    # repair: undo / return_home (motion computed by code from the log)
+    # ------------------------------------------------------------------
+
+    def _undo(self, cmd: UndoCommand, i: int, n: int, trace) -> None:
+        """Invert the last undoable record: a turn turns back by the
+        opposite angle; a straight move (timed or distance, no wz) walks
+        back the distance it actually covered at the reversed velocity,
+        then restores the heading; anything else (goto_object, a program,
+        a curved move, return_home) goes back to the pose before it."""
+        rec = self.state.last_undoable()
+        if rec is None:
+            print(f"[EXEC] action={i}/{n} undo nothing_to_undo")
+            if trace is not None:
+                trace.notes.append("there was nothing to undo")
+            print("Robot: There's nothing to undo.")
+            return
+        c = rec.command
+        print(f"[EXEC] action={i}/{n} undo of={rec.words()}")
+        cmd._undid = rec
+        if rec.kind == "turn":
+            print(f"[PLAN] undo: {talkback.words(TurnCommand(-c.angle_deg))}")
+            self._motion.turn(-c.angle_deg)
+        elif rec.kind in ("move", "move_distance") and abs(c.wz) < 0.05:
+            p0, p1 = rec.pose_before, rec.pose_after
+            dist = math.hypot(p1.x - p0.x, p1.y - p0.y) if p0 and p1 else 0.0
+            s = -1.0 if getattr(c, "distance_m", 1.0) < 0 else 1.0
+            back = DistanceMoveCommand(-c.vx * s, -c.vy * s, 0.0, round(dist, 2))
+            steps = [back] if dist >= 0.05 else []
+            fix = wrap_deg(p0.yaw_deg - self.skills.get_robot_pose().yaw_deg) if p0 else 0.0
+            if abs(fix) > 3.0:
+                steps.append(TurnCommand(round(fix, 1)))
+            print(f"[PLAN] undo: {talkback.join(steps) if steps else 'nothing moved'}")
+            if dist >= 0.05:
+                self._walk_distance(back.vx, back.vy, 0.0, back.distance_m)
+            if abs(fix) > 3.0:
+                self._motion.turn(round(fix, 1))
+        else:
+            if rec.pose_before is None:
+                raise RuntimeError("no pose recorded before that action")
+            self._go_to_pose(rec.pose_before, "undo")
+        rec.undone = True
+
+    def _go_to_pose(self, target, label: str, speed: float = limits.NORMAL_SPEED) -> None:
+        """Turn to face `target`, walk the straight-line distance closed-loop,
+        turn to its heading. Prints the computed [PLAN] first."""
+        p = self.skills.get_robot_pose()
+        dist = math.hypot(target.x - p.x, target.y - p.y)
+        steps = []
+        heading = p.yaw_deg
+        if dist > 0.15:
+            bearing = math.degrees(math.atan2(target.y - p.y, target.x - p.x))
+            face = round(wrap_deg(bearing - p.yaw_deg), 1)
+            if abs(face) > 2.0:
+                steps.append(TurnCommand(face))
+            steps.append(DistanceMoveCommand(speed, 0.0, 0.0, round(dist, 2)))
+            heading = bearing
+        final = round(wrap_deg(target.yaw_deg - heading), 1)
+        if abs(final) > 2.0:
+            steps.append(TurnCommand(final))
+        print(f"[PLAN] {label}: {talkback.join(steps) if steps else 'already there'}")
+        for st in steps:
+            self._check_abort()
+            if isinstance(st, DistanceMoveCommand):
+                self._walk_distance(st.vx, st.vy, st.wz, st.distance_m)
+            elif st is steps[0] and len(steps) > 1:
+                self._motion.turn(st.angle_deg)          # face the target
+        # the final heading is computed from where the robot actually ended
+        # up (the plan's last turn assumed a perfect walk)
+        p = self.skills.get_robot_pose()
+        err = round(wrap_deg(target.yaw_deg - p.yaw_deg), 1)
+        if abs(err) > 2.0:
+            self._check_abort()
+            self._motion.turn(err)
 
     def _sees(self, object_class: str, color: str):
         frame = self.skills.get_camera_frame()

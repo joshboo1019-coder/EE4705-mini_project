@@ -31,6 +31,7 @@ from core import config
 from dialogue import limits, talkback
 from dialogue.commands import (
     LookCommand, DistanceMoveCommand, RepeatCommand, UntilSeeCommand,
+    StatusCommand, UndoCommand, ReturnHomeCommand, STATUS_TOPICS,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -243,24 +244,42 @@ class _Invalid(Exception):
         self.suggestion = suggestion
 
 
-def parse_command(user_text: str, history: List[Dict[str, str]]) -> ParseResult:
+# The robot-state snapshot for the call in flight (set by parse_command,
+# which only the chat thread calls; _call_llm keeps its 2-argument form).
+_snapshot: Optional[str] = None
+
+
+def parse_command(user_text: str, history: List[Dict[str, str]],
+                  snapshot: Optional[str] = None) -> ParseResult:
     """history is a list of {"role": "user"/"assistant", "content": str}
     PREVIOUS dialogue turns (not including user_text), maintained by
     chat_interface.py, so follow-ups like 'do that again, but slower' can
-    be resolved. Never raises: LLM/network failures come back as a
-    rejected ParseResult with reason=llm_error:<ExceptionType>."""
+    be resolved. snapshot: the compact robot state (state.RobotState
+    .snapshot()) sent in front of the utterance. Never raises: LLM/network
+    failures come back as a rejected ParseResult with
+    reason=llm_error:<ExceptionType>. Makes at most ONE LLM call."""
+    global _snapshot
     pre = precheck(user_text)
     if pre is not None:
         r = _reject(pre)
         r.precheck = True   # no LLM call was made (chat_interface may ask for a suggestion)
         return r
+    _snapshot = snapshot
     try:
         raw = _call_llm(user_text, history)
     except NotImplementedError:
         raise
     except Exception as e:  # network, timeout, auth, rate limit, ...
         return _reject(f"llm_error:{type(e).__name__}")
+    finally:
+        _snapshot = None
     return _to_parse_result(raw)
+
+
+def user_message(user_text: str, snapshot: Optional[str]) -> str:
+    """The user turn sent to the LLM: the robot's state line (written by
+    the robot software) and then the user's words after "USER: "."""
+    return f"{snapshot}\nUSER: {user_text}" if snapshot else user_text
 
 
 def precheck(user_text: str) -> Optional[str]:
@@ -278,7 +297,8 @@ def precheck(user_text: str) -> Optional[str]:
     return None
 
 
-def _call_llm(user_text: str, history: List[Dict[str, str]]) -> str:
+def _call_llm(user_text: str, history: List[Dict[str, str]],
+              snapshot: Optional[str] = None, response_format: Optional[Dict] = None) -> str:
     """Call config.LLM_SERVICE and return the model's raw text. Text-only,
     JSON mode on, timeout config.LLM_TIMEOUT_S, at most one retry on a
     network error or a 5xx (e.g. Gemini's 503 "high demand"). Latency / token usage land in `last_call_stats`."""
@@ -294,9 +314,10 @@ def _call_llm(user_text: str, history: List[Dict[str, str]]) -> str:
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages += [{"role": m["role"], "content": m["content"]} for m in history]
-    messages.append({"role": "user", "content": user_text})
+    messages.append({"role": "user",
+                     "content": user_message(user_text, snapshot if snapshot is not None else _snapshot)})
     params = dict(extra)
-    params["response_format"] = {"type": "json_object"}
+    params["response_format"] = response_format or {"type": "json_object"}
 
     last_call_stats.clear()
     last_call_stats.update(service=service, model=model, latency_s=None,
@@ -398,6 +419,12 @@ def _command_to_dict(c) -> Dict:
     if isinstance(c, UntilSeeCommand):
         return {"action": "until_see", "class": c.object_class, "color": c.color,
                 "do": [_command_to_dict(x) for x in c.actions], "max_iter": c.max_iter}
+    if isinstance(c, StatusCommand):
+        return {"action": "status", "topic": c.topic}
+    if isinstance(c, UndoCommand):
+        return {"action": "undo"}
+    if isinstance(c, ReturnHomeCommand):
+        return {"action": "return_home"}
     raise TypeError(f"unknown command {c!r}")
 
 
@@ -468,7 +495,17 @@ def _which(cls: str) -> str:
 # only. look (a VLM call per iteration), chat, stop and the code-computed
 # motions stay top-level.
 _PROGRAM_BODY = {"move", "turn", "goto_object", "repeat", "until_see"}
-_KNOWN = _PROGRAM_BODY | {"stop", "chat", "look"}
+_KNOWN = _PROGRAM_BODY | {"stop", "chat", "look", "status", "undo", "return_home"}
+
+# status topics the model may use for the same thing
+_TOPIC_ALIASES = {
+    "last": "last_action", "action": "last_action", "actions": "last_action",
+    "history": "last_action", "what_i_did": "last_action",
+    "home": "home", "start": "home", "distance_from_start": "home", "distance": "home",
+    "position": "home", "pose": "home", "location": "home", "where": "home",
+    "reject": "last_reject", "rejection": "last_reject", "why_rejected": "last_reject",
+    "seen": "seen", "objects": "seen", "objects_seen": "seen", "detections": "seen",
+}
 
 
 def _to_command(a, depth: int = 0):
@@ -511,6 +548,17 @@ def _to_command(a, depth: int = 0):
         return GotoObjectCommand(cls, color)
     if kind in ("repeat", "until_see"):
         return _program(a, kind, depth)
+    if kind == "status":
+        topic = a.get("topic", "general")
+        if not isinstance(topic, str):
+            raise _Invalid("invalid_field:topic")
+        topic = "_".join(topic.strip().lower().split())
+        return StatusCommand(topic if topic in STATUS_TOPICS else
+                             _TOPIC_ALIASES.get(topic, "general"))
+    if kind == "undo":
+        return UndoCommand()
+    if kind == "return_home":
+        return ReturnHomeCommand()
     if kind == "stop":
         return StopCommand()
     if kind == "chat":
@@ -718,4 +766,8 @@ def _describe(c) -> str:
     if isinstance(c, UntilSeeCommand):
         return (f"until_see(class={c.object_class}, color={c.color or '-'}, max_iter={c.max_iter}: "
                 f"{', '.join(_describe(x) for x in c.actions)})")
+    if isinstance(c, StatusCommand):
+        return f"status({c.topic})"
+    if isinstance(c, (UndoCommand, ReturnHomeCommand)):
+        return c.kind
     return str(c)

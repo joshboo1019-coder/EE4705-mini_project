@@ -168,7 +168,7 @@ def handle_voice(history: List[Dict[str, str]], queue: CommandQueue,
         return llm_parser._reject("empty")
     if lang != "en" and prob >= NON_EN_MIN_PROB:
         result = llm_parser._reject("non-English")
-        chat_interface.say_rejection(result)   # no LLM call here, so no suggestion
+        chat_interface.say_rejection(result, text, queue)   # no LLM call here, so no suggestion
         chat_interface.remember(text, result, history)
         return result
     return chat_interface.handle_utterance(text, history, queue)

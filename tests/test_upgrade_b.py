@@ -572,3 +572,300 @@ def test_no_fast_path_without_a_bound_executor(fake_llm):
     fake_llm.replies.append(_actions({"action": "stop"}))
     chat_interface.handle_utterance("stop", [], CommandQueue())
     assert len(fake_llm.calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# State store: YOLO-only sightings, snapshot, status
+# ---------------------------------------------------------------------------
+
+from core.schema import Detection, RobotPose  # noqa: E402
+from dialogue.commands import StatusCommand, UndoCommand, ReturnHomeCommand  # noqa: E402
+from dialogue.state import RecordingPerception, RobotState  # noqa: E402
+
+
+class _Clock:
+    def __init__(self):
+        self.t = 1000.0
+
+    def __call__(self):
+        return self.t
+
+
+def _det(cls, color, conf=0.8):
+    return Detection(class_name=cls, color=color, conf=conf, bbox=(0, 0, 10, 10))
+
+
+def test_recording_perception_dedups_and_keeps_first_seen_order():
+    clock = _Clock()
+    st = RobotState(clock=clock)
+    poses = iter([RobotPose(0, 0, 10), RobotPose(1, 0, 20), RobotPose(2, 0, -30)])
+
+    class Inner:
+        def __init__(self):
+            self.batches = [[_det("chair", "green")], [_det("sports ball", "orange")],
+                            [_det("chair", "green", 0.5), _det("stop sign", "red")]]
+
+        def detect(self, frame, conf_threshold=None):
+            return self.batches.pop(0)
+
+        def remember_target(self, frame, target):
+            return "delegated"
+
+    rp = RecordingPerception(Inner(), st, lambda: next(poses))
+    for _ in range(3):
+        clock.t += 5
+        rp.detect(None)
+    seen = st.sightings()
+    assert [(s.color, s.class_name, s.order) for s in seen] == [
+        ("green", "chair", 1), ("orange", "sports ball", 2), ("red", "stop sign", 3)]
+    green = seen[0]
+    assert (green.conf, green.yaw_deg, green.t_first, green.t_last) == (0.5, -30, 1005.0, 1015.0)
+    assert rp.remember_target(None, None) == "delegated"          # navigation's hooks still work
+    assert not hasattr(rp, "no_such_hook")
+
+
+def test_executor_records_what_navigation_and_look_detect(tmp_path):
+    from dialogue import vlm
+
+    def goto(cls, color, skills, perception):
+        perception.detect(skills.get_camera_frame())
+        return True
+
+    queue = CommandQueue()
+    ex = CommandExecutor(MockSkills(), MockPerception(misses_before_found=0), queue, goto_object_fn=goto,
+                         vlm_fn=lambda f, q: vlm.VLMAnswer("ok", "m", 0.1, 1, 1),
+                         save_frame_fn=lambda f: tmp_path / "f.png")
+    ex._run_batch_starting_with(GotoObjectCommand("chair", "green"))
+    assert [s.name() for s in ex.state.sightings()] == ["green chair"]
+
+
+def test_no_ground_truth_in_dialogue():
+    """config.OBJECT_POSITIONS is for navigation's [FOUND] log only: no code
+    in dialogue/ (state store, snapshot, until_see, undo, ...) touches it."""
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent / "dialogue"
+    for path in root.glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            name = getattr(node, "attr", None) or getattr(node, "id", None)
+            assert name != "OBJECT_POSITIONS", f"{path}:{node.lineno}"
+
+
+def test_snapshot_is_compact_and_complete():
+    clock = _Clock()
+    st = RobotState(clock=clock)
+    st.update_pose(RobotPose(0.0, 0.0, 90.0))                       # home faces +y
+    for k, (c, col) in enumerate([("chair", "red"), ("chair", "green"), ("sports ball", "orange"),
+                                  ("stop sign", "red"), ("stop sign", "green"), ("stop sign", "yellow"),
+                                  ("chair", "blue")]):
+        st.record_detections([_det(c, col)], RobotPose(0, 0, k))
+    from dialogue.state import ActionRecord
+    for cmd in [MoveCommand(0.8, 0, 0, 3), TurnCommand(90), GotoObjectCommand("chair", "green"),
+                TurnCommand(-45)]:
+        st.record_action(ActionRecord(1, cmd, RobotPose(0, 0, 90), RobotPose(-1.0, 2.0, 180.0), True,
+                                      result=True if cmd.kind == "goto_object" else None))
+    st.record_reject("fly to the roof", "impossible:fly", None)
+    snap = st.snapshot()
+    assert snap == (
+        "STATE: 2.2 m from start (+2.0 m ahead, +1.0 m left), heading +90 deg vs start | "
+        "last actions (oldest first): turn left 90°; go to the green chair (reached); turn right 45° | "
+        "camera has seen (first to last): red chair, green chair, orange sports ball, red stop sign, "
+        "green stop sign, yellow stop sign, ... | last rejected: \"fly to the roof\" (impossible:fly)")
+    assert len(snap) / 4 < 120                       # ~4 chars per token
+
+
+def test_empty_snapshot():
+    st = RobotState()
+    st.update_pose(RobotPose(1, 1, 30))
+    assert st.snapshot() == ("STATE: at the start pose | last actions (oldest first): none | "
+                             "camera has seen (first to last): nothing yet")
+
+
+def test_snapshot_rides_in_front_of_the_utterance(monkeypatch):
+    sent = []
+
+    class FakeClient:
+        class chat:
+            class completions:
+                @staticmethod
+                def create(model, messages, **kw):
+                    sent.append((messages, kw))
+                    msg = type("M", (), {"content": _actions({"action": "stop"})})
+                    return type("R", (), {"choices": [type("C", (), {"message": msg})], "usage": None})
+
+    monkeypatch.setattr(llm_parser, "_get_client", lambda provider: FakeClient)
+    queue = CommandQueue()
+    ex = CommandExecutor(KinematicSkills(quiet=True), MockPerception(), queue)
+    history = [{"role": "user", "content": "turn left"},
+               {"role": "assistant", "content": _actions(TURN_L)}]
+    chat_interface.handle_utterance("go to the first thing you saw", history, queue)
+    messages, kw = sent[0]
+    assert messages[0]["role"] == "system" and messages[1:3] == [
+        {"role": "user", "content": "turn left"}, {"role": "assistant", "content": _actions(TURN_L)}]
+    assert messages[3] == {"role": "user", "content": ex.state.snapshot() + "\nUSER: go to the first thing you saw"}
+    assert kw["response_format"] == {"type": "json_object"}
+    assert history[-2] == {"role": "user", "content": "go to the first thing you saw"}   # raw text only
+    assert llm_parser._snapshot is None                                                  # cleared after
+
+
+def test_status_topics_are_normalised():
+    for topic, want in [("last_action", "last_action"), ("distance_from_start", "home"),
+                        ("Objects Seen", "seen"), ("why_rejected", "last_reject"), ("weather", "general")]:
+        assert _v({"action": "status", "topic": topic}).commands == [StatusCommand(want)]
+    assert _v({"action": "status"}).commands == [StatusCommand("general")]
+    assert _v({"action": "status", "topic": 3}).reject_reason == "invalid_field:topic"
+    assert _v({"action": "repeat", "times": 2, "actions": [{"action": "undo"}]}).reject_reason == \
+        "invalid_in_program:undo"
+
+
+def test_status_answers_come_from_the_state(fake_llm, capsys):
+    skills = KinematicSkills(quiet=True)
+    per = ScenarioPerception(skills, objects=[("chair", "green", 3.0, 0.0)], quiet=True)
+    queue = CommandQueue()
+    ex = CommandExecutor(skills, per, queue)
+    history = []
+
+    def say(text, reply):
+        fake_llm.replies.append(reply)
+        chat_interface.handle_utterance(text, history, queue)
+        while not queue.empty():
+            ex._run_batch_starting_with(queue.pop(timeout=0))
+
+    say("what have you seen?", _actions({"action": "status", "topic": "seen"}))
+    say("walk forward 2 m then turn left", _actions({**FWD_1M, "distance_m": 2.0}, TURN_L))
+    say("look around", _actions({"action": "until_see", "class": "chair", "color": "green",
+                                 "do": [TURN_L], "max_iter": 4}))
+    say("fly", '{"rejected": true, "reason": "impossible:fly"}')
+    say("what did you just do?", _actions({"action": "status", "topic": "last_action"}))
+    say("how far are you from the start?", _actions({"action": "status", "topic": "home"}))
+    say("why did you reject that?", _actions({"action": "status", "topic": "last_reject"}))
+    say("what have you seen?", _actions({"action": "status", "topic": "seen"}))
+    robot = [l for l in _lines(capsys.readouterr().out, "Robot:") if not l.startswith("Robot: Done")]
+    assert robot[0] == "Robot: My camera hasn't recognised any objects yet."
+    assert robot[1] == "Robot: I can't do that: it is physically impossible for a robot dog (fly)."
+    assert robot[2] == ("Robot: I just did this: keep doing this until you see the green chair: "
+                        "turn left 90 degrees (seen). Overall I turned 90° right.")   # net of 3 x 90 left
+    assert robot[3] == ("Robot: I'm 2.0 m from where I started (2.0 m ahead, 0.0 m to the left), "
+                        "facing the way I started.")
+    assert robot[4] == ('Robot: I rejected "fly" because it is physically impossible for me (fly).')
+    assert robot[5].startswith("Robot: I've seen 1 object: the green chair, last seen 0 s ago at heading +0°")
+    # the snapshot the LLM got for the last question already knew all this
+    assert "camera has seen (first to last): green chair" in ex.state.snapshot()
+
+
+# ---------------------------------------------------------------------------
+# Repair: undo / return_home
+# ---------------------------------------------------------------------------
+
+def _kin(**kw):
+    skills = KinematicSkills(quiet=True)
+    queue = CommandQueue()
+    ex = CommandExecutor(skills, ScenarioPerception(skills, objects=[], quiet=True), queue, **kw)
+    return ex, skills, queue
+
+
+def _do(ex, *cmds):
+    ex.queue.push_many(list(cmds[1:]))
+    ex._run_batch_starting_with(cmds[0])
+
+
+def _close(p, x, y, yaw, tol=0.06):
+    return abs(p.x - x) <= tol and abs(p.y - y) <= tol and abs(wrap(p.yaw_deg - yaw)) <= 3.0
+
+
+def wrap(a):
+    return (a + 180) % 360 - 180
+
+
+def test_undo_a_turn_turns_back(capsys):
+    ex, skills, _ = _kin()
+    _do(ex, TurnCommand(90.0))
+    _do(ex, UndoCommand())
+    assert skills.turns == [90.0, -90.0]
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/1 undo of=turn left 90°" in out and "[PLAN] undo: turn right 90°" in out
+
+
+def test_undo_a_move_walks_back_what_was_actually_covered(capsys):
+    ex, skills, _ = _kin()
+    _do(ex, MoveCommand(0.8, 0.0, 0.0, 2.0))
+    _do(ex, UndoCommand())
+    out = capsys.readouterr().out
+    assert "[PLAN] undo: walk backward 1.6 m at 0.8" in out
+    assert _close(skills.get_robot_pose(), 0, 0, 0)
+
+
+def test_undo_a_sidestep_and_a_reversed_distance_move():
+    ex, skills, _ = _kin()
+    _do(ex, MoveCommand(0.0, -0.5, 0.0, 2.0))
+    _do(ex, UndoCommand())
+    assert _close(skills.get_robot_pose(), 0, 0, 0)
+    _do(ex, DistanceMoveCommand(0.8, 0.0, 0.0, -1.0))           # 1 m backwards
+    _do(ex, UndoCommand())
+    assert _close(skills.get_robot_pose(), 0, 0, 0)
+
+
+def test_undo_a_goto_goes_back_to_the_pose_before_it(capsys):
+    def goto(cls, color, skills, perception):
+        skills.turn(30.0)
+        skills.move(0.8, 0.0, 0.0, 2.5)
+        return True
+    ex, skills, _ = _kin(goto_object_fn=goto)
+    _do(ex, TurnCommand(-90.0))
+    _do(ex, GotoObjectCommand("chair", "green"))
+    _do(ex, UndoCommand())
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/1 undo of=go to the green chair (reached)" in out
+    assert "180°, then walk forward 2 m at 0.8, then turn left 150°" in out   # face, walk, re-head
+    assert _close(skills.get_robot_pose(), 0, 0, -90)
+
+
+def test_undo_twice_walks_back_the_stack_and_never_undoes_an_undo(capsys):
+    ex, skills, _ = _kin()
+    _do(ex, MoveCommand(0.8, 0.0, 0.0, 1.0))
+    _do(ex, TurnCommand(90.0))
+    _do(ex, UndoCommand())
+    _do(ex, UndoCommand())
+    assert _close(skills.get_robot_pose(), 0, 0, 0)
+    _do(ex, UndoCommand())
+    out = capsys.readouterr().out
+    assert "Robot: There's nothing to undo." in out
+    assert skills.turns == [90.0, -90.0]
+
+
+def test_return_home_after_a_wander(capsys):
+    ex, skills, _ = _kin()
+    _do(ex, TurnCommand(-60.0), MoveCommand(0.8, 0.0, 0.0, 2.0), TurnCommand(100.0),
+        MoveCommand(0.0, 0.5, 0.0, 1.0))
+    _do(ex, ReturnHomeCommand())
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/1 return_home" in out
+    plan = [l for l in out.splitlines() if l.startswith("[PLAN] return home:")]
+    assert len(plan) == 1 and "walk forward" in plan[0]
+    assert _close(skills.get_robot_pose(), 0, 0, 0)
+    assert "Robot: Done: moved" in out
+
+
+def test_return_home_then_undo_goes_back_out():
+    ex, skills, _ = _kin()
+    _do(ex, MoveCommand(0.8, 0.0, 0.0, 2.0))
+    _do(ex, ReturnHomeCommand())
+    _do(ex, UndoCommand())
+    p = skills.get_robot_pose()
+    assert _close(p, 1.6, 0.0, 0.0, tol=0.1)
+
+
+def test_return_home_when_already_home():
+    ex, skills, _ = _kin()
+    _do(ex, ReturnHomeCommand())
+    assert skills.turns == [] and skills.moves == []
+
+
+def test_parse_time_plan_for_a_batch_with_undo(fake_llm, capsys):
+    fake_llm.replies.append(_actions({"action": "undo"}, {"action": "turn", "angle_deg": -90}))
+    llm_parser.parse_command("no, the other way", [])
+    assert capsys.readouterr().out.splitlines() == [
+        "[CMD] actions=undo, turn(-90 deg) n=2", "[PLAN] undo my last motion, then turn right 90°"]
+    fake_llm.replies.append(_actions({"action": "return_home"}))
+    llm_parser.parse_command("go home", [])
+    assert capsys.readouterr().out.splitlines() == ["[CMD] actions=return_home n=1"]

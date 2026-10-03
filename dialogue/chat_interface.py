@@ -78,13 +78,16 @@ def handle_utterance(user_text: str, history: List[Dict[str, str]],
     executor = runtime.executor_for(queue)
     if executor is not None and is_stop_word(user_text):
         return _emergency_stop(executor, user_text, history, t0)
-    result = llm_parser.parse_command(user_text, history)
+    # the robot's compact state (pose vs start, last actions, YOLO sightings)
+    # goes in front of the utterance, so "the first thing you saw" can resolve
+    snapshot = executor.state.snapshot() if executor is not None else None
+    result = llm_parser.parse_command(user_text, history, snapshot=snapshot)
     if not result.accepted:
         if (result.reject_reason == "non-English" and getattr(result, "precheck", False)
                 and not getattr(result, "suggestion", None)):
             # the precheck made no LLM call, so this is still <= 1 per utterance
             result.suggestion = llm_parser.suggest_english(user_text)
-        say_rejection(result)
+        say_rejection(result, user_text, queue)
     remember(user_text, result, history)
 
     if result.accepted:
@@ -106,13 +109,18 @@ def remember(user_text: str, result, history: List[Dict[str, str]]) -> None:
     del history[:-2 * config.LLM_HISTORY_TURNS]
 
 
-def say_rejection(result) -> None:
+def say_rejection(result, user_text: str = "", queue=None) -> None:
     """`Robot: ...` right after `[CMD] rejected reason=...` (talkback.py):
     an English suggestion for non-English input, a valid alternative for an
-    out-of-range request. Templates only; the suggestion is never executed."""
-    reply = talkback.reject_reply(result.reject_reason, getattr(result, "suggestion", None))
+    out-of-range request. Templates only; the suggestion is never executed.
+    The rejection is also kept in the robot state ("why did you reject that?")."""
+    suggestion = getattr(result, "suggestion", None)
+    reply = talkback.reject_reply(result.reject_reason, suggestion)
     if reply:
         print(f"Robot: {reply}")
+    executor = runtime.executor_for(queue) if queue is not None else None
+    if executor is not None and result.reject_reason != "empty":
+        executor.state.record_reject(user_text, result.reject_reason, suggestion)
 
 
 def _emergency_stop(executor, user_text: str, history: List[Dict[str, str]],
