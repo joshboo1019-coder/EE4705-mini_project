@@ -8,10 +8,13 @@ eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
     python eval/task3_eval.py --report      # rebuild eval/results/summary.md from the logs
     python eval/task3_eval.py --set hard --services qwen-flash --prompt v5 --runs 1 --budget 0.2
         # the frozen held-out Hard set (eval/hard_cases.py) -> eval/results/hard/<prompt>/
+    python eval/task3_eval.py --set noise --services qwen-flash --prompt v5 --runs 1 --budget 0.2
+        # the frozen held-out noise set N (eval/noise_cases.py) -> eval/results/noise/<prompt>/
     python eval/task3_eval.py --spend       # running USD total of every upgrade-eval call
 
---prompt v1 / v2 / v3 / v4 are the frozen prompts in eval/prompt_v1.py ... prompt_v4.py;
-v5 is the current llm_parser.SYSTEM_PROMPT.
+--prompt v1 / v2 / v3 / v4 / v5 are the frozen prompts in eval/prompt_v1.py ...
+prompt_v5.py; the current llm_parser.SYSTEM_PROMPT is registered under its own
+version name below (PROMPTS).
 
 (If ROS's PYTHONPATH is set in your shell: `env -u PYTHONPATH .venv/bin/python ...`.)
 
@@ -43,6 +46,7 @@ from eval.prompt_v1 import SYSTEM_PROMPT_V1  # noqa: E402
 from eval.prompt_v2 import SYSTEM_PROMPT_V2  # noqa: E402
 from eval.prompt_v3 import SYSTEM_PROMPT_V3  # noqa: E402
 from eval.prompt_v4 import SYSTEM_PROMPT_V4  # noqa: E402
+from eval.prompt_v5 import SYSTEM_PROMPT_V5  # noqa: E402
 from dialogue.commands import LookCommand  # noqa: E402
 
 PING_SERVICES = ["qwen-flash", "gemini-3.8-flash", "gpt-5-nano"]
@@ -229,7 +233,7 @@ CASES = [
 # ---------------------------------------------------------------------------
 
 PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": SYSTEM_PROMPT_V3,
-           "v4": SYSTEM_PROMPT_V4, "v5": llm_parser.SYSTEM_PROMPT}
+           "v4": SYSTEM_PROMPT_V4, "v5": SYSTEM_PROMPT_V5}
 
 
 class QuotaExhausted(Exception):
@@ -397,30 +401,42 @@ def _history_for(setup, pacer, spend):
     return history, cost
 
 
-def run_hard(service, prompt, runs, case_ids, spend, out_root=None, call=None, tag=None):
-    """The frozen Hard set. Every row keeps the raw reply and the two
-    safety oracles: raw_unsafe (would the model's JSON be unsafe if run
-    as-is) and accepted_unsafe (did an out-of-bounds command pass the
-    validator; must be None)."""
+def held_out_set(set_name):
+    """(cases, states) of a frozen held-out set: "hard" (eval/hard_cases.py)
+    or "noise" (set N, eval/noise_cases.py)."""
+    if set_name == "noise":
+        from eval import noise_cases as nc
+        return nc.NOISE_CASES, nc.STATES
+    from eval import hard_cases as hc
+    return hc.HARD_CASES, hc.STATES
+
+
+def run_hard(service, prompt, runs, case_ids, spend, out_root=None, call=None, tag=None,
+             set_name="hard"):
+    """A frozen held-out set (the Hard set, or set N with set_name="noise").
+    Every row keeps the raw reply and the two safety oracles: raw_unsafe
+    (would the model's JSON be unsafe if run as-is) and accepted_unsafe (did
+    an out-of-bounds command pass the validator; must be None)."""
     from eval import hard_cases as hc
     config.LLM_SERVICE = service
     llm_parser.SYSTEM_PROMPT = PROMPTS[prompt]
-    cases = [c for c in hc.HARD_CASES if not case_ids or c[0] in case_ids]
+    all_cases, states = held_out_set(set_name)
+    cases = [c for c in all_cases if not case_ids or c[0] in case_ids]
     pacer = _Pacer(MIN_INTERVAL_S.get(service, 0.0))
-    out_dir = (out_root or RESULTS_DIR / "hard") / (tag or prompt)
+    out_dir = (out_root or RESULTS_DIR / set_name) / (tag or prompt)
     out_dir.mkdir(parents=True, exist_ok=True)
     log = out_dir / f"{service}.jsonl"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     for run in range(1, runs + 1):
         rows = []
-        print(f"\n=== HARD {service} prompt {prompt} run {run}/{runs} ({len(cases)} cases) ===")
+        print(f"\n=== {set_name.upper()} {service} prompt {prompt} run {run}/{runs} ({len(cases)} cases) ===")
         for cid, cat, setup, text, check in cases:
             history, setup_cost = _history_for(setup, pacer, spend)
-            snapshot = render_state(hc.STATES.get(cid))
+            snapshot = render_state(states.get(cid))
             r, stats, api_error = parse_once(text, history, pacer, spend, snapshot=snapshot, call=call)
             ok, why = (None, "API error") if api_error else check(r)
             rows.append(dict(
-                session=stamp, set="hard", prompt=prompt, run=run, id=cid, category=cat,
+                session=stamp, set=set_name, prompt=prompt, run=run, id=cid, category=cat,
                 text=text, snapshot=snapshot, ok=ok, why=why, api_error=api_error,
                 accepted=r.accepted, reject_reason=r.reject_reason,
                 suggestion=getattr(r, "suggestion", None),
@@ -437,7 +453,7 @@ def run_hard(service, prompt, runs, case_ids, spend, out_root=None, call=None, t
 
 
 # Every directory the Task 3 upgrade evaluation writes to (for --spend).
-UPGRADE_DIRS = ["v5", "hard", "ablation", "dev"]
+UPGRADE_DIRS = ["v5", "hard", "ablation", "dev", "noise", "v5.1"]
 
 
 def spend_total(root=None):
@@ -600,7 +616,7 @@ def main():
     ap.add_argument("--budget", type=float, default=None,
                     help="stop if any one service's estimated spend in this process exceeds USD")
     ap.add_argument("--report", action="store_true")
-    ap.add_argument("--set", choices=["standard", "hard"], default="standard")
+    ap.add_argument("--set", choices=["standard", "hard", "noise"], default="standard")
     ap.add_argument("--out", default=None, help="results root instead of eval/results[/hard]")
     ap.add_argument("--spend", action="store_true", help="print the upgrade-eval USD total")
     args = ap.parse_args()
@@ -619,9 +635,9 @@ def main():
     try:
         for prompt in args.prompt:
             for s in args.services:
-                if args.set == "hard":
+                if args.set in ("hard", "noise"):
                     run_hard(s, prompt, args.runs, set(args.cases), spend,
-                             out_root=Path(args.out) if args.out else None)
+                             out_root=Path(args.out) if args.out else None, set_name=args.set)
                     continue
                 n = run_service(s, prompt, args.runs, set(args.cases), spend)
                 print(f"\n{s} {prompt}: {n}/{args.runs} complete runs")
