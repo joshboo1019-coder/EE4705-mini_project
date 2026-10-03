@@ -26,6 +26,25 @@ _CAMERA_DOWN_PITCH_DEG = 14.0
 _CAMERA_HEIGHT_ABOVE_TRUNK_M = 0.16
 _DEFAULT_TRUNK_HEIGHT_M = 0.45
 _CAMERA_FORWARD_OFFSET_M = 0.45
+_TARGET_CENTER_OFFSETS_M = {
+    "chair": 0.44,
+    "sports ball": 0.0,
+    "stop sign": 0.50,
+}
+_DEFAULT_TARGET_CENTER_HEIGHTS_M = {
+    "green_chair": 0.44,
+    "red_chair": 0.44,
+    "orange_sports ball": 0.11,
+    "red_stop sign": 0.50,
+    "yellow_stop sign": 0.50,
+    "green_stop sign": 0.50,
+    "blue_chair": 0.84,
+}
+_CLASS_MATERIAL_TOKENS = {
+    "chair": ("chair",),
+    "sports ball": ("sports_ball", "ball"),
+    "stop sign": ("stop_sign", "sign"),
+}
 
 
 def goto_object(object_class: str, color: str,
@@ -203,7 +222,9 @@ def goto_object(object_class: str, color: str,
             initial_center_scan_complete = True
 
         pose = skills.get_robot_pose()
-        camera_height = _camera_height_above_ground(skills)
+        camera_height = _camera_height_above_ground(
+            skills, target.class_name, target.color
+        )
         if target_position is None:
             target_position = _estimated_target_position(
                 pose, target, frame.shape, camera_height
@@ -305,7 +326,13 @@ def _approach_step(skills: SkillsAPI, distance: float) -> float:
     return step_duration
 
 
-def _camera_height_above_ground(skills: SkillsAPI) -> float:
+def _camera_height_above_ground(skills: SkillsAPI, object_class: str,
+                                color: str) -> float:
+    """Return camera z minus the target center's live world-frame z."""
+    target_key = f"{color}_{object_class}"
+    target_center_z = _target_center_world_height(
+        skills, target_key, object_class
+    )
     get_trunk_height = getattr(skills, "get_trunk_height", None)
     if callable(get_trunk_height):
         try:
@@ -314,8 +341,96 @@ def _camera_height_above_ground(skills: SkillsAPI) -> float:
             pass
         else:
             if math.isfinite(trunk_height) and trunk_height > 0.0:
-                return trunk_height + _CAMERA_HEIGHT_ABOVE_TRUNK_M
-    return _DEFAULT_TRUNK_HEIGHT_M + _CAMERA_HEIGHT_ABOVE_TRUNK_M
+                camera_z = trunk_height + _CAMERA_HEIGHT_ABOVE_TRUNK_M
+                return camera_z - target_center_z
+    camera_z = _DEFAULT_TRUNK_HEIGHT_M + _CAMERA_HEIGHT_ABOVE_TRUNK_M
+    return camera_z - target_center_z
+
+
+def _target_center_world_height(skills: SkillsAPI, target_key: str,
+                                object_class: str) -> float:
+    """Read target body z from its colored geoms and add its center offset."""
+    model = getattr(skills, "_model", None)
+    data = getattr(skills, "_data", None)
+    if model is not None or data is not None:
+        if model is None or data is None:
+            raise RuntimeError(
+                "Simulator target height requires both skills._model and "
+                "skills._data"
+            )
+        target_color = target_key.split("_", 1)[0]
+        body_id = _find_target_body_id(model, target_color, object_class)
+        if body_id is None:
+            raise LookupError(
+                f"Cannot locate {target_key!r} in the compiled simulator "
+                "model by its colored geometry"
+            )
+        body_z = float(data.xpos[body_id][2])
+        center_offset = _TARGET_CENTER_OFFSETS_M[object_class]
+        center_z = body_z + center_offset
+        if not math.isfinite(center_z):
+            raise ValueError(
+                f"Non-finite world height for target {target_key!r}"
+            )
+        return center_z
+
+    # SkillsAPI test doubles do not expose simulator model/data state.
+    return _DEFAULT_TARGET_CENTER_HEIGHTS_M[target_key]
+
+
+def _find_target_body_id(model, target_color: str,
+                         object_class: str) -> int | None:
+    """Find a target body after the map loader has renamed imported bodies."""
+    geom_ids_by_body: dict[int, list[int]] = {}
+    for geom_id in range(model.ngeom):
+        material_id = int(model.geom_matid[geom_id])
+        if material_id < 0:
+            continue
+        material_name = model.mat(material_id).name
+        material_tokens = set(material_name.split("_"))
+        if target_color not in material_tokens:
+            continue
+        body_id = int(model.geom_bodyid[geom_id])
+        geom_ids_by_body.setdefault(body_id, []).append(geom_id)
+
+    candidates = []
+    class_tokens = _CLASS_MATERIAL_TOKENS[object_class]
+    for body_id, geom_ids in geom_ids_by_body.items():
+        material_names = {
+            model.mat(int(model.geom_matid[geom_id])).name
+            for geom_id in geom_ids
+        }
+        named_for_class = any(
+            token in material_name.split("_")
+            for material_name in material_names
+            for token in class_tokens
+        )
+        if named_for_class or _geometry_matches_class(
+                model, geom_ids, object_class):
+            candidates.append(body_id)
+
+    if len(candidates) > 1:
+        raise LookupError(
+            f"Multiple simulator bodies match color={target_color!r}, "
+            f"class={object_class!r}: {candidates}"
+        )
+    return candidates[0] if candidates else None
+
+
+def _geometry_matches_class(model, geom_ids: list[int],
+                            object_class: str) -> bool:
+    """Recognize Task 4 primitive props when their material is color-only."""
+    box_geoms = [
+        geom_id for geom_id in geom_ids
+        if all(float(size) > 0.0 for size in model.geom_size[geom_id])
+    ]
+    if object_class == "chair":
+        return len(box_geoms) >= 4
+    if object_class == "stop sign":
+        return len(box_geoms) == 2
+    if object_class == "sports ball":
+        return any(geom_id not in box_geoms for geom_id in geom_ids)
+    return False
 
 
 def _estimated_planar_distance(pose: RobotPose, detection,
@@ -325,7 +440,11 @@ def _estimated_planar_distance(pose: RobotPose, detection,
                                    + _CAMERA_HEIGHT_ABOVE_TRUNK_M
                                ),
                                target_position: tuple | None = None) -> float:
-    """Estimate range from a fixed target point or the current bbox."""
+    """Estimate horizontal range to a fixed target point or bbox center.
+
+    `camera_height` is the signed vertical difference between the camera
+    and the target center.
+    """
     if target_position is None:
         target_position = _estimated_target_position(
             pose, detection, frame_shape, camera_height
@@ -339,7 +458,7 @@ def _estimated_planar_distance(pose: RobotPose, detection,
 
 def _estimated_target_position(pose: RobotPose, detection, frame_shape,
                                camera_height: float) -> tuple | None:
-    """Project the bbox's ground contact point into world coordinates."""
+    """Project the bbox center into world coordinates using its known z."""
     frame_height, frame_width = frame_shape[:2]
     if frame_height <= 0 or frame_width <= 0:
         return None
@@ -348,15 +467,20 @@ def _estimated_target_position(pose: RobotPose, detection, frame_shape,
         2.0 * math.tan(math.radians(_CAMERA_VERTICAL_FOV_DEG) / 2.0)
     )
     bbox_center_x = (detection.bbox[0] + detection.bbox[2]) / 2.0
-    bbox_bottom_y = min(max(detection.bbox[3], 0.0), float(frame_height))
+    bbox_center_y = (
+        (detection.bbox[1] + detection.bbox[3]) / 2.0
+    )
+    bbox_center_y = min(max(bbox_center_y, 0.0), float(frame_height))
     image_down_angle = math.atan(
-        (bbox_bottom_y - frame_height / 2.0) / focal_length_px
+        (bbox_center_y - frame_height / 2.0) / focal_length_px
     )
     ray_down_angle = math.radians(_CAMERA_DOWN_PITCH_DEG) + image_down_angle
-    if not 0.0 < ray_down_angle < math.pi / 2.0:
+    if not 0.0 < abs(ray_down_angle) < math.pi / 2.0:
         return None
 
     camera_forward = camera_height / math.tan(ray_down_angle)
+    if not math.isfinite(camera_forward) or camera_forward <= 0.0:
+        return None
     bearing = math.atan(
         (bbox_center_x - frame_width / 2.0) / focal_length_px
     )

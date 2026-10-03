@@ -92,11 +92,9 @@ def _log_blue_chair_range(stage: str, skills, perception) -> None:
     """Grab one frame, look for blue_chair, print [DETECT]/[RANGE] lines
     using the exact same range-estimation helpers navigation.py's own
     goto_object() uses internally -- not a separate/different distance
-    computation. navigation._camera_height_above_ground() itself now
-    corrects for local (not world-frame) ground clearance via
-    skills.get_ground_height_below(), so this script no longer needs
-    its own terrain-aware override -- the fix lives in shared code and
-    applies to every object/test, not just this one."""
+    computation. The shared projection uses the measured trunk world z
+    and this scene's known blue-chair center z, so elevated targets use
+    the same height-aware estimate as every other navigation target."""
     frame = skills.get_camera_frame()
     detections = perception.detect(frame)
     target = navigation._pick_target(detections, "chair", "blue")
@@ -106,7 +104,9 @@ def _log_blue_chair_range(stage: str, skills, perception) -> None:
         print(f"[DETECT] stage={stage} blue_chair not visible this frame")
         return
 
-    camera_height = navigation._camera_height_above_ground(skills)
+    camera_height = navigation._camera_height_above_ground(
+        skills, "chair", "blue"
+    )
     estimated = navigation._estimated_planar_distance(
         pose, target, frame.shape, camera_height
     )

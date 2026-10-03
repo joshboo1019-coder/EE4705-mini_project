@@ -72,7 +72,9 @@ def test_reacquire_sweep_triggers_after_three_detector_misses_even_if_recovered(
 
     monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
     monkeypatch.setattr(navigation, "_steer_to_center", lambda *args: True)
-    monkeypatch.setattr(navigation, "_camera_height_above_ground", lambda _: 0.6)
+    monkeypatch.setattr(
+        navigation, "_camera_height_above_ground", lambda *_: 0.6
+    )
     monkeypatch.setattr(
         navigation, "_estimated_target_position", lambda *args: (1.0, 0.0)
     )
@@ -131,7 +133,37 @@ def test_steer_to_center_accepts_target_within_wider_tolerance():
     assert skills.turns == [-5.0]
 
 
-def test_target_projection_does_not_add_fixed_range_bias():
+def test_camera_height_is_relative_to_target_center():
+    class _MeasuredHeightSkills(_Skills):
+        _model = SimpleNamespace(
+            ngeom=6,
+            geom_matid=(0, 0, 0, 0, 0, 0),
+            geom_bodyid=(3, 3, 3, 3, 3, 3),
+            geom_size=(
+                (0.02, 0.02, 0.21), (0.02, 0.02, 0.21),
+                (0.02, 0.02, 0.21), (0.02, 0.02, 0.21),
+                (0.22, 0.22, 0.02), (0.22, 0.02, 0.22),
+            ),
+            mat=lambda material_id: SimpleNamespace(
+                name="custom_scene_chair_blue_mat"
+            ),
+        )
+        _data = SimpleNamespace(
+            xpos=((0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                  (0.0, 0.0, 0.0), (0.0, 0.0, 2.5))
+        )
+
+        def get_trunk_height(self):
+            return 1.2
+
+    assert navigation._camera_height_above_ground(
+        _MeasuredHeightSkills(), "chair", "blue"
+    ) == pytest.approx(
+        1.2 + navigation._CAMERA_HEIGHT_ABOVE_TRUNK_M - (2.5 + 0.44)
+    )
+
+
+def test_target_projection_uses_bbox_center_without_fixed_range_bias():
     detection = Detection("sports ball", "orange", 0.9, (310, 200, 330, 300))
     pose = RobotPose(1.0, -2.0, 0.0)
     frame_shape = (480, 640, 3)
@@ -141,7 +173,10 @@ def test_target_projection_does_not_add_fixed_range_bias():
             navigation.math.radians(navigation._CAMERA_VERTICAL_FOV_DEG) / 2
         )
     )
-    image_down_angle = navigation.math.atan((300 - 240) / focal_length_px)
+    bbox_center_y = (200 + 300) / 2
+    image_down_angle = navigation.math.atan(
+        (bbox_center_y - 240) / focal_length_px
+    )
     ray_down_angle = (
         navigation.math.radians(navigation._CAMERA_DOWN_PITCH_DEG)
         + image_down_angle
@@ -161,6 +196,47 @@ def test_target_projection_does_not_add_fixed_range_bias():
     assert navigation._estimated_planar_distance(
         pose, detection, frame_shape, camera_height, target_position
     ) == pytest.approx(expected_forward)
+
+
+def test_target_projection_handles_target_center_above_camera():
+    pose = RobotPose(0.0, 0.0, 0.0)
+    frame_shape = (480, 640, 3)
+    target_center_z = 0.84
+    camera_z = 0.50 + navigation._CAMERA_HEIGHT_ABOVE_TRUNK_M
+    camera_height = camera_z - target_center_z
+    expected_camera_forward = 3.0
+    ray_down_angle = navigation.math.atan(
+        camera_height / expected_camera_forward
+    )
+    focal_length_px = 480 / (
+        2 * navigation.math.tan(
+            navigation.math.radians(navigation._CAMERA_VERTICAL_FOV_DEG) / 2
+        )
+    )
+    image_down_angle = (
+        ray_down_angle
+        - navigation.math.radians(navigation._CAMERA_DOWN_PITCH_DEG)
+    )
+    bbox_center_y = 240 + focal_length_px * navigation.math.tan(
+        image_down_angle
+    )
+    detection = Detection(
+        "chair", "blue", 0.9,
+        (310, bbox_center_y - 20, 330, bbox_center_y + 20),
+    )
+
+    target_position = navigation._estimated_target_position(
+        pose, detection, frame_shape, camera_height
+    )
+
+    assert target_position == pytest.approx(
+        (expected_camera_forward + navigation._CAMERA_FORWARD_OFFSET_M, 0.0)
+    )
+    assert navigation._estimated_planar_distance(
+        pose, detection, frame_shape, camera_height, target_position
+    ) == pytest.approx(
+        expected_camera_forward + navigation._CAMERA_FORWARD_OFFSET_M
+    )
 
 
 def test_reacquire_strafe_refreshes_target_position_for_range(monkeypatch):
@@ -229,7 +305,9 @@ def test_reacquire_strafe_refreshes_target_position_for_range(monkeypatch):
 
     monkeypatch.setattr(navigation.time, "sleep", sleeps.append)
     monkeypatch.setattr(navigation, "_steer_to_center", lambda *args: True)
-    monkeypatch.setattr(navigation, "_camera_height_above_ground", lambda _: 0.6)
+    monkeypatch.setattr(
+        navigation, "_camera_height_above_ground", lambda *_: 0.6
+    )
     monkeypatch.setattr(
         navigation, "_estimated_target_position", estimate_target_position
     )
@@ -309,7 +387,9 @@ def test_obstructed_approach_backs_up_strafes_and_retries_scan(monkeypatch):
     monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
     monkeypatch.setattr(navigation.time, "monotonic", lambda: skills.now)
     monkeypatch.setattr(navigation, "_steer_to_center", lambda *args: True)
-    monkeypatch.setattr(navigation, "_camera_height_above_ground", lambda _: 0.6)
+    monkeypatch.setattr(
+        navigation, "_camera_height_above_ground", lambda *_: 0.6
+    )
     monkeypatch.setattr(
         navigation, "_estimated_target_position", lambda *args: (1.0, 0.0)
     )
@@ -362,7 +442,9 @@ def test_recenter_time_counts_toward_four_second_recovery(monkeypatch):
     attempt_started_at = [None]
     monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
     monkeypatch.setattr(navigation.time, "monotonic", lambda: now[0])
-    monkeypatch.setattr(navigation, "_camera_height_above_ground", lambda _: 0.6)
+    monkeypatch.setattr(
+        navigation, "_camera_height_above_ground", lambda *_: 0.6
+    )
     monkeypatch.setattr(
         navigation, "_estimated_target_position", lambda *args: (1.0, 0.0)
     )
