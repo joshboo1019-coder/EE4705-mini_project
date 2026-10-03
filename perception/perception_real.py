@@ -6,6 +6,8 @@ Task 2's camera frames. Depends only on numpy arrays in, Detection list
 out — never imports skills_real.py, so you can develop/test this with
 saved images or a webcam before Student A's simulation is ready.
 
+Colour-grounding fix contributed by Student B (assist), reviewed by Student C.
+
 Test standalone (run from the project root so `core` resolves):
     python -m perception.perception_real --image path/to/test_frame.png
 """
@@ -37,6 +39,23 @@ _COLOR_HUE_RANGES = {
     "purple": ((250.0, 305.0),),
     "pink": ((305.0, 345.0),),
 }
+# Colour grounding (_grounded_color). Tuned offline on rendered dog-camera
+# frames (tools/task4_color_testset.py, docs/task4_color_grounding.md).
+_GROUND_MIN_SATURATION = 160    # drop grey/white pixels, the beige terrain (S ~70) and most of the
+                                # floor/sky (S ~130-170); graded objects render at S >= 206
+_GROUND_MIN_VALUE = 32          # drop near-black pixels (shadows)
+_GROUND_MAX_VALUE = 250         # drop clipped highlights: their hue drifts (orange -> yellow)
+_GROUND_RING_FRAC = 0.15        # background ring width, as a fraction of the bbox's longer side
+_GROUND_RING_MIN_PX = 4
+_GROUND_BG_MIN_FRAC = 0.02      # a colour (within the tolerances below) is background if it covers
+_GROUND_BG_RATIO = 1.0          # >= 2% of the ring AND is >= 1.0x as dense in the ring as in the bbox
+_GROUND_BG_HUE_TOL = 10.0       # colour tolerance: +-10 deg hue ...
+_GROUND_BG_SAT_TOL = 1          # ... and +-1 saturation cell (32 wide)
+_GROUND_HUE_BIN = 10.0          # dominant-hue histogram bin (deg)
+_GROUND_BIN_FINE = 2.0          # background-model hue cell (deg)
+_GROUND_CENTER_SIGMA = 0.5      # centre weighting of the hue vote (1.0 = bbox half-size)
+_GROUND_MIN_FG_PX = 12          # fewer foreground pixels than this -> "unknown"
+_GROUND_MIN_FG_FRAC = 0.002     # ... or than this fraction of the bbox area
 
 
 class RealPerception(PerceptionAPI):
@@ -242,7 +261,19 @@ class RealPerception(PerceptionAPI):
         return float(np.count_nonzero(matches & valid) / region.shape[0] / region.shape[1])
 
     def _grounded_color(self, frame: np.ndarray, bbox: tuple) -> str:
-        """Classify rendered RGB pixels inside the detection, independently of YOLO."""
+        """Classify rendered RGB pixels inside the detection, independently of YOLO.
+
+        Thin objects (chair frames, sign poles) leave most of their bbox to
+        background, and this scene's floor and sky are blue, so background
+        pixels must not vote:
+          1. model the background from a ring of pixels just outside the bbox
+             and drop bbox pixels close to it in hue and saturation;
+          2. drop low-saturation, near-black and clipped-highlight pixels;
+          3. take the dominant hue (histogram mode, wrapping at 0/360) of the
+             pixels left over the FULL bbox, weighted towards its centre,
+             and name it;
+          4. too few pixels left -> "unknown" rather than a guess.
+        """
         if frame.ndim < 3 or frame.shape[2] < 3 or len(bbox) != 4:
             return "unknown"
 
@@ -255,16 +286,11 @@ class RealPerception(PerceptionAPI):
         if x2 <= x1 or y2 <= y1:
             return "unknown"
 
-        box_width = x2 - x1
-        box_height = y2 - y1
-        inner_x1 = x1 + box_width // 4
-        inner_x2 = x2 - box_width // 4
-        inner_y1 = y1 + box_height // 4
-        inner_y2 = y2 - box_height // 4
-        rgb = frame[inner_y1:inner_y2, inner_x1:inner_x2, :3]
-        if rgb.size == 0:
-            return "unknown"
-
+        ring = max(_GROUND_RING_MIN_PX,
+                   int(round(_GROUND_RING_FRAC * max(x2 - x1, y2 - y1))))
+        ox1, oy1 = max(0, x1 - ring), max(0, y1 - ring)
+        ox2, oy2 = min(width, x2 + ring), min(height, y2 + ring)
+        rgb = frame[oy1:oy2, ox1:ox2, :3]
         if rgb.dtype != np.uint8:
             rgb = rgb.astype(np.float32)
             if rgb.max() <= 1.0:
@@ -272,48 +298,94 @@ class RealPerception(PerceptionAPI):
             rgb = np.clip(rgb, 0.0, 255.0).astype(np.uint8)
 
         # MuJoCo's renderer returns RGB with scene lighting already applied.
-        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+        hsv = cv2.cvtColor(np.ascontiguousarray(rgb), cv2.COLOR_RGB2HSV)
         hue = hsv[..., 0].astype(np.float32) * 2.0
         saturation = hsv[..., 1]
         value = hsv[..., 2]
-        valid = ((saturation >= _MIN_COLOR_SATURATION)
-                 & (value >= _MIN_COLOR_VALUE))
-        if not np.any(valid):
+        inside = np.zeros(hue.shape, dtype=bool)
+        inside[y1 - oy1:y2 - oy1, x1 - ox1:x2 - ox1] = True
+        chromatic = ((saturation >= _GROUND_MIN_SATURATION)
+                     & (value >= _GROUND_MIN_VALUE)
+                     & (value <= _GROUND_MAX_VALUE))
+
+        # Background colour cells: a (hue, saturation) cell is background if
+        # it is common in the ring AND at least as dense there as inside the
+        # bbox. Floor and sky pass both tests; an object that sticks out of
+        # its bbox is still denser inside, so its own colour is kept.
+        n_hue = int(round(360.0 / _GROUND_BIN_FINE))
+        hue_cell = (hue / _GROUND_BIN_FINE).astype(np.int32) % n_hue
+        sat_cell = (saturation // 32).astype(np.int32)
+        background = np.zeros((n_hue, 8), dtype=bool)
+        n_ring = np.count_nonzero(~inside)
+        if n_ring > 0:
+            ring_density = _cell_density(hue_cell, sat_cell, ~inside & chromatic, n_ring)
+            box_density = _cell_density(hue_cell, sat_cell, inside & chromatic,
+                                        np.count_nonzero(inside))
+            background = ((ring_density >= _GROUND_BG_MIN_FRAC)
+                          & (ring_density >= _GROUND_BG_RATIO * box_density))
+
+        # Hues with no colour name (the 170-220 deg gap: floor reflections)
+        # can't be the answer, so they don't vote either.
+        named = np.zeros(hue.shape, dtype=bool)
+        for name in _COLOR_HUE_RANGES:
+            named |= _hue_color_mask(hue, name)
+        foreground = inside & chromatic & named & ~background[hue_cell, sat_cell]
+        n_fg = int(np.count_nonzero(foreground))
+        box_area = (x2 - x1) * (y2 - y1)
+        if n_fg < max(_GROUND_MIN_FG_PX, _GROUND_MIN_FG_FRAC * box_area):
             if self.debug_dir is not None:
-                print("[HSV] no pixels passed saturation/value filters")
+                print(f"[HSV] only {n_fg} foreground pixels -> unknown")
             return "unknown"
 
-        color_masks = {
-            color: valid & _hue_color_mask(hue, color)
-            for color in _COLOR_HUE_RANGES
-        }
-        color_counts = {
-            color: int(np.count_nonzero(mask))
-            for color, mask in color_masks.items()
-        }
-        color = max(color_counts, key=color_counts.get)
-        if color_counts[color] == 0:
-            return "unknown"
-
-        selected = color_masks[color]
-        selected_hues = hue[selected]
-        # Unwrap red hues on either side of 0/360 before taking the median.
-        ordered_hues = np.sort(selected_hues)
-        gaps = np.diff(np.concatenate((ordered_hues, ordered_hues[:1] + 360.0)))
-        gap_index = int(np.argmax(gaps))
-        start = (gap_index + 1) % ordered_hues.size
-        unwrapped = np.concatenate((ordered_hues[start:], ordered_hues[:start] + 360.0))
-        median_hue = float(np.median(unwrapped) % 360.0)
-        median_saturation = float(np.median(saturation[selected])) / 255.0
-        median_value = float(np.median(value[selected])) / 255.0
+        # Dominant hue: circular histogram mode, smoothed with its neighbours
+        # so a peak split across two bins still wins.
+        # Pixels are weighted towards the bbox centre (Gaussian, sigma as a
+        # fraction of the half-size): YOLO centres its box on the object it
+        # found, so a second object caught at the box's edge votes less.
+        fg_hue = hue[foreground]
+        ys, xs = np.nonzero(foreground)
+        dx = (xs + ox1 + 0.5 - 0.5 * (x1 + x2)) / (0.5 * (x2 - x1))
+        dy = (ys + oy1 + 0.5 - 0.5 * (y1 + y2)) / (0.5 * (y2 - y1))
+        weight = np.exp(-(dx * dx + dy * dy) / (2.0 * _GROUND_CENTER_SIGMA ** 2))
+        n_bins = int(round(360.0 / _GROUND_HUE_BIN))
+        hist = np.bincount((fg_hue / _GROUND_HUE_BIN).astype(np.int32) % n_bins,
+                           weights=weight, minlength=n_bins)
+        smooth = hist + 0.5 * (np.roll(hist, 1) + np.roll(hist, -1))
+        peak = (int(np.argmax(smooth)) + 0.5) * _GROUND_HUE_BIN
+        # refine: circular mean of the pixels within one bin of the peak
+        diff = (fg_hue - peak + 180.0) % 360.0 - 180.0
+        near = np.abs(diff) <= 1.5 * _GROUND_HUE_BIN
+        dominant = float((peak + np.mean(diff[near])) % 360.0)
+        color = "unknown"
+        for name in _COLOR_HUE_RANGES:
+            if _hue_color_mask(np.array([dominant]), name)[0]:
+                color = name
+                break
         if self.debug_dir is not None:
-            print(
-                f"[HSV] color={color} median_hsv=({median_hue:.1f}, "
-                f"{median_saturation:.3f}, {median_value:.3f}) "
-                f"n_color_px={color_counts[color]}"
-            )
-
+            print(f"[HSV] color={color} dominant_hue={dominant:.1f} "
+                  f"n_fg_px={n_fg} share={near.mean():.2f}")
         return color
+
+
+def _cell_density(hue_cell: np.ndarray, sat_cell: np.ndarray, mask: np.ndarray,
+                  n_total: int) -> np.ndarray:
+    """Fraction of n_total pixels in each (hue, saturation) cell, summed over
+    the background colour tolerance (hue wraps around, saturation doesn't)."""
+    n_hue = int(round(360.0 / _GROUND_BIN_FINE))
+    hist = np.zeros((n_hue, 8), dtype=np.float64)
+    np.add.at(hist, (hue_cell[mask], sat_cell[mask]), 1.0)
+    k = int(round(_GROUND_BG_HUE_TOL / _GROUND_BIN_FINE))
+    out = np.zeros_like(hist)
+    for dh in range(-k, k + 1):
+        rolled = np.roll(hist, dh, axis=0)
+        for ds in range(-_GROUND_BG_SAT_TOL, _GROUND_BG_SAT_TOL + 1):
+            if ds > 0:
+                out[:, ds:] += rolled[:, :-ds]
+            elif ds < 0:
+                out[:, :ds] += rolled[:, -ds:]
+            else:
+                out += rolled
+    return out / max(n_total, 1)
 
 
 def _hue_color_mask(hue_degrees: np.ndarray, color: str) -> np.ndarray:
