@@ -1,0 +1,37 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=turn(180 deg) n=1
+User: [EXEC] action=1/1 turn angle=180.0 deg
+[TURN] target=180.0 deg final_error=-1.7 deg
+[DONE] actions=1 t=3.9 s
+[CMD] actions=look("what can you see?") n=1
+User: [EXEC] action=1/1 look question="what can you see?"
+[DETECT] class=chair color=red conf=0.43 bbox=[0.04, 133.41, 77.42, 261.46]
+[VLM] model=qwen3-vl-flash t=0.92 s tokens=395/59 frame=/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261004-010936-101270.png
+Robot: I see a checkered floor with blue and dark blue squares, a large red square sign on a gray pole in front, a green sign to the left, a yellow sign to the right, and part of a red chair on the far left. The background is a solid blue gradient.
+[DONE] actions=1 t=2.4 s
+[CMD] actions=turn(-45 deg) n=1
+User: [EXEC] action=1/1 turn angle=-45.0 deg
+[TURN] target=-45.0 deg final_error=-1.8 deg
+[DONE] actions=1 t=1.0 s
+[CMD] actions=look("is there a chair in front of you?") n=1
+User: [EXEC] action=1/1 look question="is there a chair in front of you?"
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[63.09, 203.44, 96.11, 229.66]
+[VLM] model=qwen3-vl-flash t=0.51 s tokens=399/22 frame=/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261004-010945-047287.png
+Robot: Yes, there is a green chair in front of you, positioned toward the center-right of the view.
+[DONE] actions=1 t=0.6 s
+[CMD] actions=turn(90 deg) n=1
+User: [EXEC] action=1/1 turn angle=90.0 deg
+[TURN] target=90.0 deg final_error=1.8 deg
+[DONE] actions=1 t=2.4 s
+[CMD] actions=look("what colour is the ball ahead?") n=1
+User: [EXEC] action=1/1 look question="what colour is the ball ahead?"
+[DETECT] class=chair color=red conf=0.39 bbox=[288.13, 118.48, 363.09, 233.65]
+[VLM] model=qwen3-vl-flash t=0.80 s tokens=397/26 frame=/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261004-010952-986951.png
+Robot: There is no ball visible ahead in the image. The objects present are a red chair and a green square on a stick.
+[DONE] actions=1 t=0.9 s

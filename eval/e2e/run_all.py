@@ -396,8 +396,8 @@ def _eval_s3(rec: dict, lines: List[str], ev: dict) -> dict:
     relevant = [(c, col) for c, col in detects if c in scenarios.SUPPORTED_CLASSES]
     correct = [p for p in relevant if p in scene_pairs]
     target_seen = sum(1 for p in relevant if p == (cls, color))
-    mission = next((l for l in lines if "[MISSION]" in l), None)
-    found = next((l for l in lines if "[FOUND]" in l), None)
+    mission = next((l for l in lines if re.match(r"^(User: )*\[MISSION\] status=", l)), None)
+    found = next((l for l in lines if re.match(r"^(User: )*\[FOUND\] ", l)), None)
     stop_check = [l for l in lines if "phase=stop_check" in l]
     done = next((l for l in lines if "[DONE]" in l), None)
     t = None
@@ -539,6 +539,22 @@ def _git(*args):
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
 
 
+def reeval(run_dir: Path) -> None:
+    """Re-score a finished run from results.jsonl + the trace files (no sim)."""
+    run = Run.__new__(Run)
+    run.stamp, run.dir, run.video = run_dir.name, run_dir, True
+    records = []
+    for line in (run_dir / "results.jsonl").read_text().splitlines():
+        rec = json.loads(line)
+        rec["trace"] = _read_trace(run_dir / f"{rec['suite']}_{rec['scenario']}.trace.jsonl")
+        rec["eval"] = evaluate(rec)
+        records.append(rec)
+    with (run_dir / "results.jsonl").open("w") as jf:
+        for rec in records:
+            jf.write(json.dumps({k: v for k, v in rec.items() if k != "trace"}, default=str) + "\n")
+    print(f"[E2E] re-scored: {write_summary(run, records)}")
+
+
 # ---------------------------------------------------------------------------
 
 def main():
@@ -549,7 +565,11 @@ def main():
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--only", nargs="*", default=None, help="scenario ids, e.g. S3_03")
     ap.add_argument("--display", default=":99")
+    ap.add_argument("--reeval", metavar="RUN_DIR", help="re-score a finished run offline")
     args = ap.parse_args()
+    if args.reeval:
+        reeval(Path(args.reeval))
+        return
 
     ensure_xvfb(args.display)
     run = Run(args.label, not args.no_video, args.display)
