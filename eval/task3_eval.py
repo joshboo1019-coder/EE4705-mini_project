@@ -195,6 +195,10 @@ CASES = [
     ("V3", "look", [], "what colour is the ball ahead?", cmds(look())),
     ("V4", "look", [], "describe your surroundings", cmds(look())),
     ("V5", "look", [], "look out!", no_look()),          # a warning, not a question
+    # held-out warnings (added after v4 was frozen; none appears in the prompt)
+    ("V6", "look", [], "watch out!", no_look()),
+    ("V7", "look", [], "heads up, there's a wall", no_look()),
+    ("V8", "look", [], "careful, stop there", no_look()),
     # --- invalid / out of scope ---
     ("X1", "invalid", [], "fly to the roof", rejected()),
     ("X2", "invalid", [], "avancez tout droit", rejected()),
@@ -386,7 +390,7 @@ def _got(r):
 
 def report(services, prompts=("v1", "v2", "v3", "v4")) -> str:
     out = [f"Test set: {len(CASES)} utterances; each prompt is scored on the cases it was run on "
-           "(C2 and F3 were added with v3, V1-V5 with v4; v1/v2 cover 31, v3 33). Accuracy excludes API errors "
+           "(C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors "
            "(calls that still failed after back-off), which are counted separately.", ""]
     for prompt in prompts:
         out += [f"### Prompt {prompt}", "",

@@ -1,4 +1,4 @@
-Test set: 38 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, V1-V5 with v4; v1/v2 cover 31, v3 33). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
+Test set: 41 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
 
 ### Prompt v1
 
@@ -82,21 +82,22 @@ Failures (v3):
 
 | Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
 |---|---|---|---|---|---|---|---|---|
-| qwen-flash | 100.0% (38/38) | – | – | **100.0% (38/38)** | 0 | 0.29 / 0.49 | 1415 / 28 | 0.082 |
-| gemini-3.8-flash | 100.0% (38/38) | – | – | **100.0% (38/38)** | 0 | 2.15 / 2.74 | 1462 / 29 | 1.204 |
-| gpt-5-nano | 97.4% (37/38) | – | – | **97.4% (37/38)** | 0 | 1.12 / 1.45 | 1397 / 38 | 0.085 |
+| qwen-flash | 100.0% (41/41) | – | – | **100.0% (41/41)** | 0 | 0.29 / 0.49 | 1414 / 27 | 0.082 |
+| gemini-3.8-flash | 100.0% (41/41) | – | – | **100.0% (41/41)** | 0 | 2.14 / 2.73 | 1462 / 27 | 1.199 |
+| gpt-5-nano | 95.1% (39/41) | – | – | **95.1% (39/41)** | 0 | 1.13 / 1.45 | 1396 / 37 | 0.085 |
 
 | Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | invalid |
 |---|---|---|---|---|---|---|---|---|
 | qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 | gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
-| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 80.0% | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 75.0% | 100.0% |
 
 Failures (v4):
 
 | Service | Run | Case | Utterance | Got | Why |
 |---|---|---|---|---|---|
 | gpt-5-nano | 1 | V5 | look out! | `{"action": "look", "question": "what would you like me to look for or describe in the scene?"}` | produced a look action |
+| gpt-5-nano | 1 | V7 | heads up, there's a wall | `{"action": "look", "question": "is there a wall ahead?"}` | produced a look action |
 
 ### Items that flipped between v1 and v2 (passes / runs)
 
@@ -127,11 +128,11 @@ Failures (v4):
 
 - qwen-flash v2: $0.0065
 - qwen-flash v3: $0.0073
-- qwen-flash v4: $0.0032
+- qwen-flash v4: $0.0034
 - gemini-3.8-flash v1: $0.0813
 - gemini-3.8-flash v2: $0.0945
 - gemini-3.8-flash v3: $0.0355
-- gemini-3.8-flash v4: $0.0469
+- gemini-3.8-flash v4: $0.0503
 - gpt-5-nano v2: $0.0068
 - gpt-5-nano v3: $0.0077
-- gpt-5-nano v4: $0.0033
+- gpt-5-nano v4: $0.0036

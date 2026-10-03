@@ -202,14 +202,32 @@ move (2 of 5 retries; 0 of 5 with v3). Two general rules fixed most of this:
   understand it." → X2 rejected 5/5 again.
 - In the look description: only an actual question about what is visible is a look; "an exclamation or warning
   that happens to contain 'look' (like 'careful!') is not a look action; treat a warning as stop." → gpt-5-nano
-  V5 3/5 non-look in retries; qwen-flash maps "look out!" to stop. The example is "careful!", so V5 stays
-  held out, but the rule was still written *because* of V5.
+  V5 3/5 non-look in retries; qwen-flash maps "look out!" to stop. The rule's example is "careful!", but the
+  rule was written *because* of V5, so **V5 is no longer a held-out case**: its result below is a training-set
+  number. gpt-5-nano's remaining V5 failure (37/38) is accepted, and the prompt is not tuned further.
 
 | Service | v4 (38 cases) | the 33 v3 cases | look (V1–V5) | Latency median / p90 (s) | Tokens in / out | Cost per 1k calls |
 |---|---|---|---|---|---|---|
 | qwen-flash | **100%** (38/38) | 33/33 | 5/5 | 0.29 / 0.49 | 1415 / 28 | $0.082 |
 | gpt-5-nano | **97.4%** (37/38) | 33/33 | 4/5 (V5 → look) | 1.12 / 1.45 | 1397 / 38 | $0.085 |
 | gemini-3.8-flash | **100%** (38/38) | 33/33 | 5/5 | 2.15 / 2.74 | 1462 / 29 | $1.204 |
+
+**Held-out warnings (V6–V8).** Since V5 is no longer held out, three new warning utterances were added after v4
+was frozen. None of them is in the prompt. Each was run once per service, with no prompt changes afterwards
+(2026-10-03, logged in `eval/results/v4/<service>.jsonl`). Pass means anything except a look action.
+
+| Case | Utterance | qwen-flash | gpt-5-nano | gemini-3.8-flash |
+|---|---|---|---|---|
+| V6 | watch out! | ✅ stop | ✅ stop | ✅ stop |
+| V7 | heads up, there's a wall | ✅ chat | ❌ `look("is there a wall ahead?")` | ✅ stop |
+| V8 | careful, stop there | ✅ stop | ✅ stop | ✅ stop |
+| | **held-out total** | 3/3 | 2/3 | 3/3 |
+
+So gpt-5-nano generalises the warning rule only partly: an informative warning ("there's a wall") still reads to
+it as a cue to look. qwen-flash passes V7, but with a chat reply rather than a stop. That's allowed under the
+grading rule, but it isn't the "treat a warning as stop" behaviour the prompt asks for. With n = 1 per case, these
+are spot checks, not rates. They don't change the recommendation (qwen-flash). Because `summary.md` merges V6–V8
+into the v4 rows, its v4 totals there are out of 41 cases, not 38.
 
 **No regressions against v3:** every one of the 33 v3 cases passes on v4 for all three services (the v3 → v4 flip
 table in `eval/results/summary.md` is empty). The longer prompt adds about 210 input tokens per call (+17%).
