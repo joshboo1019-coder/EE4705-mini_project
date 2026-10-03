@@ -1,0 +1,137 @@
+User: keep turning until you see the orange ball, then go to it
+[CMD] actions=until_see(class=sports ball, color=orange, max_iter=8: turn(45 deg)), goto_object(class=sports ball, color=orange) n=2
+[PLAN] until I see the orange sports ball, up to 8x (turn left 45°), then go to the orange sports ball
+[EXEC] action=1/2 until_see class=sports ball color=orange max_iter=8
+[UNTIL] iteration=1/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=0.0 deg
+[UNTIL] iteration=2/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=0.0 deg
+[UNTIL] iteration=3/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=0.0 deg
+[DETECT] class=chair color=green conf=0.80 bbox=[298.79, 200.00, 341.21, 242.43]
+[DETECT] class=stop sign color=yellow conf=0.80 bbox=[139.52, 200.00, 163.88, 224.37]
+[UNTIL] iteration=4/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=0.0 deg
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[342.11, 200.00, 376.27, 234.16]
+[DETECT] class=stop sign color=yellow conf=0.80 bbox=[499.52, 200.00, 523.88, 224.37]
+[UNTIL] seen class=sports ball color=orange conf=0.80 after 4 iteration(s)
+[EXEC] action=2/2 goto_object class=sports ball color=orange
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[342.11, 200.00, 376.27, 234.16]
+[DETECT] class=stop sign color=yellow conf=0.80 bbox=[499.52, 200.00, 523.88, 224.37]
+[TURN] target=-4.9 deg final_error=0.0 deg
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=3.39s
+[MOCK goto] reached orange sports ball (stub: range 3.5 m from bbox width)
+[DONE] actions=2 t=2.8 s
+Robot: Done: saw the orange sports ball after 4 tries; reached the orange sports ball; moved 2.7 m, net turn 175° left.
+User: what have you seen?
+[CMD] actions=status(seen) n=1
+[EXEC] action=1/1 status topic=seen
+Robot: I've seen 3 objects: the green chair (first), last seen 2 s ago at heading +135°; the yellow stop sign, last seen 1 s ago at heading +180°; the orange sports ball, last seen 1 s ago at heading +180°.
+[DONE] actions=1 t=0.0 s
+User: go back to where you started
+[CMD] actions=return_home n=1
+[EXEC] action=1/1 return_home
+[PLAN] return home: turn left 180°, then walk forward 2.71 m at 0.8, then turn left 4.9°
+[TURN] target=180.0 deg final_error=0.0 deg
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.38749999999999896s
+[MOVE] target=2.71 m final_error=0.00 m
+[TURN] target=4.9 deg final_error=0.0 deg
+[DONE] actions=1 t=1.6 s
+Robot: Done: moved 2.7 m, net turn 175° right.
+User: walk in a square with 1 meter sides
+[CMD] actions=move(vx=0.8, 1.0 m), turn(90 deg), move(vx=0.8, 1.0 m), turn(90 deg), move(vx=0.8, 1.0 m), turn(90 deg), move(vx=0.8, 1.0 m) n=7
+[PLAN] walk forward 1 m at 0.8, then turn left 90°, then walk forward 1 m at 0.8, then turn left 90°, then walk forward 1 m at 0.8, then turn left 90°, then walk forward 1 m at 0.8
+[EXEC] action=1/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.24999999999999925s
+[MOVE] target=1.00 m final_error=0.00 m
+[EXEC] action=2/7 turn angle=90.0 deg
+[TURN] target=90.0 deg final_error=0.0 deg
+[EXEC] action=3/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.2499999999999994s
+[MOVE] target=1.00 m final_error=0.00 m
+[EXEC] action=4/7 turn angle=90.0 deg
+[TURN] target=90.0 deg final_error=0.0 deg
+[EXEC] action=5/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.2499999999999991s
+[MOVE] target=1.00 m final_error=0.00 m
+[EXEC] action=6/7 turn angle=90.0 deg
+[TURN] target=90.0 deg final_error=0.0 deg
+[EXEC] action=7/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.2499999999999991s
+[MOVE] target=1.00 m final_error=0.00 m
+[DONE] actions=7 t=2.4 s
+Robot: Done: walked about 4.0 m, ending 0.0 m from where I began, net turn 90° right.
+User: what did you just do?
+[CMD] actions=status(last_action) n=1
+[EXEC] action=1/1 status topic=last_action
+Robot: I just did this: walk forward 1 metre, then turn left 90 degrees, then walk forward 1 metre, then turn left 90 degrees, then walk forward 1 metre, then turn left 90 degrees, then walk forward 1 metre. Overall I turned 90° right.
+[DONE] actions=1 t=0.0 s
+User: turn right 45 degrees
+[CMD] actions=turn(-45 deg) n=1
+[EXEC] action=1/1 turn angle=-45.0 deg
+[TURN] target=-45.0 deg final_error=0.0 deg
+[DONE] actions=1 t=0.2 s
+Robot: Done: net turn 45° right.
+User: undo that
+[CMD] actions=undo n=1
+[EXEC] action=1/1 undo of=turn right 45°
+[PLAN] undo: turn left 45°
+[TURN] target=45.0 deg final_error=0.0 deg
+[DONE] actions=1 t=0.2 s
+Robot: Done: net turn 45° left.
+User: 向前走三秒
+[CMD] rejected reason=non-English
+Robot: I only take commands in English. Did you mean "walk forward for 3 seconds"?
+User: walk forward for a hundred meters
+[CMD] rejected reason=out_of_range:distance
+Robot: The longest single move is 30 s, about 24 m at walking speed; I could walk forward 24 meters instead.
+User: why did you reject that?
+[CMD] actions=status(last_reject) n=1
+[EXEC] action=1/1 status topic=last_reject
+Robot: I rejected "walk forward for a hundred meters" because the longest single move is 30 s, about 24 m at walking speed. I suggested "walk forward 24 meters" instead.
+[DONE] actions=1 t=0.0 s
+User: walk in a square with 2 meter sides
+[CMD] actions=move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m), turn(-90 deg), move(vx=0.8, 2.0 m) n=7
+[PLAN] walk forward 2 m at 0.8, then turn right 90°, then walk forward 2 m at 0.8, then turn right 90°, then walk forward 2 m at 0.8, then turn right 90°, then walk forward 2 m at 0.8
+[EXEC] action=1/7 move vx=0.8 vy=0.0 wz=0.0 distance=2.0 m
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.4999999999999985s
+[MOVE] target=2.00 m final_error=0.00 m
+[EXEC] action=2/7 turn angle=-90.0 deg
+[TURN] target=-90.0 deg final_error=0.0 deg
+[EXEC] action=3/7 move vx=0.8 vy=0.0 wz=0.0 distance=2.0 m
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+[MOCK move] vx=0.8 vy=0.0 wz=0.0 t=0.5s
+User: stop
+[MOCK stop]
+[ESTOP] latency=0.0 ms
+[EXEC] action=3/7 aborted reason=emergency_stop
+[DONE] actions=2 t=1.3 s
+Robot: Emergency stop: I halted during step 3 of 7; walked about 2.8 m, ending 2.2 m from where I began, net turn 90° right.
+User: how far are you from the start?
+[CMD] actions=status(home) n=1
+[EXEC] action=1/1 status topic=home
+Robot: I'm 2.2 m from where I started (0.8 m behind, 2.0 m to the right), facing the opposite way from when I started.
+[DONE] actions=1 t=0.0 s
+[MOCK] final pose x=-0.80 y=-2.00 yaw=180.0

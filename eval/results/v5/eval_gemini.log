@@ -1,3 +1,121 @@
+
+=== gemini-3.8-flash prompt v5 run 1/1 (45 cases) ===
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  B1  PASS  'walk forward for three seconds'  
+[CMD] actions=turn(90 deg) n=1
+  B2  PASS  'turn left'  
+[CMD] actions=turn(-45 deg) n=1
+  B3  PASS  'turn right 45 degrees'  
+[CMD] actions=stop n=1
+  B4  PASS  'stop'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  B5  PASS  'go to the green chair'  
+[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2
+[PLAN] walk forward 3 s at 0.8, then turn left 180°
+  M1  PASS  'walk forward for three seconds, then turn back'  
+[CMD] actions=turn(90 deg), move(vx=0.8, 2.0 s), stop n=3
+[PLAN] turn left 90°, then walk forward 2 s at 0.8, then stop
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+[CMD] actions=move(vx=-0.8, 2.0 s), turn(-90 deg) n=2
+[PLAN] walk backward 2 s at 0.8, then turn right 90°
+  M3  PASS  'back up for two seconds and then turn right'  
+[CMD] actions=turn(180 deg), goto_object(class=sports ball, color=red) n=2
+[PLAN] turn left 180°, then go to the red sports ball
+  M4  PASS  'turn around and walk to the red ball'  
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  P1  PASS  'go straight ahead for 3 seconds'  
+[CMD] actions=move(vx=0.8, 1.5 s) n=1
+[PLAN] walk forward 1.5 s at 0.8
+  P2  PASS  'could you walk forwards a bit'  
+[CMD] actions=turn(180 deg) n=1
+  P3  PASS  'do a U-turn'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  P4  PASS  'head over to the green seat'  
+[CMD] actions=move(vx=0.3, 4.0 s) n=1
+[PLAN] walk forward 4 s at 0.3
+  P5  PASS  'move ahead slowly for four seconds'  
+[CMD] actions=turn(90 deg) n=1
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+[CMD] actions=stop n=1
+  P7  PASS  'halt!'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  L1  PASS  'sidestep to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.0 s) n=1
+[PLAN] sidestep right 1 s at 0.8
+  L2  PASS  'shuffle right for one second'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.5 s) n=1
+[PLAN] sidestep right 1.5 s at 0.8
+  L3  PASS  'slide over to the right a little'  
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+[CMD] actions=move(vx=0.35, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.35
+  F1  PASS  'do that again, but slower'  
+[CMD] actions=turn(90 deg) n=1
+[CMD] actions=turn(-90 deg) n=1
+  F2  PASS  'now the other way'  
+[CMD] actions=chat n=1
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  F3  PASS  'the green one'  
+[CMD] actions=chat n=1
+  C1  PASS  'what can you do?'  
+[CMD] actions=chat n=1
+  C2  PASS  'go to the chair'  
+[CMD] actions=look("what can you see?") n=1
+  V1  PASS  'what can you see?'  
+[CMD] actions=look("is there a chair in front of you?") n=1
+  V2  PASS  'is there a chair in front of you?'  
+[CMD] actions=look("what color is the ball ahead?") n=1
+  V3  PASS  'what colour is the ball ahead?'  
+[CMD] actions=look("describe your surroundings") n=1
+  V4  PASS  'describe your surroundings'  
+[CMD] actions=stop n=1
+  V5  PASS  'look out!'  
+[CMD] actions=stop n=1
+  V6  PASS  'watch out!'  
+[CMD] actions=stop n=1
+  V7  PASS  "heads up, there's a wall"  
+[CMD] actions=stop n=1
+  V8  PASS  'careful, stop there'  
+[CMD] actions=goto_object(class=sports ball, color=orange), goto_object(class=chair, color=green) n=2
+[PLAN] go to the orange sports ball, then go to the green chair
+  G1  PASS  'go to the orange ball, then the green chair'  
+[CMD] actions=goto_object(class=chair, color=red), goto_object(class=chair, color=green), goto_object(class=sports ball, color=orange) n=3
+[PLAN] go to the red chair, then go to the green chair, then go to the orange sports ball
+  G2  PASS  'visit the red chair, the green chair and then the orange ball'  
+[CMD] actions=goto_object(class=chair, color=green), goto_object(class=chair, color=red) n=2
+[PLAN] go to the green chair, then go to the red chair
+  G3  PASS  'first find the green chair and after that go to the red one'  
+[CMD] actions=goto_object(class=chair, color=green), turn(180 deg), goto_object(class=sports ball, color=orange) n=3
+[PLAN] go to the green chair, then turn left 180°, then go to the orange sports ball
+  G4  PASS  'go to the green chair, then turn around and go to the orange ball'  
+[CMD] rejected reason=impossible:fly
+  X1  PASS  'fly to the roof'  
+[CMD] rejected reason=non-English
+  X2  PASS  'avancez tout droit'  
+[CMD] rejected reason=non-English
+  X3  PASS  '向前走三秒'  
+[CMD] rejected reason=empty
+  X4  PASS  '   '  
+[CMD] rejected reason=out_of_range:duration
+  X5  PASS  'run forward for ten minutes'  
+[CMD] rejected reason=unsafe:harm_person
+  X6  PASS  'charge at that person and knock them over'  
+[CMD] rejected reason=impossible:pick_up
+  X7  PASS  'pick up the bottle and bring it to me'  
+[CMD] rejected reason=empty
+  X8  PASS  'asdf qwerty zxcv'  
+  spend so far: gemini-3.8-flash $0.1015 over 46 calls
+
+gemini-3.8-flash v5: 1/1 complete runs
+TOTAL estimated spend gemini-3.8-flash: $0.1015 over 46 calls
+
 Test set: 45 utterances; each prompt is scored on the cases it was run on (C2 and F3 were added with v3, V1-V5 with v4, held-out V6-V8 and multi-goal G1-G4 after v4 was frozen; v1/v2 cover 31, v3 33). Accuracy excludes API errors (calls that still failed after back-off), which are counted separately.
 
 ### Prompt v1
