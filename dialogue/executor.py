@@ -17,8 +17,9 @@ from core.schema import (
     StopCommand, ChatCommand,
 )
 from perception import navigation
-from dialogue import vlm
+from dialogue import talkback, vlm
 from dialogue.commands import LookCommand
+from dialogue.limits import kind
 
 
 class CommandExecutor:
@@ -55,6 +56,7 @@ class CommandExecutor:
         t0 = time.time()
         n = len(batch)
         done = 0
+        trace = talkback.BatchTrace(kinds=[kind(c) for c in batch], pose_before=self._pose())
         # Two or more goto_object actions in one utterance form a multi-goal
         # mission: each goal is reported, a goal that isn't reached is
         # skipped (the robot goes on to the next one), and a [MULTI] summary
@@ -69,8 +71,11 @@ class CommandExecutor:
             except Exception as e:
                 print(f"[EXEC] action={i}/{n} failed reason={_short_error(e)}")
                 self._safe_stop()
+                trace.failed = (i, _short_error(e, limit=40))
                 break
             done += 1
+            if isinstance(cmd, GotoObjectCommand):
+                trace.goals.append((_target(cmd), bool(reached)))
             if mission is not None and isinstance(cmd, GotoObjectCommand):
                 mission.append((cmd, bool(reached)))
                 print(f"[GOAL] {len(mission)}/{n_goals} {_target(cmd)} "
@@ -80,6 +85,18 @@ class CommandExecutor:
         if mission is not None:
             print(_mission_summary(mission, n_goals, elapsed))
         print(f"[DONE] actions={done} t={elapsed:.1f} s")
+        trace.done = done
+        trace.pose_after = self._pose()
+        line = talkback.summary(trace)
+        if line:
+            print(f"Robot: {line}")
+
+    def _pose(self):
+        """Pose for the talk-back trace; None if the skills can't say."""
+        try:
+            return self.skills.get_robot_pose()
+        except Exception:
+            return None
 
     def _look(self, question: str) -> None:
         """Visual QA on ONE frame: YOLO's [DETECT] lines and the VLM answer

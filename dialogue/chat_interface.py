@@ -11,7 +11,7 @@ from typing import List, Dict
 
 from core import config
 from core.schema import CommandQueue
-from dialogue import llm_parser
+from dialogue import llm_parser, talkback
 
 
 def start_chat_thread(queue: CommandQueue) -> threading.Thread:
@@ -48,6 +48,12 @@ def handle_utterance(user_text: str, history: List[Dict[str, str]],
     commands, then record the exchange in `history` (trimmed to the last
     config.LLM_HISTORY_TURNS exchanges). Returns the ParseResult."""
     result = llm_parser.parse_command(user_text, history)
+    if not result.accepted:
+        if (result.reject_reason == "non-English" and getattr(result, "precheck", False)
+                and not getattr(result, "suggestion", None)):
+            # the precheck made no LLM call, so this is still <= 1 per utterance
+            result.suggestion = llm_parser.suggest_english(user_text)
+        say_rejection(result)
     remember(user_text, result, history)
 
     if result.accepted:
@@ -67,3 +73,12 @@ def remember(user_text: str, result, history: List[Dict[str, str]]) -> None:
     history.append({"role": "assistant",
                     "content": llm_parser.history_entry(result)})
     del history[:-2 * config.LLM_HISTORY_TURNS]
+
+
+def say_rejection(result) -> None:
+    """`Robot: ...` right after `[CMD] rejected reason=...` (talkback.py):
+    an English suggestion for non-English input, a valid alternative for an
+    out-of-range request. Templates only; the suggestion is never executed."""
+    reply = talkback.reject_reply(result.reject_reason, getattr(result, "suggestion", None))
+    if reply:
+        print(f"Robot: {reply}")

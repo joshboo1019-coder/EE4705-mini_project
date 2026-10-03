@@ -28,6 +28,7 @@ from core.schema import (
     StopCommand, ChatCommand,
 )
 from core import config
+from dialogue import talkback
 from dialogue.commands import LookCommand
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -225,7 +226,14 @@ COCO_CLASSES = {
 
 
 class _Invalid(Exception):
-    """Validation failure; args[0] is the reject reason."""
+    """Validation failure; args[0] is the reject reason. out_of_bounds: a
+    finite number outside its range (talk-back can suggest a clamp)."""
+
+    def __init__(self, reason: str, out_of_bounds: bool = False,
+                 suggestion: Optional[str] = None):
+        super().__init__(reason)
+        self.out_of_bounds = out_of_bounds
+        self.suggestion = suggestion
 
 
 def parse_command(user_text: str, history: List[Dict[str, str]]) -> ParseResult:
@@ -236,7 +244,9 @@ def parse_command(user_text: str, history: List[Dict[str, str]]) -> ParseResult:
     rejected ParseResult with reason=llm_error:<ExceptionType>."""
     pre = precheck(user_text)
     if pre is not None:
-        return _reject(pre)
+        r = _reject(pre)
+        r.precheck = True   # no LLM call was made (chat_interface may ask for a suggestion)
+        return r
     try:
         raw = _call_llm(user_text, history)
     except NotImplementedError:
@@ -350,7 +360,10 @@ def history_entry(result: ParseResult) -> str:
     JSON shape the model is asked to produce, so a follow-up can see (and
     modify) exactly which actions were accepted."""
     if not result.accepted:
-        return json.dumps({"rejected": True, "reason": result.reject_reason})
+        entry = {"rejected": True, "reason": result.reject_reason}
+        if getattr(result, "suggestion", None):
+            entry["suggestion"] = result.suggestion
+        return json.dumps(entry)
     return json.dumps({"actions": [_command_to_dict(c) for c in result.commands]})
 
 
@@ -381,14 +394,33 @@ def _strip_fences(raw: str) -> str:
 
 
 def _to_parse_result(raw_json: str) -> ParseResult:
+    """Validate the model's raw reply and print the [CMD] line (plus [PLAN]
+    for a move or a multi-action batch, see talkback.plan_line)."""
+    r = _validate(raw_json)
+    if not r.accepted:
+        print(f"[CMD] rejected reason={r.reject_reason}")
+        return r
+    summary = ", ".join(_describe(c) for c in r.commands)
+    print(f"[CMD] actions={summary} n={len(r.commands)}")
+    plan = talkback.plan_line(r.commands)
+    if plan:
+        print(plan)
+    return r
+
+
+def _validate(raw_json: str) -> ParseResult:
+    """The validator, silent. A rejection may carry `.suggestion`: the
+    model's own English suggestion (v5 reject JSON), or, for a number
+    outside the bounds, the same action clamped into them, in words."""
     try:
         data = json.loads(_strip_fences(raw_json))
     except (json.JSONDecodeError, TypeError):
-        return _reject("malformed_json")
+        return _rejected("malformed_json")
 
     try:
         if isinstance(data, dict) and data.get("rejected"):
-            return _reject(_clean_reason(data.get("reason")))
+            return _rejected(_clean_reason(data.get("reason")),
+                             _clean_suggestion(data.get("suggestion")))
         if isinstance(data, list):
             actions = data
         elif isinstance(data, dict) and "actions" in data:
@@ -403,10 +435,7 @@ def _to_parse_result(raw_json: str) -> ParseResult:
             raise _Invalid("empty_actions")
         commands = [_to_command(a) for a in actions]
     except _Invalid as e:
-        return _reject(e.args[0])
-
-    summary = ", ".join(_describe(c) for c in commands)
-    print(f"[CMD] actions={summary} n={len(commands)}")
+        return _rejected(e.args[0], e.suggestion)
     return ParseResult(accepted=True, commands=commands)
 
 
@@ -417,10 +446,15 @@ def _to_command(a):
     if not isinstance(kind, str):
         raise _Invalid("invalid_field:action")
     if kind == "move":
-        vx = _number(a, "vx", -1.0, 1.0)
-        vy = _number(a, "vy", -1.0, 1.0)
-        wz = _number(a, "wz", -1.0, 1.0)
-        duration = _number(a, "duration", 0.0, MAX_DURATION_S)
+        try:
+            vx = _number(a, "vx", -1.0, 1.0)
+            vy = _number(a, "vy", -1.0, 1.0)
+            wz = _number(a, "wz", -1.0, 1.0)
+            duration = _number(a, "duration", 0.0, MAX_DURATION_S)
+        except _Invalid as e:
+            if e.out_of_bounds:
+                e.suggestion = _clamped_move_words(a)
+            raise
         if duration <= 0.0:
             raise _Invalid("invalid_field:duration")
         return MoveCommand(vx, vy, wz, duration)
@@ -457,8 +491,29 @@ def _number(a: Dict, name: str, lo: Optional[float] = None,
     if not math.isfinite(v):
         raise _Invalid(f"invalid_field:{name}")
     if (lo is not None and v < lo) or (hi is not None and v > hi):
-        raise _Invalid(f"invalid_field:{name}")
+        raise _Invalid(f"invalid_field:{name}", out_of_bounds=True)
     return v
+
+
+def _lenient(a: Dict, name: str) -> Optional[float]:
+    v = a.get(name)
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        return None
+    return float(v)
+
+
+def _clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+def _clamped_move_words(a: Dict) -> Optional[str]:
+    """The out-of-bounds move clamped into the bounds, as an English
+    instruction to SAY (never executed), or None if it can't be clamped."""
+    vals = [_lenient(a, f) for f in ("vx", "vy", "wz", "duration")]
+    if any(v is None for v in vals) or vals[3] <= 0.0:
+        return None
+    vx, vy, wz = (_clamp(v, -1.0, 1.0) for v in vals[:3])
+    return talkback.words(MoveCommand(vx, vy, wz, min(vals[3], MAX_DURATION_S)), say=True)
 
 
 def _string(a: Dict, name: str, allow_empty: bool = False) -> str:
@@ -474,9 +529,48 @@ def _clean_reason(reason) -> str:
     return "_".join(reason.split())[:80]
 
 
-def _reject(reason: str) -> ParseResult:
+_MAX_SUGGESTION_CHARS = 120
+
+
+def _clean_suggestion(s) -> Optional[str]:
+    """A suggestion is only ever printed (Robot: ... Did you mean "..."?),
+    never parsed or executed. Keep it one short English line."""
+    if not isinstance(s, str):
+        return None
+    s = " ".join(s.replace('"', "'").split()).strip(" .")
+    if not s or len(s) > _MAX_SUGGESTION_CHARS or precheck(s) is not None:
+        return None
+    return s
+
+
+def _rejected(reason: str, suggestion: Optional[str] = None) -> ParseResult:
+    """A rejected ParseResult (silent). ParseResult lives in core/schema.py
+    and has no suggestion field, so the talk-back text rides along as an
+    attribute: getattr(result, "suggestion", None)."""
+    r = ParseResult(accepted=False, reject_reason=reason)
+    r.suggestion = suggestion
+    return r
+
+
+def _reject(reason: str, suggestion: Optional[str] = None) -> ParseResult:
     print(f"[CMD] rejected reason={reason}")
-    return ParseResult(accepted=False, reject_reason=reason)
+    return _rejected(reason, suggestion)
+
+
+def suggest_english(user_text: str) -> Optional[str]:
+    """ONE LLM call for text the local precheck already rejected as
+    non-English, only to get an English suggestion to SAY. The reply is
+    validated silently and nothing is queued or executed: the precheck's
+    verdict stands whatever the model returns. Used by chat_interface only
+    when parse_command made no LLM call for this utterance, so it is still
+    at most one LLM call per utterance."""
+    try:
+        r = _validate(_call_llm(user_text, []))
+    except Exception:   # a missing suggestion is fine
+        return None
+    if r.accepted:
+        return _clean_suggestion(talkback.join(r.commands, say=True))
+    return getattr(r, "suggestion", None)
 
 
 def _fmt(x: float) -> str:
