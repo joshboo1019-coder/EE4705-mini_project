@@ -17,10 +17,10 @@ USE_REAL_SKILLS = True
 USE_REAL_PERCEPTION = True
 
 
-def build_skills():
+def build_skills(gui: bool = False, native: bool = False):
     if USE_REAL_SKILLS:
         from skills.skills_real import RealSkills
-        return RealSkills()
+        return RealSkills(gui=gui, native_viewer=native)
     from skills.skills_mock import MockSkills
     return MockSkills()
 
@@ -35,9 +35,13 @@ def build_perception():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.parse_args()
+    parser.add_argument("--gui", action="store_true",
+                        help="browser control panel at http://localhost:8765 (real skills only)")
+    parser.add_argument("--native", action="store_true",
+                        help="native MuJoCo window (real skills only)")
+    args = parser.parse_args()
 
-    skills = build_skills()
+    skills = build_skills(gui=args.gui, native=args.native)
     perception = build_perception()
     queue = CommandQueue()
 

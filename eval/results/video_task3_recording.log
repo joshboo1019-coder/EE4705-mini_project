@@ -1,0 +1,135 @@
+Script started on 2026-10-02 20:06:18+08:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="80" LINES="24"]
+(base) jiamo@jiamo-ROG-Strix-G733PZ-G733PZ:~/EE4705/EE4705-mini_project$ cl ear
+(base) jiamo@jiamo-ROG-Strix-G733PZ-G733PZ:~/EE4705/EE4705-mini_project$ ev al/run_env.sh main.py --gui
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+User: turn left 90 degrees
+[CMD] actions=turn(90 deg) n=1
+User: [EXEC] action=1/1 turn angle=90.0 deg
+[TURN] target=90.0 deg final_error=1.8 deg
+[DONE] actions=1 t=2.5 s
+walk forward for three seconds, then turn back
+[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2
+User: [EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=3.0 s
+[EXEC] action=2/2 turn angle=180.0 deg
+[TURN] target=180.0 deg final_error=1.6 deg
+[DONE] actions=2 t=7.8 s
+walk forward for two seconds, then turn right 90 degrees
+[CMD] actions=move(vx=0.8, 2.0 s), turn(-90 deg) n=2
+User: [EXEC] action=1/2 move vx=0.8 vy=0.0 wz=0.0 t=2.0 s
+[EXEC] action=2/2 turn angle=-90.0 deg
+[TURN] target=-90.0 deg final_error=-1.3 deg
+[DONE] actions=2 t=4.0 s
+sidestep to your left for two seconds
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+User: [EXEC] action=1/1 move vx=0.0 vy=0.8 wz=0.0 t=2.0 s
+[DONE] actions=1 t=2.0 s
+do that again, but slower
+[CMD] actions=move(vx=0, vy=0.3, 2.0 s) n=1
+User: [EXEC] action=1/1 move vx=0.0 vy=0.3 wz=0.0 t=2.0 s
+[DONE] actions=1 t=2.0 s
+fly to the roof
+[CMD] rejected reason=impossible:fly
+User: avancez tout droit
+[CMD] rejected reason=non-English
+User: ^CTraceback (most recent call last):
+  File "/home/jiamo/EE4705/EE4705-mini_project/main.py", line 59, in <module>
+    main()
+    ~~~~^^
+  File "/home/jiamo/EE4705/EE4705-mini_project/main.py", line 51, in main
+    executor.run_forever()  # blocks; keep the sim/physics alive in here
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jiamo/EE4705/EE4705-mini_project/dialogue/executor.py", line 35, in run_forever
+    cmd = self.queue.pop(timeout=poll_timeout)
+  File "/home/jiamo/EE4705/EE4705-mini_project/core/schema.py", line 111, in pop
+    return self._q.get(timeout=timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jiamo/miniconda3/lib/python3.13/queue.py", line 213, in get
+    self.not_empty.wait(remaining)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/jiamo/miniconda3/lib/python3.13/threading.py", line 363, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt
+Exception in thread Thread-2 (_render_loop):
+Traceback (most recent call last):
+  File "/home/jiamo/miniconda3/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/home/jiamo/miniconda3/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jiamo/EE4705/quadruped_mujoco/src/runtime_control/runtime.py", line 434, in _render_loop
+    renderer.close()
+    ~~~~~~~~~~~~~~^^
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/rendering/classic/renderer.py", line 335, in close
+    self._gl_context.free()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 132, in free
+    EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                       EGL.EGL_NO_SURFACE, EGL.EGL_NO_CONTEXT)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+    ...<4 lines>...
+    )
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglMakeCurrent,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7cf630b6ea50>,
+		<OpenGL._opaque.EGLSurface_pointer object at 0x7cf63ab9d750>,
+		<OpenGL._opaque.EGLSurface_pointer object at 0x7cf63ab9d750>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7cf63ab9d650>,
+	),
+	result = 0
+)
+Exception ignored in: <function Renderer.__del__ at 0x7cf63abeb420>
+Traceback (most recent call last):
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/rendering/classic/renderer.py", line 349, in __del__
+    self.close()
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/rendering/classic/renderer.py", line 335, in close
+    self._gl_context.free()
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 132, in free
+    EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglMakeCurrent,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7cf630b6ea50>,
+		<OpenGL._opaque.EGLSurface_pointer object at 0x7cf63ab9d750>,
+		<OpenGL._opaque.EGLSurface_pointer object at 0x7cf63ab9d750>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7cf63ab9d650>,
+	),
+	result = 0
+)
+Exception ignored in: <function GLContext.__del__ at 0x7cf63abead40>
+Traceback (most recent call last):
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 139, in __del__
+    self.free()
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/mujoco/egl/__init__.py", line 132, in free
+    EGL.eglMakeCurrent(EGL_DISPLAY, EGL.EGL_NO_SURFACE,
+  File "/home/jiamo/EE4705/EE4705-mini_project/.venv/lib/python3.13/site-packages/OpenGL/error.py", line 230, in glCheckError
+    raise self._errorClass(
+OpenGL.raw.EGL._errors.EGLError: EGLError(
+	err = EGL_NOT_INITIALIZED,
+	baseOperation = eglMakeCurrent,
+	cArguments = (
+		<OpenGL._opaque.EGLDisplay_pointer object at 0x7cf630b6ea50>,
+		<OpenGL._opaque.EGLSurface_pointer object at 0x7cf63ab9d750>,
+		<OpenGL._opaque.EGLSurface_pointer object at 0x7cf63ab9d750>,
+		<OpenGL._opaque.EGLContext_pointer object at 0x7cf63ab9d650>,
+	),
+	result = 0
+)
+
+(base) jiamo@jiamo-ROG-Strix-G733PZ-G733PZ:~/EE4705/EE4705-mini_project$ ex it
+exit
+
+Script done on 2026-10-02 20:08:19+08:00 [COMMAND_EXIT_CODE="130"]
