@@ -869,3 +869,63 @@ def test_parse_time_plan_for_a_batch_with_undo(fake_llm, capsys):
     fake_llm.replies.append(_actions({"action": "return_home"}))
     llm_parser.parse_command("go home", [])
     assert capsys.readouterr().out.splitlines() == ["[CMD] actions=return_home n=1"]
+
+
+# ---------------------------------------------------------------------------
+# Prompt v5 hygiene
+# ---------------------------------------------------------------------------
+
+import hashlib  # noqa: E402
+import re  # noqa: E402
+
+
+def _prompt_examples(prompt):
+    """(user text, JSON reply) pairs from the few-shot block."""
+    block = prompt.split("Examples:", 1)[1]
+    out, user = [], []
+    for line in block.strip().splitlines():
+        if line.startswith("{"):
+            out.append(("\n".join(user), line))
+            user = []
+        else:
+            user.append(line.split(": ", 1)[1] if line.startswith(("User: ", "USER: ")) else line)
+    return out
+
+
+def test_v4_stays_frozen():
+    from eval.prompt_v4 import SYSTEM_PROMPT_V4
+    assert hashlib.sha256(SYSTEM_PROMPT_V4.encode()).hexdigest() == \
+        "00d843d96765e6e9f12aef63fb856f1f57dccc638ff15bc80c1f2979ac4da29d"
+
+
+def test_v5_examples_validate():
+    for user, reply in _prompt_examples(llm_parser.SYSTEM_PROMPT):
+        r = llm_parser._validate(reply)
+        if '"rejected"' in reply:
+            assert not r.accepted and not r.reject_reason.startswith(("invalid", "malformed")), user
+        else:
+            assert r.accepted, (user, r.reject_reason)
+
+
+def test_v5_has_no_hard_set_phrasing():
+    from eval.hard_cases import HARD_CASES
+    prompt = llm_parser.SYSTEM_PROMPT.lower()
+    examples = {u.split("\n")[-1].lower() for u, _ in _prompt_examples(llm_parser.SYSTEM_PROMPT)}
+    for cid, _, setup, text, _ in HARD_CASES:
+        assert text.lower() not in prompt, cid
+        assert text.lower() not in examples, cid
+        for turn in setup:
+            user = turn[0] if isinstance(turn, tuple) else turn
+            # the canned history may reuse ordinary commands, never a scored phrasing
+            assert user.lower() not in {t[3].lower() for t in HARD_CASES}
+
+
+def test_v5_keeps_every_v4_rule_line():
+    from eval.prompt_v4 import SYSTEM_PROMPT_V4
+    v4_examples = _prompt_examples(SYSTEM_PROMPT_V4)
+    v5_examples = _prompt_examples(llm_parser.SYSTEM_PROMPT)
+    assert all(e in v5_examples for e in v4_examples)
+    for rule in ['"turn back"/"turn around" = 180', '"stop", "halt", "freeze", "stop now"',
+                 "Decide the language first", "vy  + = LEFT", "treat a warning as stop",
+                 'If it is unclear WHAT the user wants']:
+        assert rule in llm_parser.SYSTEM_PROMPT
