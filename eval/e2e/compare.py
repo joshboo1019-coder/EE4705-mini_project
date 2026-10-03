@@ -68,6 +68,7 @@ def main():
     ap.add_argument("final")
     ap.add_argument("--out", default="eval/e2e/COMPARISON.md")
     ap.add_argument("--extra", nargs="*", default=[])
+    ap.add_argument("--notes", help="markdown inserted after the intro (summary, run notes)")
     args = ap.parse_args()
     B, F = load(Path(args.baseline)), load(Path(args.final))
     extras = []
@@ -81,12 +82,14 @@ def main():
          f"their checks; not `assist/stopsign`). Same harness, fresh launch per scenario, real LLM "
          f"(qwen-flash), every scenario recorded: clips under `~/Videos/e2e/`. Per-run details: "
          f"`eval/e2e/results/<run>/summary.md`.", ""]
+    if args.notes:
+        L += [Path(args.notes).read_text().rstrip(), ""]
 
     # S1
     L += ["## S1 — Task 2 skills (unchanged code: expect same)", "",
           "| Scenario | Baseline | Final | Verdict | Clips (baseline / final) |", "|---|---|---|---|---|"]
-    for sc, key, fmt in (("closed", "max_abs_error", "max |err| {}°"),
-                         ("open", "mean_abs_error", "mean |err| {}°"),
+    for sc, key, fmt in (("closed", "max_abs_error", "max abs error {}°"),
+                         ("open", "mean_abs_error", "mean abs error {}°"),
                          ("move", "distance_m", "{} m")):
         b, f = B.get(("S1", sc)), F.get(("S1", sc))
         bv = b["eval"].get(key) if b else None
