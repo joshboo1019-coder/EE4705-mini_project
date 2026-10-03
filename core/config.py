@@ -41,9 +41,15 @@ FOUND_DETECTION_CONF_THRESHOLD = 0.1
 FOUND_DISTANCE_M = 0.8      # evaluation definition of "found" (C2), unchanged
 # Change contributed by Student B (assist), pending review by Student C:
 # the approach stops at this ESTIMATED range, a margin below FOUND_DISTANCE_M,
-# so the TRUE distance is <= 0.80 m in >= 95 % of observed stops
+# so the TRUE distance is <= 0.80 m in >= 95 % of observed stops. The range
+# error is class-dependent (true - est: chairs +0.16 m, ball -0.09 m), so the
+# margin is per class; other classes use the pooled value
 # (docs/task4_c2_margin.md). The stop check (C2) still uses FOUND_DISTANCE_M.
 APPROACH_STOP_M = 0.57
+APPROACH_STOP_M_BY_CLASS = {
+    "chair": 0.56,         # 0.80 - p95(+0.237)
+    "sports ball": 0.78,   # estimate reads long: stop just inside 0.80 (hysteresis)
+}
 APPROACH_TIMEOUT_S = 120.0
 SEARCH_TURN_DEG = 30.0
 MAX_MISSES_BEFORE_LOST = 5

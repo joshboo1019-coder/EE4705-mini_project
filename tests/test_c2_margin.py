@@ -52,6 +52,17 @@ def test_far_target_uses_the_normal_step():
     assert s.moves[0] == (abs(config.APPROACH_VX), 0.0, 0.0, config.APPROACH_STEP_S)
 
 
-def test_without_the_config_value_behaviour_is_unchanged(monkeypatch):
+def test_per_class_thresholds():
+    for cls, stop in config.APPROACH_STOP_M_BY_CLASS.items():
+        assert navigation._approach_stop_m(cls) == stop < config.FOUND_DISTANCE_M
+    assert navigation._approach_stop_m("stop sign") == config.APPROACH_STOP_M
+    s = _Skills()
+    assert navigation._approach_step(s, 0.7, navigation._approach_stop_m("sports ball")) == 0.0
+    s = _Skills()
+    assert navigation._approach_step(s, 0.7, navigation._approach_stop_m("chair")) > 0.0
+
+
+def test_without_the_config_values_behaviour_is_unchanged(monkeypatch):
     monkeypatch.delattr(config, "APPROACH_STOP_M")
-    assert navigation._approach_stop_m() == config.FOUND_DISTANCE_M
+    monkeypatch.delattr(config, "APPROACH_STOP_M_BY_CLASS")
+    assert navigation._approach_stop_m("chair") == config.FOUND_DISTANCE_M
