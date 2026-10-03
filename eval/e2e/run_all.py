@@ -157,7 +157,9 @@ def suite_s4() -> List[Scenario]:
 S5_STEPS = [
     ("until_see", ["keep turning until you see the orange ball, then go to it",
                    "what have you seen?"], 300),
-    ("square", ["walk in a square with 1 meter sides"], 150),
+    # facing +y first: a square from the spawn heading (+x) brushes the low
+    # terrain pieces at x ~ 1.0-1.3 m (S5 dry run, trace contacts)
+    ("square", ["turn left 90 degrees", "walk in a square with 1 meter sides"], 150),
     ("return_home", ["turn left 90 degrees, then walk forward for two seconds",
                      "go back to where you started",
                      "how far are you from the start?"], 120),
