@@ -1,4 +1,7 @@
 """
+Change contributed by Student B (assist), pending review by the group:
+E2E_TRACE_FILE hook (eval/e2e harness only).
+
 main.py — ALL. The only file that wires the real (or mock) implementations
 together. Nobody develops against this file day-to-day; you only touch it
 during integration, and each flag below can be flipped independently so
@@ -7,6 +10,7 @@ the deadline.
 """
 
 import argparse
+import os
 from core.schema import CommandQueue
 from dialogue.executor import CommandExecutor
 from dialogue import chat_interface
@@ -42,6 +46,11 @@ def main():
     args = parser.parse_args()
 
     skills = build_skills(gui=args.gui, native=args.native)
+    # e2e harness only (eval/e2e/trace.py): logs pose/tilt/contacts to a file
+    # for evaluation when E2E_TRACE_FILE is set. Prints nothing, controls nothing.
+    if os.environ.get("E2E_TRACE_FILE"):
+        from eval.e2e.trace import start_trace
+        start_trace(skills, os.environ["E2E_TRACE_FILE"])
     perception = build_perception()
     queue = CommandQueue()
 
