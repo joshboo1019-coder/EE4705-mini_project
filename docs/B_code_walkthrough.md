@@ -630,8 +630,11 @@ an offline re-score of the same logged reply gives a pass (rejected `too_many_it
 So the committed S2 (Video_Task3) pass is on **prompt v4**; the S5 dry run is the only committed
 real-sim run on v5.
 
-A later run (`20261004-0206_final`, at this commit) was still being written, uncommitted, when this
-document was generated; it is not in the table. One observation from its S2 log is in 6.3 (item 2).
+**Added after this document was generated (02:40):** `20261004-0206_final` (v5 + STATE) failed S2 step e
+(6.3 item 2); the snapshot fix `e06968e` followed, and the definitive `20261004-0221_final` passed S2 7/7
+(`[CMD] actions=move(vx=0, vy=0.3, 2.0 s) n=1` for step e), S5 7/7, S4 look 3 + multi-goal 2/2. Items 1, 3, 5 and
+part of 6 of section 6.3 were fixed in `1f7c9c4` and re-checked by `20261004-*_final_delta_fixes` (S2 + S5 incl. a
+"spin around twice" scenario).
 
 ---
 
@@ -676,7 +679,7 @@ criterion failed in several S3 runs; `stop_verification` has no hysteresis (`mul
 
 ### 6.3 Found while writing this walkthrough (code reading; check before the viva)
 
-1. **Turns of 180° or more vs `RealSkills.turn`.** The validator bounds a turn only through the
+1. **[FIXED in `1f7c9c4`: the executor splits turns > 180° into ≤ 120° chunks]** **Turns of 180° or more vs `RealSkills.turn`.** The validator bounds a turn only through the
    60-s budget (`TurnCommand(_number(a, "angle_deg"))` has no per-turn range; `turn 2000°` is
    accepted). `RealSkills.turn` (Student A) sets `target_yaw = start_yaw + angle` and drives
    `_wrap_deg(target_yaw − current_yaw)`, which lies in [−180, 180). So `turn(360)` (and any multiple)
@@ -686,7 +689,7 @@ criterion failed in several S3 runs; `stop_verification` has no hysteresis (`mul
    reading the real robot would not spin. The final heading is always right; the path, and the
    `[PLAN]` wording ("turn left 180°"), may not be. This comes from code reading only: no e2e run
    tested a turn above 180°.
-2. **Follow-ups can pick up older actions from STATE — the Video_Task3 step e.** STATE lists the last
+2. **[FIXED in `e06968e`: the snapshot names the last command on its own; S2 passes again in `20261004-0221_final`]** **Follow-ups can pick up older actions from STATE — the Video_Task3 step e.** STATE lists the last
    3 *actions* across batches. The committed S2 pass of "do that again, but slower" ran on prompt v4
    with no STATE (5.5). In the uncommitted `20261004-0206_final` S2 log (v5 + STATE, this commit), the
    same step after the sidestep came back as `move(vx=0.3, 2 s), turn(-90), move(vx=0, vy=0.3, 2 s)`
@@ -695,17 +698,17 @@ criterion failed in several S3 runs; `stop_verification` has no hysteresis (`mul
    `move(vx=0, vy=0.3, 2 s), turn(-90 deg)`. The v5 Standard set (F1 100 % on qwen-flash) was run
    **without** a STATE line (`upgrade_eval.md`), so this path was never scored. Check this before
    re-recording Video_Task3 on the current code.
-3. **`goto_object` inside a program is not in the 60-s budget.** `program_seconds` counts goto as 0
+3. **[FIXED in `1f7c9c4`: at most 4 goals per utterance, loops multiplied out → `too_many_goals:<n>`]** **`goto_object` inside a program is not in the 60-s budget.** `program_seconds` counts goto as 0
    even inside `repeat`/`until_see`, so `repeat(8x: goto red chair, goto green chair)` validates
    (checked offline with `_validate`): up to 16 navigation runs of up to 120 s each. Speeds stay
    bounded by navigation; the duration does not.
 4. **One batch may hold two utterances.** `_run_batch` drains *everything* queued, so two utterances
    typed while a long batch runs are executed as one `[EXEC] 1/n … [DONE]` block (one talk-back
    summary; their gotos count as one mission). The docstring says "from the SAME parsed utterance".
-5. **A top-level colour-less goto does not cancel its siblings.** "walk forward 2 s, then go to the
+5. **[FIXED in `1f7c9c4`: a colour-less goto anywhere makes the whole utterance the question]** **A top-level colour-less goto does not cancel its siblings.** "walk forward 2 s, then go to the
    chair" validates to `[move, chat]`: the robot walks, then asks "Which chair…". Inside a program
    the whole utterance becomes the question instead.
-6. **Stale references.** `executor.py`'s docstring points to `tests/test_parser_with_mock.py`, which
+6. **[Partly fixed in `1f7c9c4`: executor docstring; task3_eval.md's stop note marked superseded. DECISIONS.md / STUDENT_B_README.md still to update]** **Stale references.** `executor.py`'s docstring points to `tests/test_parser_with_mock.py`, which
    does not exist; `DECISIONS.md` §5 and `STUDENT_B_README.md` §2 still call the executor a pure
    dispatcher; `task3_eval.md`'s "Don't demo a mid-move stop" predates the e-stop fast path.
 7. **Minor:** `snapshot()` filters `kind != "estop"`, but no record of that kind is ever logged;
@@ -747,8 +750,9 @@ thread survives.
 the last 6 exchanges go back with every call. The prompt's follow-up rule tells the model to reuse
 the previous accepted actions with the change applied, written out as plain actions. Demo e: after
 `move(vx=0, vy=0.8, 2 s)` the model returned `move(vx=0, vy=0.3, 2 s)` (e2e baseline S2, prompt v4).
-Be ready for the caveat: on v5, the STATE line also lists the last 3 actions, and the model has
-replayed those too (6.3 item 2).
+On v5 the STATE line names the last *command* separately ("last command: … | earlier: …"); an earlier
+flat list of the last 3 actions made the model replay all of them (6.3 item 2, fixed in `e06968e`;
+definitive e2e S2 passes).
 
 **5. Why is the stop word handled before the LLM?**
 Latency and reliability. The LLM path takes 0.3–2 s (15 s in the worst case) and has misread
