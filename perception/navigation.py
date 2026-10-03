@@ -40,6 +40,13 @@ _DEFAULT_TARGET_CENTER_HEIGHTS_M = {
     "green_stop sign": 0.50,
     "blue_chair": 0.84,
 }
+_TARGET_HEIGHTS_M = {
+    "chair": 0.88,
+    "sports ball": 0.22,
+    "stop sign": 0.30,
+}
+_SAME_HEIGHT_TOLERANCE_M = 0.03
+_NEAR_HORIZONTAL_RAY_ANGLE_DEG = 5.0
 _CLASS_MATERIAL_TOKENS = {
     "chair": ("chair",),
     "sports ball": ("sports_ball", "ball"),
@@ -458,7 +465,12 @@ def _estimated_planar_distance(pose: RobotPose, detection,
 
 def _estimated_target_position(pose: RobotPose, detection, frame_shape,
                                camera_height: float) -> tuple | None:
-    """Project the bbox center into world coordinates using its known z."""
+    """Project the bbox into world coordinates with height-aware ranging.
+
+    Near equal camera and target-center heights, or when the bbox-center ray
+    is nearly horizontal, use the known target size because vertical-angle
+    ranging is poorly conditioned. Otherwise, use the signed vertical angle.
+    """
     frame_height, frame_width = frame_shape[:2]
     if frame_height <= 0 or frame_width <= 0:
         return None
@@ -466,19 +478,27 @@ def _estimated_target_position(pose: RobotPose, detection, frame_shape,
     focal_length_px = frame_height / (
         2.0 * math.tan(math.radians(_CAMERA_VERTICAL_FOV_DEG) / 2.0)
     )
-    bbox_center_x = (detection.bbox[0] + detection.bbox[2]) / 2.0
-    bbox_center_y = (
-        (detection.bbox[1] + detection.bbox[3]) / 2.0
-    )
-    bbox_center_y = min(max(bbox_center_y, 0.0), float(frame_height))
+    x1, y1, x2, y2 = detection.bbox
+    bbox_center_x = (x1 + x2) / 2.0
+    bbox_center_y = min(max((y1 + y2) / 2.0, 0.0), float(frame_height))
     image_down_angle = math.atan(
         (bbox_center_y - frame_height / 2.0) / focal_length_px
     )
     ray_down_angle = math.radians(_CAMERA_DOWN_PITCH_DEG) + image_down_angle
-    if not 0.0 < abs(ray_down_angle) < math.pi / 2.0:
-        return None
+    if (abs(camera_height) <= _SAME_HEIGHT_TOLERANCE_M
+            or abs(ray_down_angle)
+            <= math.radians(_NEAR_HORIZONTAL_RAY_ANGLE_DEG)):
+        bbox_height = y2 - y1
+        target_height = _TARGET_HEIGHTS_M.get(detection.class_name)
+        if (bbox_height <= 0.0 or target_height is None
+                or y1 <= 0.0 or y2 >= frame_height):
+            return None
+        camera_forward = focal_length_px * target_height / bbox_height
+    else:
+        if not 0.0 < abs(ray_down_angle) < math.pi / 2.0:
+            return None
+        camera_forward = camera_height / math.tan(ray_down_angle)
 
-    camera_forward = camera_height / math.tan(ray_down_angle)
     if not math.isfinite(camera_forward) or camera_forward <= 0.0:
         return None
     bearing = math.atan(

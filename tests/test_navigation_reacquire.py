@@ -198,6 +198,70 @@ def test_target_projection_uses_bbox_center_without_fixed_range_bias():
     ) == pytest.approx(expected_forward)
 
 
+@pytest.mark.parametrize(
+    ("object_class", "target_height"),
+    [("chair", 0.88), ("sports ball", 0.22), ("stop sign", 0.30)],
+)
+def test_target_projection_uses_bbox_size_at_camera_height(
+        object_class, target_height):
+    pose = RobotPose(0.0, 0.0, 0.0)
+    frame_shape = (480, 640, 3)
+    bbox_height = 100.0
+    detection = Detection(
+        object_class, "green", 0.9,
+        (310, 190, 330, 190 + bbox_height),
+    )
+    focal_length_px = 480 / (
+        2 * navigation.math.tan(
+            navigation.math.radians(navigation._CAMERA_VERTICAL_FOV_DEG) / 2
+        )
+    )
+    expected_forward = (
+        focal_length_px * target_height / bbox_height
+        + navigation._CAMERA_FORWARD_OFFSET_M
+    )
+
+    target_position = navigation._estimated_target_position(
+        pose, detection, frame_shape, camera_height=0.0
+    )
+
+    assert target_position == pytest.approx((expected_forward, 0.0))
+    assert navigation._estimated_planar_distance(
+        pose, detection, frame_shape, camera_height=0.0,
+        target_position=target_position,
+    ) == pytest.approx(expected_forward)
+
+
+def test_target_projection_uses_bbox_size_for_near_horizontal_ray():
+    pose = RobotPose(0.0, 0.0, 0.0)
+    frame_shape = (480, 640, 3)
+    camera_height = 0.17
+    bbox_height = 50.0
+    focal_length_px = 480 / (
+        2 * navigation.math.tan(
+            navigation.math.radians(navigation._CAMERA_VERTICAL_FOV_DEG) / 2
+        )
+    )
+    bbox_center_y = 240 - focal_length_px * navigation.math.tan(
+        navigation.math.radians(navigation._CAMERA_DOWN_PITCH_DEG)
+    )
+    detection = Detection(
+        "sports ball", "orange", 0.9,
+        (310, bbox_center_y - bbox_height / 2,
+         330, bbox_center_y + bbox_height / 2),
+    )
+    expected_forward = (
+        focal_length_px * 0.22 / bbox_height
+        + navigation._CAMERA_FORWARD_OFFSET_M
+    )
+
+    target_position = navigation._estimated_target_position(
+        pose, detection, frame_shape, camera_height
+    )
+
+    assert target_position == pytest.approx((expected_forward, 0.0))
+
+
 def test_target_projection_handles_target_center_above_camera():
     pose = RobotPose(0.0, 0.0, 0.0)
     frame_shape = (480, 640, 3)
