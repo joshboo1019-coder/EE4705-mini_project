@@ -48,10 +48,25 @@ class CommandExecutor:
 
         t0 = time.time()
         n = len(batch)
+        done = 0
         for i, cmd in enumerate(batch, start=1):
-            self._exec_one(cmd, i, n)
+            # This runs on the main thread: a skill or navigation error must
+            # not kill the program, so it ends this batch and nothing more.
+            try:
+                self._exec_one(cmd, i, n)
+            except Exception as e:
+                print(f"[EXEC] action={i}/{n} failed reason={_short_error(e)}")
+                self._safe_stop()
+                break
+            done += 1
         elapsed = time.time() - t0
-        print(f"[DONE] actions={n} t={elapsed:.1f} s")
+        print(f"[DONE] actions={done} t={elapsed:.1f} s")
+
+    def _safe_stop(self) -> None:
+        try:
+            self.skills.stop()
+        except Exception as e:
+            print(f"[EXEC] stop after failure also failed reason={_short_error(e)}")
 
     def _exec_one(self, cmd, i: int, n: int) -> None:
         if isinstance(cmd, MoveCommand):
@@ -74,3 +89,10 @@ class CommandExecutor:
             print(f"Robot: {cmd.reply}")
         else:
             print(f"[EXEC] action={i}/{n} unknown command skipped: {cmd}")
+
+
+def _short_error(e: Exception, limit: int = 80) -> str:
+    msg = " ".join(str(e).split())
+    if len(msg) > limit:
+        msg = msg[:limit - 3] + "..."
+    return f"{type(e).__name__}: {msg}"
