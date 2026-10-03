@@ -69,7 +69,7 @@ def main():
     ap.add_argument("--class", dest="object_class", default="chair",
                      help='COCO class name, e.g. "chair", "sports ball", '
                           '"stop sign"')
-    ap.add_argument("--color", default="blue",
+    ap.add_argument("--color", default="green",
                      help='must match a key in core.config.OBJECT_POSITIONS, '
                           'e.g. "<color>_<class>" -> "green_chair"')
     ap.add_argument("--mock-perception", action="store_true",
