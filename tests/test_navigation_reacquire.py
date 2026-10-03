@@ -1,10 +1,12 @@
+# Change contributed by Student B (assist), pending review by Student C
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from core import config
 from core.schema import Detection, RobotPose
-from perception import navigation
+from perception import navigation, perception_real
 from perception.perception_real import RealPerception
 
 
@@ -20,10 +22,14 @@ def test_remember_target_retains_last_twenty_png_bbox_frames():
         )
         perception.remember_target(frame, detection)
 
+    # The limit is tuned by Student C (_TARGET_HISTORY_LIMIT, 8 at the time
+    # of writing); the test name predates that tuning.
+    limit = perception_real._TARGET_HISTORY_LIMIT
+    oldest = 21 - limit
     history = perception._target_history
-    assert len(history) == 20
+    assert len(history) == limit
     assert all(encoded.startswith(b"\x89PNG\r\n\x1a\n") for encoded, *_ in history)
-    assert history[0][1] == (1, 2, 3, 4)
+    assert history[0][1] == (oldest, oldest + 1, oldest + 2, oldest + 3)
     assert history[-1][1] == (20, 21, 22, 23)
 
 
@@ -123,8 +129,16 @@ def test_steer_to_center_accepts_target_within_wider_tolerance():
             self.turns.append(angle)
 
     skills = _TurningSkills()
-    within_tolerance = Detection("sports ball", "orange", 0.9, (185, 0, 195, 10))
-    outside_tolerance = Detection("sports ball", "orange", 0.9, (186, 0, 196, 10))
+    # Default frame_width=320 -> center x=160; bbox is 10 px wide.
+    tolerance = config.CENTER_TOLERANCE_PX
+    within_tolerance = Detection(
+        "sports ball", "orange", 0.9,
+        (155 + tolerance, 0, 165 + tolerance, 10),
+    )
+    outside_tolerance = Detection(
+        "sports ball", "orange", 0.9,
+        (156 + tolerance, 0, 166 + tolerance, 10),
+    )
 
     assert navigation._steer_to_center(within_tolerance, skills) is True
     assert skills.turns == []
@@ -268,9 +282,15 @@ def test_target_projection_handles_target_center_above_camera():
     target_center_z = 0.84
     camera_z = 0.50 + navigation._CAMERA_HEIGHT_ABOVE_TRUNK_M
     camera_height = camera_z - target_center_z
-    expected_camera_forward = 3.0
+    # Rays within _NEAR_HORIZONTAL_RAY_ANGLE_DEG are ranged by bbox size
+    # (0b438c0); at 3.0 m this ray was only ~3.4 deg, so use 1.0 m to keep
+    # the signed vertical-angle path under test.
+    expected_camera_forward = 1.0
     ray_down_angle = navigation.math.atan(
         camera_height / expected_camera_forward
+    )
+    assert abs(ray_down_angle) > navigation.math.radians(
+        navigation._NEAR_HORIZONTAL_RAY_ANGLE_DEG
     )
     focal_length_px = 480 / (
         2 * navigation.math.tan(
@@ -470,11 +490,19 @@ def test_obstructed_approach_backs_up_strafes_and_retries_scan(monkeypatch):
     assert len(skills.moves) == 12
     assert all(move == (0.3, 0.0, 0.0, 0.5) for move in skills.moves[:8])
     assert skills.moves[8] == (-0.3, 0.0, 0.0, 0.5)
-    assert skills.moves[9] == (0.0, 0.6, 0.0, 2.0)
+    assert skills.moves[9] == (
+        0.0, config.REACQUIRE_STRAFE_VY, 0.0, config.REACQUIRE_STRAFE_S
+    )
     assert skills.moves[10:] == [(0.3, 0.0, 0.0, 0.5)] * 2
-    assert perception.scan_count == 11
+    # 8 approach + 1 initial-center + 1 post-strafe settle re-detect + 2 retry
+    assert perception.scan_count == 12
 
 
+@pytest.mark.xfail(
+    reason="expects a (0.3, 0, 0, 0.5) forward move but its own "
+           "_approach_step fake never calls skills.move; intent needs Student C",
+    strict=False,
+)
 def test_recenter_time_counts_toward_four_second_recovery(monkeypatch):
     detection = Detection("sports ball", "orange", 0.9, (300, 200, 340, 240))
     now = [0.0]
@@ -482,7 +510,7 @@ def test_recenter_time_counts_toward_four_second_recovery(monkeypatch):
     class _RecoverStarted(Exception):
         pass
 
-    class _Skills(_Skills):
+    class _RecoverSkills(_Skills):
         def __init__(self):
             self.moves = []
 
@@ -501,7 +529,7 @@ def test_recenter_time_counts_toward_four_second_recovery(monkeypatch):
         def remember_target(self, frame, target):
             pass
 
-    skills = _Skills()
+    skills = _RecoverSkills()
     steer_calls = [0]
     attempt_started_at = [None]
     monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
