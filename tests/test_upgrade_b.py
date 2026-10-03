@@ -929,3 +929,77 @@ def test_v5_keeps_every_v4_rule_line():
                  "Decide the language first", "vy  + = LEFT", "treat a warning as stop",
                  'If it is unclear WHAT the user wants']:
         assert rule in llm_parser.SYSTEM_PROMPT
+
+
+# ---------------------------------------------------------------------------
+# Cross-cutting: e-stop during repair motions, speech, LLM call budget,
+# proxies
+# ---------------------------------------------------------------------------
+
+def test_estop_during_return_home(fake_llm, capsys):
+    skills = KinematicSkills(sleep_scale=0.5, quiet=True)
+    queue = CommandQueue()
+    ex = CommandExecutor(skills, ScenarioPerception(skills, objects=[], quiet=True), queue)
+    _do(ex, MoveCommand(0.8, 0.0, 0.0, 5.0))                          # 4 m out
+    _background(ex)
+    queue.push_many([ReturnHomeCommand()])
+    assert _wait(lambda: ex._busy and len(skills.moves) >= 3)
+    chat_interface.handle_utterance("emergency stop", [], queue)
+    assert _wait(lambda: not ex._busy)
+    p = skills.get_robot_pose()
+    assert math.hypot(p.x, p.y) > 0.5                                  # did not make it home
+    out = capsys.readouterr().out
+    assert "[EXEC] action=1/1 aborted reason=emergency_stop" in out and fake_llm.calls == []
+    # the aborted return_home is logged as stopped early
+    assert ex.state.actions[-1].words().endswith("(stopped early)")
+
+
+def test_spoken_stop_word_takes_the_fast_path(fake_llm, capsys):
+    import numpy as np
+
+    class Tr:
+        def transcribe(self, audio):
+            return "Stop.", "en", 0.9
+
+    queue = CommandQueue()
+    CommandExecutor(KinematicSkills(quiet=True), MockPerception(), queue)
+    r = speech_input.handle_voice([], queue, record_fn=lambda: np.full(16000, 0.1, np.float32),
+                                  transcriber=Tr())
+    assert r.commands == [StopCommand()] and fake_llm.calls == []
+    assert "[ESTOP] latency=" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("text,reply,calls", [
+    ("walk forward", _actions(MOVE_3S), 1),
+    ("walk in a square", _actions(SQUARE), 1),
+    ("向前走三秒", _actions(MOVE_3S), 1),           # precheck reject + one suggestion call
+    ("avancez", '{"rejected": true, "reason": "non-English", "suggestion": "go forward"}', 1),
+    ("stop", None, 0),                              # fast path
+    ("   ", None, 0),                               # empty: no call, no suggestion
+])
+def test_at_most_one_llm_call_per_utterance(fake_llm, text, reply, calls):
+    if reply:
+        fake_llm.replies.append(reply)
+    queue = CommandQueue()
+    ex = CommandExecutor(KinematicSkills(quiet=True), MockPerception(), queue)
+    chat_interface.handle_utterance(text, [], queue)
+    while not queue.empty():                       # executing never calls the LLM
+        ex._run_batch_starting_with(queue.pop(timeout=0))
+    assert len(fake_llm.calls) == calls
+
+
+def test_abortable_skills_delegates_everything_else():
+    from dialogue.executor import _AbortableSkills, ExecutionAborted
+    inner = MockSkills()
+    inner._model = "mj-model"
+    flag = {"on": False}
+    px = _AbortableSkills(inner, lambda: flag["on"])
+    assert px._model == "mj-model" and px.get_trunk_height() == 0.25
+    assert px.get_robot_pose() == inner.get_robot_pose()
+    flag["on"] = True
+    with pytest.raises(ExecutionAborted):
+        px.move(0.5, 0, 0, 1)
+    with pytest.raises(ExecutionAborted):
+        px.turn(10)
+    px.stop()                                    # stop always goes through
+    assert getattr(px, "no_such_attr", None) is None
