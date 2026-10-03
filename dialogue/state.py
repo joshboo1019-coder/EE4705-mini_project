@@ -230,6 +230,7 @@ class RobotState:
             return "I don't know where I started."
         ahead, left, dist, head = rel
         facing = ("facing the way I started" if abs(head) < 2 else
+                  "facing the opposite way from when I started" if abs(head) > 178 else
                   f"facing {abs(head):.0f}° {'left' if head > 0 else 'right'} of my starting direction")
         if dist < 0.1:
             return f"I'm at my starting point, {facing}."

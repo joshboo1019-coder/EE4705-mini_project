@@ -1049,3 +1049,15 @@ def test_summary_reports_path_length_when_the_robot_comes_back(capsys):
     _run_cmds(ex, queue, _v(SQUARE).commands)
     assert _lines(capsys.readouterr().out, "Robot:")[-1] == \
         "Robot: Done: walked about 4.0 m, ending 0.0 m from where I began."
+
+
+def test_hard_set_state_is_rendered_by_the_system_under_test():
+    from eval import hard_cases, task3_eval
+    snap = task3_eval.render_state(hard_cases.STATES["H-R3"])
+    assert snap.endswith("camera has seen (first to last): orange sports ball, red stop sign, green chair")
+    assert task3_eval.render_state(None) is None
+    # every Hard case has a checker that runs on an empty rejection without crashing
+    from core.schema import ParseResult
+    for case in hard_cases.HARD_CASES:
+        ok, why = case[4](ParseResult(accepted=False, reject_reason="x"))
+        assert isinstance(ok, bool)
