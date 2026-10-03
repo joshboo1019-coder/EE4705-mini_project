@@ -130,10 +130,17 @@ How to read the clip names: `~/Videos/e2e/<run>/<suite>_<scenario>.mp4` (not in 
   `eval/e2e/results/20261004-0138_stopsign_eval`. **Not merged.** Decision: keep old signs (recommended for now), or
   adopt + calibrate signs + try the text-free octagon (142/387 signs, smaller chair loss). **Time:** 1–2 h if adopted.
 
-### C4. No obstacle avoidance; close-range loss
+### C4. No obstacle avoidance; close-range C1 failures
 - Scenario 2 (original layout): the straight path from spawn to the ball passes the red stop sign at (−1.3, 0);
-  two runs brushed its pole (e2e trace contacts). Close range: a chair at < 0.6 m fills the frame (bbox touching the
-  top edge, conf ≈ 0.4) and the stop frame can miss it (scenario 4, `stop_verification`). **Time:** open.
+  two runs brushed its pole (e2e trace contacts).
+- **Close range (C1).** With the closer chair stop (P2b), a chair fills the frame (bbox touching the top edge) and
+  YOLO's label becomes unstable: in the S4 multi-goal run the red chair at a *true* 0.63 m (C2 satisfied) was
+  labelled `bed` (conf 0.18) in the stop frame → `[TRACK] final label conflict not confirmed by target history` →
+  `[MISSION] status=FAIL reason=stop_verification` (`eval/e2e/results/20261004-0206_final/S4_multigoal.log`);
+  S3 scenario 4 fails the same way. So the margin trades C2 violations (true 0.84–0.96 m) for occasional C1 misses
+  at ~0.6 m. **Proposal:** verify C1 on the last frame where the target was still confidently tracked before the
+  final step, or let the tracker's identity (`recover_target`, score ≥ 0.9 seen in these logs) confirm a
+  frame-filling target. **Time:** 1 h + re-run S3.
 
 ### C5. Tests that need C's intent
 - `test_recenter_time_counts_toward_four_second_recovery` (xfail on `chore/cli-tests`), the above-camera
