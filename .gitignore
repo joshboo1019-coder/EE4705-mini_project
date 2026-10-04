@@ -8,6 +8,8 @@ runs/
 
 # never commit API keys or credentials
 .env
+.env.*
+!.env.example
 *.key
 
 # large/generated assets students fetch locally
