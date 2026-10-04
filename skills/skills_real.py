@@ -1470,6 +1470,27 @@ class RealSkills(SkillsAPI):
         with self._frame_lock:
             self._latest_frame = frame
 
+    def _apply_panel_camera_change(self) -> None:
+        """Apply the browser panel's Camera dropdown. The platform consumes it
+        only in RuntimeControl.update_command(), which this sim loop never
+        calls (it replaces the keyboard command source), so the selection was
+        silently dropped. Only the camera change: map changes would swap out
+        our scene and panel keys must not drive the robot. No-op without a
+        panel (headless, mock, native viewer)."""
+        # Change contributed by Student B (assist), pending review by Student A
+        panel = getattr(self._runtime, "panel", None)
+        consume = getattr(panel, "consume_camera_change", None)
+        if not callable(consume):
+            return
+        camera = consume()
+        if camera:
+            lock = getattr(self._runtime, "render_lock", None)
+            if lock is None:
+                self._runtime.browser_camera_mode = camera
+            else:
+                with lock:
+                    self._runtime.browser_camera_mode = camera
+
     def _sim_loop(self) -> None:
         real_start = time.time()
         while not self._stop_event.is_set():
@@ -1481,6 +1502,7 @@ class RealSkills(SkillsAPI):
             runtime_state = None
             if self._runtime is not None:
                 runtime_state = self._runtime.runtime_control(self._model, self._data)
+                self._apply_panel_camera_change()
                 if self._runtime.consume_reset():
                     platform.reset_robot(self._model, self._data, platform.DEFAULT_ANGLES_MUJOCO)
                     self._obs_history.reset()
