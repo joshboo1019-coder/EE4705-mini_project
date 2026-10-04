@@ -1,0 +1,79 @@
+
+=== Scenario 8: surrounded ===
+Robot in the middle of a ring of objects, facing 45 deg.
+Robot start: x=-3.0 y=0.0 yaw=45.0 deg | target visible at start (expected): False
+Valid targets: green chair, red chair, blue chair, orange sports ball, red stop sign
+Example: go to the green chair
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_pf4ga72l/scenario_08_surrounded.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_pf4ga72l/scenario_08_surrounded.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-3.01 y=-0.02 yaw=44.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=chair, color=blue) n=1
+User: [EXEC] action=1/1 goto_object class=chair color=blue
+[CMD] action=goto_object(class=chair, color=blue)
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.9 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.4 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=chair color=blue conf=0.64 bbox=[119.83, 97.53, 212.92, 253.90]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=blue conf=0.62 bbox=[166.88, 108.33, 249.74, 254.61]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=blue conf=0.69 bbox=[194.08, 110.17, 272.33, 252.52]
+[DETECT] class=chair color=red conf=0.54 bbox=[557.95, 101.48, 617.34, 242.23]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=blue conf=0.81 bbox=[212.52, 108.49, 288.18, 252.05]
+[DETECT] class=chair color=red conf=0.41 bbox=[583.28, 97.98, 639.64, 244.43]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=blue conf=0.61 bbox=[247.06, 108.36, 317.00, 246.98]
+[DETECT] class=chair color=blue conf=0.61 bbox=[263.08, 105.30, 333.22, 244.87]
+[RANGE] estimated_planar=2.26 m ground_truth=2.46 m phase=approach
+[DETECT] class=chair color=blue conf=0.49 bbox=[256.63, 84.57, 330.54, 231.01]
+[RANGE] estimated_planar=2.18 m ground_truth=2.38 m phase=approach
+[DETECT] class=chair color=blue conf=0.46 bbox=[249.89, 109.51, 326.75, 260.13]
+[RANGE] estimated_planar=2.05 m ground_truth=2.25 m phase=approach
+[DETECT] class=chair color=blue conf=0.62 bbox=[235.56, 108.28, 322.35, 268.64]
+[RANGE] estimated_planar=1.91 m ground_truth=2.11 m phase=approach
+[DETECT] class=chair color=blue conf=0.52 bbox=[229.25, 95.80, 324.75, 420.98]
+[RANGE] estimated_planar=1.77 m ground_truth=1.97 m phase=approach
+[DETECT] class=chair color=blue conf=0.42 bbox=[218.88, 72.99, 325.60, 290.46]
+[RANGE] estimated_planar=1.62 m ground_truth=1.82 m phase=approach
+[DETECT] class=chair color=blue conf=0.32 bbox=[197.40, 54.73, 327.77, 465.67]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=chair color=blue conf=0.65 bbox=[217.96, 59.63, 339.23, 466.02]
+[RANGE] estimated_planar=1.46 m ground_truth=1.66 m phase=approach
+[TRACK] recovered blue chair in live frame score=1.00
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=blue conf=0.42 bbox=[210.48, 20.26, 368.00, 365.07]
+[RANGE] estimated_planar=1.18 m ground_truth=1.38 m phase=approach
+[DETECT] class=chair color=blue conf=0.26 bbox=[200.74, 2.31, 376.60, 355.69]
+[RANGE] estimated_planar=1.08 m ground_truth=1.28 m phase=approach
+[DETECT] class=chair color=blue conf=0.82 bbox=[172.87, 1.76, 379.61, 462.87]
+[RANGE] estimated_planar=0.96 m ground_truth=1.16 m phase=approach
+[DETECT] class=chair color=blue conf=0.90 bbox=[111.08, 2.38, 378.90, 470.39]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=chair color=blue conf=0.93 bbox=[129.93, 2.82, 406.03, 466.96]
+[RANGE] estimated_planar=0.81 m ground_truth=1.01 m phase=approach
+[DETECT] class=chair color=blue conf=0.92 bbox=[112.17, 3.84, 469.46, 468.57]
+[RANGE] estimated_planar=0.68 m ground_truth=0.88 m phase=approach
+[DETECT] class=chair color=blue conf=0.69 bbox=[18.25, 1.98, 557.75, 475.51]
+[RANGE] estimated_planar=0.57 m ground_truth=0.77 m phase=approach
+[DETECT] class=chair color=blue conf=0.32 bbox=[11.18, 4.05, 544.02, 474.29]
+[RANGE] estimated_planar=0.56 m ground_truth=0.76 m phase=approach
+[DETECT] class=chair color=blue conf=0.34 bbox=[73.20, 142.38, 540.18, 478.20]
+[TRACK] recovered blue chair in live frame score=0.82
+[RANGE] estimated_planar=0.50 m ground_truth=0.70 m phase=stop_check
+[FOUND] class=chair color=blue t=18.1 s d=0.70 m
+[MISSION] status=SUCCESS
+[DONE] actions=1 t=18.1 s
+Robot: Done: reached the blue chair; moved 1.8 m, net turn 137° left.
