@@ -101,6 +101,14 @@ class CommandQueue:
 
     def __init__(self):
         self._q = queue.Queue()
+        self._input_closed = threading.Event()
+
+    def close_input(self) -> None:
+        """The chat input ended (EOF): no more commands will be pushed."""
+        self._input_closed.set()
+
+    def input_closed(self) -> bool:
+        return self._input_closed.is_set()
 
     def push_many(self, commands: List[Command]) -> None:
         for c in commands:

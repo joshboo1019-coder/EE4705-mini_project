@@ -190,9 +190,13 @@ class CommandExecutor:
 
     def run_forever(self, poll_timeout: float = 0.2) -> None:
         """Call this from the main thread's loop (not the chat thread) so
-        the simulation keeps stepping while it also executes commands."""
+        the simulation keeps stepping while it also executes commands.
+        Returns once the chat input is closed (EOF) and nothing is left to run."""
         while True:
-            self.run_next(poll_timeout)
+            ran = self.run_next(poll_timeout)
+            if (not ran and self.queue.input_closed() and self.queue.empty()
+                    and self._carry is None):
+                return
 
     def run_next(self, timeout: float = 0.2) -> bool:
         """Run the next queued utterance (a carried-over one first) as one
