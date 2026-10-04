@@ -1,5 +1,11 @@
 """
 Change contributed by Student B (assist), pending review by Student C:
+reactive avoidance during the approach (branch iter/avoid,
+docs/iter_avoid.md): a nearer non-target object estimated < 1.0 m ahead
+within +/-25 deg of the heading triggers a sideways step ([AVOID] log line);
+live detections and estimated ranges only.
+
+Change contributed by Student B (assist), pending review by Student C:
 colour-plate fallback + plate range model for "stop sign" targets (branch
 iter/stopsign-plate, docs/iter_stopsign_plate.md; image pixels only).
 
@@ -101,6 +107,7 @@ def goto_object(object_class: str, color: str,
     forward_attempt_start: RobotPose | None = None
     forward_attempt_started_at: float | None = None
     forward_attempt_duration = 0.0
+    avoid_state = {"steps": 0, "sides": {}}
 
     def reacquire_sweep(attempt: int) -> None:
         nonlocal target_position
@@ -220,6 +227,10 @@ def goto_object(object_class: str, color: str,
                 skills.turn(config.SEARCH_TURN_DEG)
                 scan_degrees += abs(config.SEARCH_TURN_DEG)
                 if scan_degrees >= 360.0:
+                    if _occlusion_sidestep(skills, object_class, avoid_state):
+                        scan_degrees = 0.0
+                        consecutive_misses = 0
+                        continue
                     print("[MISSION] status=FAIL reason=target_not_found")
                     skills.stop()
                     return False
@@ -286,6 +297,17 @@ def goto_object(object_class: str, color: str,
             print("[MISSION] status=FAIL reason=stop_verification")
             skills.stop()
             return False
+
+        # iter/avoid (Student B assist, pending review by Student C):
+        # side-step a nearer non-target object in the path (live detections
+        # and estimated ranges only), then continue the approach.
+        if _avoid_obstacle_ahead(skills, perception, frame, detections, pose,
+                                 object_class, color, target_position,
+                                 distance, avoid_state):
+            forward_attempt_start = None
+            forward_attempt_started_at = None
+            forward_attempt_duration = 0.0
+            continue
 
         if forward_attempt_start is None:
             forward_attempt_start = pose
@@ -677,6 +699,141 @@ def _reverify_after_backoff(skills, perception, object_class, color, t0,
     if turned:
         skills.turn(-turned)  # back to the original heading
     return False
+
+
+# --- Reactive avoidance (iter/avoid) ----------------------------------------
+# Change contributed by Student B (assist), pending review by Student C.
+# During the approach, a NON-target object whose ESTIMATED range is below
+# _AVOID_AHEAD_M and whose estimated bearing is within +/-_AVOID_CONE_DEG of
+# the heading, while the target is estimated farther away, triggers a short
+# sideways step away from it; the loop repeats until it leaves the cone.
+# Inputs are the live detections (YOLO + the stop-sign colour-plate detector)
+# and the robot's own pose; no simulator ground truth (docs/iter_avoid.md).
+_AVOID_AHEAD_M = 1.0
+_AVOID_CONE_DEG = 25.0
+_AVOID_TARGET_MARGIN_M = 0.20    # obstacle must be this much nearer than the target
+_AVOID_SAME_OBJECT_M = 0.45      # a detection this close to the target estimate is the target
+_AVOID_STRAFE_VY = 0.3           # m/s sideways (+vy = left)
+_AVOID_STRAFE_S = 0.5            # one side-step: ~0.15 m
+_AVOID_MAX_STEPS = 12            # per goto_object (~1.8 m sideways in total)
+_AVOID_PLATE_COLORS = ("red", "yellow", "green")
+
+
+_OCCLUSION_SIDESTEP_CLASSES = ("stop sign",)  # thin, small targets hide behind a nearer object
+_OCCLUSION_SIDESTEP_VY = 0.4     # m/s, +vy = left
+_OCCLUSION_SIDESTEP_S = 2.0      # ~0.8 m sideways
+
+
+def _occlusion_sidestep(skills, object_class: str, state) -> bool:
+    """After a full in-place scan without the target: for a small/thin target
+    class (a sign plate can sit right behind a nearer chair), step sideways
+    once and let the caller scan again. Returns True if it stepped."""
+    if object_class not in _OCCLUSION_SIDESTEP_CLASSES or state.get("sidestepped"):
+        return False
+    state["sidestepped"] = True
+    print(f"[SEARCH] full scan without the target, side-stepping left "
+          f"{_OCCLUSION_SIDESTEP_VY * _OCCLUSION_SIDESTEP_S:.1f} m to look past occluders")
+    skills.move(vx=0.0, vy=_OCCLUSION_SIDESTEP_VY, wz=0.0,
+                duration=_OCCLUSION_SIDESTEP_S)
+    skills.stop()
+    time.sleep(0.4)  # settle, fresh frame
+    return True
+
+
+def _avoid_decision(obstacles, target_distance: float,
+                    target_bearing_deg: float = 0.0, sides=None):
+    """Pure decision. `obstacles`: iterable of (label, d_est, bearing_deg)
+    with bearing relative to the heading (+ = left). Returns
+    (label, d_est, side) for the nearest obstacle that is within
+    _AVOID_AHEAD_M, inside the +/-_AVOID_CONE_DEG cone and nearer than the
+    target by _AVOID_TARGET_MARGIN_M; side is "L" or "R" (the direction to
+    step: away from the obstacle, relative to the target line). `sides`
+    keeps the first side chosen per label so the robot does not zig-zag."""
+    best = None
+    for label, d_est, bearing in obstacles:
+        if not (math.isfinite(d_est) and math.isfinite(bearing)):
+            continue
+        if d_est >= _AVOID_AHEAD_M or abs(bearing) > _AVOID_CONE_DEG:
+            continue
+        if not d_est < target_distance - _AVOID_TARGET_MARGIN_M:
+            continue
+        if best is None or d_est < best[1]:
+            best = (label, d_est, bearing)
+    if best is None:
+        return None
+    label, d_est, bearing = best
+    side = (sides or {}).get(label)
+    if side is None:
+        side = "R" if bearing > target_bearing_deg else "L"
+    return label, d_est, side
+
+
+def _obstacle_estimates(skills, perception, frame, detections, pose,
+                        object_class, color, target_position):
+    """(label, d_est, bearing_deg) for each live non-target detection,
+    ranged with the same bbox models as the target (no ground truth)."""
+    candidates = [d for d in detections
+                  if d.class_name in _NOMINAL_CENTER_HEIGHTS_M
+                  and not (d.class_name == object_class and d.color == color)]
+    detect_plate = getattr(perception, "detect_plate", None)
+    if callable(detect_plate):
+        for plate_color in _AVOID_PLATE_COLORS:
+            if object_class == "stop sign" and plate_color == color:
+                continue
+            if any(d.class_name == "stop sign" and d.color == plate_color
+                   for d in candidates):
+                continue
+            plate = detect_plate(frame, plate_color)
+            if plate is not None:
+                candidates.append(plate)
+    out = []
+    for det in candidates:
+        camera_height = _camera_height_above_ground(
+            skills, det.class_name, det.color, det, frame.shape)
+        position = _estimated_target_position(pose, det, frame.shape,
+                                              camera_height)
+        if position is None:
+            continue
+        if (target_position is not None
+                and math.hypot(position[0] - target_position[0],
+                               position[1] - target_position[1])
+                < _AVOID_SAME_OBJECT_M):
+            continue
+        d_est = math.hypot(position[0] - pose.x, position[1] - pose.y)
+        bearing = math.degrees(math.atan2(position[1] - pose.y,
+                                          position[0] - pose.x))
+        bearing = (bearing - pose.yaw_deg + 180.0) % 360.0 - 180.0
+        out.append((f"{det.color} {det.class_name}", d_est, bearing))
+    return out
+
+
+def _avoid_obstacle_ahead(skills, perception, frame, detections, pose,
+                          object_class, color, target_position,
+                          target_distance, state) -> bool:
+    """One avoidance step if needed: log [AVOID], side-step, return True."""
+    if state["steps"] >= _AVOID_MAX_STEPS:
+        return False
+    obstacles = _obstacle_estimates(skills, perception, frame, detections,
+                                    pose, object_class, color,
+                                    target_position)
+    target_bearing = 0.0
+    if target_position is not None:
+        target_bearing = math.degrees(math.atan2(
+            target_position[1] - pose.y, target_position[0] - pose.x))
+        target_bearing = (target_bearing - pose.yaw_deg + 180.0) % 360.0 - 180.0
+    decision = _avoid_decision(obstacles, target_distance, target_bearing,
+                               state["sides"])
+    if decision is None:
+        return False
+    label, d_est, side = decision
+    state["sides"].setdefault(label, side)
+    state["steps"] += 1
+    print(f"[AVOID] obj={label} d_est={d_est:.2f} side={side}")
+    vy = _AVOID_STRAFE_VY if side == "L" else -_AVOID_STRAFE_VY
+    skills.move(vx=0.0, vy=vy, wz=0.0, duration=_AVOID_STRAFE_S)
+    skills.stop()
+    time.sleep(0.3)  # settle, fresh frame
+    return True
 
 
 def _ground_truth_distance(pose: RobotPose, object_class: str, color: str) -> float:
