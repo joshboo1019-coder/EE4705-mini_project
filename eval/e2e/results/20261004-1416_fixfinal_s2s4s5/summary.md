@@ -1,6 +1,6 @@
 # e2e run `20261004-1416_fixfinal_s2s4s5`
 
-Commit: `132d820` on `fix/final`. LLM: qwen-flash (config.LLM_SERVICE). Clips: `~/Videos/e2e/20261004-1416_fixfinal_s2s4s5/` (not recorded).
+Commit: `711737c` on `fix/final`. LLM: qwen-flash (config.LLM_SERVICE). Clips: `~/Videos/e2e/20261004-1416_fixfinal_s2s4s5/` (recorded).
 
 ## S2 — Task 3 (Video_Task3 script a–g, typed into main.py)
 
@@ -35,7 +35,7 @@ Multi-goal (clip –): `[MULTI] status=PARTIAL reached=1/2 missed=red_chair t=71
 | return_home | plan ✅, home_within_0.3m ✅, status_answer ✅ | ✅ | ✅ fall, 0 contacts | – |
 | status | answer_mentions_turn ✅ | ✅ | ✅ fall, 0 contacts | – |
 | estop | estop_line ✅, no_llm_for_stop ✅, latency 0.0 ms | ✅ | ✅ fall, 1 contacts | – |
-| non_english | rejected_non_english ✅, suggestion ✅, redirect_turned ❌ | ❌ | ✅ fall, 0 contacts | – |
+| non_english | rejected_non_english ✅, suggestion ✅, redirect_turned ✅ | ✅ | ✅ fall, 0 contacts | – |
 | out_of_range | rejected_out_of_range ✅, suggestion ✅, why_answer ✅ | ✅ | ✅ fall, 0 contacts | – |
 | spin | chunked_turns ✅, rotated_~720 ✅, rotated 715.4° | ✅ | ✅ fall, 0 contacts | – |
 
