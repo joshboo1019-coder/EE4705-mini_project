@@ -1,3 +1,5 @@
+# Owner: ALL (backbone)
+# Change contributed by Student B (assist), pending review by Student C and the group
 """
 config.py — Shared constants. Edit freely; these are just numbers, not
 interfaces, so there's little risk of merge conflicts here. Still, agree

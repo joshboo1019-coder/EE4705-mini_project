@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/make_highlights.py — Student B. ~/Videos/e2e/highlights.mp4 for the
 morning review: short captioned excerpts of e2e clips, concatenated.

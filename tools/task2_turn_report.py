@@ -1,3 +1,5 @@
+# Owner: Student A (Task 2)
+# Change contributed by Student B (assist), pending review by Student A
 """
 tools/task2_turn_report.py -- table + figure from the turn-trial JSONL logs.
 

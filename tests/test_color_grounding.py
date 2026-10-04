@@ -1,3 +1,5 @@
+# Owner: Student C (Task 4)
+# Change contributed by Student B (assist), pending review by Student C
 """
 Colour grounding (perception_real._grounded_color) on synthetic crops.
 Written by Student B (assist Task 4). No YOLO, no sim.

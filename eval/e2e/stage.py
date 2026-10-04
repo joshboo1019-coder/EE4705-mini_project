@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/stage.py — Student B. A virtual "stage" for recorded end-to-end runs.
 

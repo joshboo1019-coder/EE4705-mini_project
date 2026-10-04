@@ -1,3 +1,4 @@
+# Owner: Student C (Task 4)
 """
 scenarios.py -- Student C. Ten reproducible Task 4 test scenarios, each with
 its own object layout and robot start pose.

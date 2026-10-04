@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2 stairs demo; uses Student C's perception)
 """
 Change contributed by Student B (assist), pending review by Student C:
 the range log passes the live bbox (no simulator ground truth for the

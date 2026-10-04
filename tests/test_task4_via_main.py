@@ -1,3 +1,5 @@
+# Owner: ALL (backbone)
+# Change contributed by Student B (assist), pending review by Student C and the group
 """
 tests/test_task4_via_main.py — Student B (assist), pending review by Student C
 and the group. `main.py --scenario N` (assist/task4-via-main): Task 4 runs

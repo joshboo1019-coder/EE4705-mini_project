@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/trace.py — Student B. Ground-truth trace for the e2e harness ONLY.
 

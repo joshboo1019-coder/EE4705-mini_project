@@ -1,3 +1,4 @@
+# Owner: ALL (backbone mock of Student A's SkillsAPI)
 """
 skills_mock.py — Fake SkillsAPI for offline development/testing.
 

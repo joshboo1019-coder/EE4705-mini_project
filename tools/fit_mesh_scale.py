@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tools/fit_mesh_scale.py — compute the MJCF <mesh scale="sx sy sz"/> value
 that makes a downloaded .obj match a target real-world size.

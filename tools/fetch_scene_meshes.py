@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tools/fetch_scene_meshes.py — download real chair + stop-sign meshes for
 Task 2.iii, replacing the flat-color primitive geoms currently in
