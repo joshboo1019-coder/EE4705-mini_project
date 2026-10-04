@@ -68,6 +68,22 @@ def load_scenario(token: str):
     return scenario, scene_path
 
 
+def _wait_until_sim_ready(skills, timeout_s: float = 15.0, min_wall_s: float = 2.0) -> None:
+    """Before teleporting the robot for a --scenario: wait until the sim thread
+    is stepping and the onboard camera delivers frames, instead of a fixed
+    1.0 s. Two e2e launches hung inside place_robot right after the camera's
+    EGL renderer re-creation on the sim thread ("never became ready")."""
+    t0 = time.time()
+    sim_time = getattr(skills, "_get_sim_time", None)
+    start = sim_time() if sim_time else 0.0
+    while time.time() - t0 < timeout_s:
+        stepping = sim_time is None or sim_time() - start >= 0.5
+        if stepping and time.time() - t0 >= min_wall_s and skills.get_camera_frame() is not None:
+            break
+        time.sleep(0.1)
+    print(f"[SCENARIO] sim ready after {time.time() - t0:.1f} s")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gui", action="store_true",
@@ -90,7 +106,7 @@ def main():
         start_trace(skills, os.environ["E2E_TRACE_FILE"])
     if scenario is not None and USE_REAL_SKILLS:
         from perception import scenarios
-        time.sleep(1.0)          # let the sim thread start stepping
+        _wait_until_sim_ready(skills)
         scenarios.place_robot(skills, *scenario.robot)
     perception = build_perception()
     queue = CommandQueue()
