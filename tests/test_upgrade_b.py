@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 tests/test_upgrade_b.py — STUDENT B. Offline tests for the Task 3 upgrade:
 talk-back, programs (repeat / until_see / distance moves), the stop fast

@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/aggregate_s3.py — Student B. S3 over repeated runs (n per scenario).
 

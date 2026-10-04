@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/demo_bonus.py — Student B. Typed demo for Video_Bonus (one take).
 

@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tools/visual_test_rough_terrain.py — drive the real robot over the UNEVEN
 terrain features already present in assets/scenes/custom_scene.xml (they

@@ -1,3 +1,4 @@
+# Owner: ALL (shared tooling, written by Student A)
 """
 tools/check_status.py — quick "what's actually implemented" sweep.
 

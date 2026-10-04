@@ -1,3 +1,5 @@
+# Owner: Student C (Task 4)
+# Change contributed by Student B (assist), pending review by Student C
 """
 tests/test_c2_margin.py — Student B (assist), pending review by Student C.
 The approach stops at config.APPROACH_STOP_M (estimated range), a margin

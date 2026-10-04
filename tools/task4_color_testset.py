@@ -1,3 +1,5 @@
+# Owner: Student C (Task 4)
+# Change contributed by Student B (assist), pending review by Student C
 """
 tools/task4_color_testset.py — offline colour-grounding test set for Task 4.
 Written by Student B (assist Task 4) for the colour-grounding fix.

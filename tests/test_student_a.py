@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tests/test_student_a.py — STUDENT A's interface/contract check.
 

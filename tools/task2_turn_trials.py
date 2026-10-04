@@ -1,3 +1,5 @@
+# Owner: Student A (Task 2)
+# Change contributed by Student B (assist), pending review by Student A
 """
 tools/task2_turn_trials.py -- open-loop vs closed-loop turn trials (Task 2).
 

@@ -1,3 +1,4 @@
+# Change contributed by Student B (assist), reviewed by Student C (colour-grounding fix)
 """
 perception_real.py — STUDENT C OWNS THIS FILE (half of Task 4, 60% w/ nav).
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Owner: Student B (shared run wrapper, used by ALL)
 # eval/run_env.sh — run a project Python command on the real platform.
 #
 #   eval/run_env.sh main.py --gui                    # demo: browser panel at http://localhost:8765

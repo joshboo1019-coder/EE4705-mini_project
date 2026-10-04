@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tools/gen_task2_block_diagram.py -- generates the Task 2 control-pipeline
 block diagram for the report (docs/task2_block_diagram.svg / .png).

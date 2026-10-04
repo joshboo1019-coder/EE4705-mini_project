@@ -1,3 +1,4 @@
+# Owner: ALL (backbone)
 # Change contributed by Student B (assist), pending review by the group
 """
 tests/test_handoff.py — BACKBONE (ALL). Full-pipeline integration check.

@@ -1,3 +1,4 @@
+# Owner: ALL (backbone mock of Student C's PerceptionAPI)
 """
 perception_mock.py — Fake PerceptionAPI for offline development/testing.
 
