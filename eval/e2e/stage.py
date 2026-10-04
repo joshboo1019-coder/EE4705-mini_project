@@ -33,8 +33,21 @@ from typing import Callable, List, Optional
 REPO = Path(__file__).resolve().parents[2]
 XROOT = Path(os.environ.get("E2E_XROOT", "/tmp/e2e-xroot"))
 WIDTH, HEIGHT = 1920, 1080
+OX, OY = 0, 0                      # recorded region's offset on the X screen
 TERM_W = 960                       # terminal on the left, panel on the right
 PANEL_URL = "http://127.0.0.1:8765"
+
+
+def set_geometry(geom: str) -> None:
+    """Record / place windows in WxH+X+Y of the X screen, e.g. one monitor of a
+    real desktop: "2560x1440+745+2160" (from `xrandr --listmonitors`)."""
+    global WIDTH, HEIGHT, OX, OY, TERM_W
+    import re as _re
+    m = _re.fullmatch(r"(\d+)x(\d+)\+(\d+)\+(\d+)", geom)
+    if not m:
+        raise ValueError(f"bad geometry {geom!r}")
+    WIDTH, HEIGHT, OX, OY = map(int, m.groups())
+    TERM_W = WIDTH // 2
 
 
 def _bin(name: str) -> str:
@@ -92,9 +105,10 @@ def port_open(port: int = 8765) -> bool:
 class Stage:
     """One recorded scenario: terminal + panel + recorder on the virtual display."""
 
-    def __init__(self, display: str = ":99", font_size: int = 12):
+    def __init__(self, display: str = ":99", font_size: int = 12, term_h: Optional[int] = None):
         self.display = display
         self.font_size = font_size
+        self.term_h = term_h
         self.term: Optional[subprocess.Popen] = None
         self.term_win: Optional[str] = None
         self.browser: Optional[subprocess.Popen] = None
@@ -138,9 +152,9 @@ class Stage:
                 break
         if self.term_win is None:
             raise RuntimeError("xterm window did not appear")
-        xdotool(self.display, "windowsize", self.term_win, str(TERM_W), str(HEIGHT))
-        xdotool(self.display, "windowmove", self.term_win, "0", "0")
-        xdotool(self.display, "mousemove", str(WIDTH - 1), str(HEIGHT - 1))
+        xdotool(self.display, "windowsize", self.term_win, str(TERM_W), str(self.term_h or HEIGHT))
+        xdotool(self.display, "windowmove", self.term_win, str(OX), str(OY))
+        xdotool(self.display, "mousemove", str(OX + WIDTH - 1), str(OY + HEIGHT - 1))
 
     def type_line(self, text: str, delay_ms: int = 35) -> None:
         """Type `text` + Enter into the demo terminal, like a person."""
@@ -200,10 +214,10 @@ class Stage:
             return False
         time.sleep(1.0)
         xdotool(self.display, "windowsize", win, str(WIDTH - TERM_W), str(HEIGHT), check=False)
-        xdotool(self.display, "windowmove", win, str(TERM_W), "0", check=False)
+        xdotool(self.display, "windowmove", win, str(OX + TERM_W), str(OY), check=False)
         self.panel_win = win
         time.sleep(3.0)        # page load + first video frames
-        xdotool(self.display, "mousemove", str(WIDTH - 1), str(HEIGHT - 1), check=False)
+        xdotool(self.display, "mousemove", str(OX + WIDTH - 1), str(OY + HEIGHT - 1), check=False)
         if self.term_win:
             xdotool(self.display, "windowactivate", self.term_win, check=False)
             xdotool(self.display, "windowfocus", self.term_win, check=False)
@@ -216,9 +230,24 @@ class Stage:
         self.recorder = subprocess.Popen(
             ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
              "-f", "x11grab", "-framerate", str(fps), "-draw_mouse", "0",
-             "-video_size", f"{WIDTH}x{HEIGHT}", "-i", self.display,
+             "-video_size", f"{WIDTH}x{HEIGHT}", "-i", f"{self.display}+{OX},{OY}",
              "-c:v", "h264_nvenc", "-preset", "p5", "-cq", "26", "-pix_fmt", "yuv420p",
              str(out)],
+            stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+            stderr=open(str(out) + ".ffmpeg.txt", "w"), start_new_session=True)
+        self.recording_path = out
+
+    def start_recording_av(self, out: Path, fps: int = 30) -> None:
+        """Screen region + default microphone (PipeWire/Pulse), H.264 + AAC."""
+        out = Path(out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        self.recorder = subprocess.Popen(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+             "-f", "x11grab", "-framerate", str(fps), "-draw_mouse", "0",
+             "-video_size", f"{WIDTH}x{HEIGHT}", "-i", f"{self.display}+{OX},{OY}",
+             "-f", "pulse", "-i", "default",
+             "-c:v", "h264_nvenc", "-preset", "p5", "-cq", "24", "-pix_fmt", "yuv420p",
+             "-c:a", "aac", "-b:a", "160k", str(out)],
             stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
             stderr=open(str(out) + ".ffmpeg.txt", "w"), start_new_session=True)
         self.recording_path = out

@@ -224,7 +224,7 @@ class Run:
         rec = {"suite": sc.suite, "scenario": sc.name, "launch": sc.launch,
                "clip": str(clip.relative_to(VIDEOS)) if clip else None,
                "meta": sc.meta, "steps": [], "crash": False}
-        st = Stage(self.display)
+        st = Stage(self.display, font_size=getattr(self, "font", 12))
         t_start = time.time()
         try:
             st.open_terminal(sc.launch, log, title=f"demo {sc.sid}",
@@ -711,14 +711,21 @@ def main():
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--only", nargs="*", default=None, help="scenario ids, e.g. S3_03")
     ap.add_argument("--display", default=":99")
+    ap.add_argument("--geom", default=None, help="record WxH+X+Y of the X screen (one monitor)")
+    ap.add_argument("--font", type=int, default=12)
     ap.add_argument("--reeval", metavar="RUN_DIR", help="re-score a finished run offline")
     args = ap.parse_args()
     if args.reeval:
         reeval(Path(args.reeval))
         return
 
-    ensure_xvfb(args.display)
+    if args.geom:
+        from eval.e2e import stage as _stage
+        _stage.set_geometry(args.geom)
+    if args.display == ":99":
+        ensure_xvfb(args.display)
     run = Run(args.label, not args.no_video, args.display)
+    run.font = args.font
     scen: List[Scenario] = []
     for s in args.suites:
         scen += {"S1": suite_s1, "S2": suite_s2, "S3": lambda: suite_s3(args.s3_path),
