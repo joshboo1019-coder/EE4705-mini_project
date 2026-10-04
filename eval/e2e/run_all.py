@@ -323,6 +323,30 @@ def _frame_check(img: Path) -> dict:
 # Evaluation
 # ---------------------------------------------------------------------------
 
+def _classify_contacts(trace: List[dict], objects: dict, target: Optional[str]) -> dict:
+    """F5 (logging only): count trace samples in contact with the target, with
+    another scene object, or with terrain, by matching each contacted body's
+    world xy to the scenario's object positions (within 0.35 m)."""
+    out = {"target": 0, "objects": 0, "terrain": 0, "objects_hit": []}
+    hit = set()
+    for r in trace:
+        kinds = set()
+        for name, xy in (r.get("contact_xy") or {}).items():
+            best = min(objects.items(), key=lambda kv: math.hypot(kv[1][0] - xy[0], kv[1][1] - xy[1]),
+                       default=None)
+            if best and math.hypot(best[1][0] - xy[0], best[1][1] - xy[1]) <= 0.35:
+                kinds.add("target" if best[0] == target else "objects")
+                hit.add(best[0])
+            else:
+                kinds.add("terrain")
+        if not r.get("contact_xy") and r.get("contacts"):
+            kinds.add("terrain")       # old traces without body xy
+        for k in kinds:
+            out[k] += 1
+    out["objects_hit"] = sorted(hit)
+    return out
+
+
 def _trace_checks(trace: List[dict]) -> dict:
     if not trace:
         return {"trace": False}
@@ -516,6 +540,7 @@ def _eval_s3(rec: dict, lines: List[str], ev: dict) -> dict:
         success = status == meta["expected"]
     else:
         success = status == "SUCCESS" and true_d is not None and true_d <= 0.80 and c1
+    ev["contact_classes"] = _classify_contacts(rec.get("trace") or [], objs, key)
     ev.update(cmd=cmd, rejected=rejected,
               search=any("[SEARCH]" in l for l in lines),
               detect_total=len(relevant), detect_correct=len(correct),
@@ -572,8 +597,8 @@ def write_summary(run: Run, records: List[dict]) -> Path:
         out += ["## S3 — Task 4 (C's 10 scenarios, typed utterance)", "",
                 "Success = `[MISSION] status=SUCCESS` and true d ≤ 0.80 m and C1 (scenario 10: "
                 "the correct `FAIL reason=target_not_found`). True d is ground truth, logged only.", "",
-                "| # | Typed | [CMD] ok | Search | DETECT correct | Mission | Time (s) | Est. d at stop | True d | C1 | C2 est | C2 true | C3 | Success | Clip |",
-                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                "| # | Typed | [CMD] ok | Search | DETECT correct | Mission | Time (s) | Est. d at stop | True d | C1 | C2 est | C2 true | C3 | Success | Contacts (target / other objects / terrain, samples) | Clip |",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         n_ok = 0
         for r in by["S3"]:
             e = r["eval"]
@@ -585,8 +610,9 @@ def write_summary(run: Run, records: List[dict]) -> Path:
                 f"{e.get('detect_correct')}/{e.get('detect_total')} (target {e.get('target_detections')}) | "
                 f"{e.get('mission')} | {e.get('time_s')} | {e.get('est_d_stop')} | {e.get('true_d')} | "
                 f"{_yn(e.get('C1'))} | {_yn(e.get('C2_est'))} | {_yn(e.get('C2_true'))} | "
-                f"{_yn(e.get('C3'))} | {_yn(e.get('pass'))} | {_clip(r)} |")
-        out += ["", f"**S3 success: {n_ok}/{len(by['S3'])}**", ""]
+                f"{_yn(e.get('C3'))} | {_yn(e.get('pass'))} | {_cc(e)} | {_clip(r)} |")
+        tgt_hits = sum(1 for r in by["S3"] if (r["eval"].get("contact_classes") or {}).get("target"))
+        out += ["", f"**S3 success: {n_ok}/{len(by['S3'])}** · runs with target contact: {tgt_hits}", ""]
     if "S4" in by:
         out += ["## S4 — Bonus", ""]
         for r in by["S4"]:
@@ -635,6 +661,14 @@ def write_summary(run: Run, records: List[dict]) -> Path:
     path = run.dir / "summary.md"
     path.write_text("\n".join(out))
     return path
+
+
+def _cc(e):
+    c = e.get("contact_classes") or {}
+    if not c:
+        return "–"
+    hit = f" ({', '.join(c.get('objects_hit', []))})" if c.get("objects_hit") else ""
+    return f"{c.get('target', 0)} / {c.get('objects', 0)} / {c.get('terrain', 0)}{hit}"
 
 
 def _clip(r):
