@@ -1,0 +1,6 @@
+{"mode": "single", "trial": 1, "dir": 1, "after_s": 0.8, "latency_s": 3.005, "rotation_after_stop_deg": 143.5}
+{"mode": "chunked", "trial": 1, "dir": 1, "after_s": 0.8, "latency_s": 0.33, "rotation_after_stop_deg": 14.1}
+{"mode": "single", "trial": 2, "dir": -1, "after_s": 0.8, "latency_s": 3.11, "rotation_after_stop_deg": 149.7}
+{"mode": "chunked", "trial": 2, "dir": -1, "after_s": 0.8, "latency_s": 0.44, "rotation_after_stop_deg": 19.5}
+{"mode": "single", "trial": 3, "dir": 1, "after_s": 0.8, "latency_s": 2.985, "rotation_after_stop_deg": 143.4}
+{"mode": "chunked", "trial": 3, "dir": 1, "after_s": 0.8, "latency_s": 0.305, "rotation_after_stop_deg": 13.6}
