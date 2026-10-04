@@ -1037,6 +1037,21 @@ def test_v5_has_no_hard_set_phrasing():
             assert user.lower() not in {t[3].lower() for t in HARD_CASES}
 
 
+def test_v5_1_has_no_state_set_phrasing():
+    from eval.state_cases import STATE_CASES, STATES
+    prompt = llm_parser.SYSTEM_PROMPT.lower()
+    for cid, _, _, text, _ in STATE_CASES:
+        assert text.lower() not in prompt, cid
+        assert cid in STATES, cid
+
+
+def test_v5_frozen_and_v5_1_is_current():
+    from eval.prompt_v5 import SYSTEM_PROMPT_V5
+    from eval.task3_eval import PROMPTS
+    assert PROMPTS["v5"] == SYSTEM_PROMPT_V5 != llm_parser.SYSTEM_PROMPT
+    assert "missing from STATE" in llm_parser.SYSTEM_PROMPT
+
+
 def test_v5_keeps_every_v4_rule_line():
     from eval.prompt_v4 import SYSTEM_PROMPT_V4
     v4_examples = _prompt_examples(SYSTEM_PROMPT_V4)
