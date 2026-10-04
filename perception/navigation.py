@@ -528,6 +528,13 @@ def _finish_if_found(skills, perception, object_class, color, t0,
             target = recover_target(frame, object_class, color)
         elif target is None:
             print("[TRACK] final label conflict not confirmed by target history")
+            # iter/close-range-c1 (Student B assist, pending review by Student C):
+            # a frame-filling target is often mislabelled by YOLO ("bed") while the
+            # tracker still re-identifies it in the live frame; try the whole live
+            # frame once (C1 stays a live-frame detection, no ground truth).
+            target = recover_target(frame, object_class, color)
+            if target is not None:
+                print("[TRACK] final label conflict resolved: target re-identified in the live frame")
     if target is None:                                       # C1: current-frame match required
         return False
 

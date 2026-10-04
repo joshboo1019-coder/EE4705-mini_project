@@ -227,9 +227,21 @@ class Run:
         st = Stage(self.display, font_size=getattr(self, "font", 12))
         t_start = time.time()
         try:
-            st.open_terminal(sc.launch, log, title=f"demo {sc.sid}",
-                             env={"E2E_TRACE_FILE": str(trace)})
-            ok = st.wait_for(sc.ready, 150, on_line=lambda l: lines.append((time.time(), l)))
+            # Launch, and relaunch once if the program never shows its prompt
+            # (a rare boot hang, see main._wait_until_sim_ready); recorded as
+            # rec["relaunched"]. A normal boot is ready in < 30 s.
+            for attempt in (1, 2):
+                st.open_terminal(sc.launch, log, title=f"demo {sc.sid}",
+                                 env={"E2E_TRACE_FILE": str(trace)})
+                ok = st.wait_for(sc.ready, 90 if attempt == 1 else 150,
+                                 on_line=lambda l: lines.append((time.time(), l)))
+                if ok is not None or attempt == 2:
+                    break
+                lines.append((time.time(), "### harness: never became ready -> relaunch once"))
+                rec["relaunched"] = True
+                st.close()
+                st = Stage(self.display, font_size=getattr(self, "font", 12))
+                trace.write_text("")
             if ok is None:
                 rec["crash"] = True
                 rec["error"] = "never became ready"

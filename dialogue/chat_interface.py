@@ -49,7 +49,13 @@ def _chat_loop(queue: CommandQueue) -> None:
     while True:
         try:
             user_text = input("User: ").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError:
+            # stdin closed (Ctrl+D or the end of piped input): finish what is
+            # queued, then main() returns and shuts the sim down.
+            print("\n[CHAT] input closed (EOF): quitting after the queued commands")
+            queue.close_input()
+            break
+        except KeyboardInterrupt:
             break
         if not user_text:
             continue
