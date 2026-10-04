@@ -124,3 +124,33 @@ def test_occlusion_sidestep_once_for_signs_only(monkeypatch, capsys):
     assert not nav._occlusion_sidestep(skills, "stop sign", state)  # once per goto
     assert len(skills.moves) == 1 and skills.moves[0][1] > 0.0      # left
     assert "[SEARCH] full scan without the target" in capsys.readouterr().out
+
+
+def test_object_partly_inside_the_cone_counts():
+    # centre at 30 deg but a 12 deg half-width reaches into the 25 deg cone
+    assert nav._avoid_decision([("green chair", 0.8, 30.0, 12.0)], 3.0)[2] == "R"
+    assert nav._avoid_decision([("green chair", 0.8, 40.0, 12.0)], 3.0) is None
+
+
+def test_remembered_obstacle_is_still_avoided(monkeypatch):
+    monkeypatch.setattr(nav.time, "sleep", lambda s: None)
+    skills = _Skills()
+    frame = SimpleNamespace(shape=(480, 640, 3))
+    state = {"steps": 0, "sides": {}}
+    pose = RobotPose(0.0, 0.0, 0.0)
+    assert nav._avoid_obstacle_ahead(
+        skills, _Perception(), frame, [_chair_ahead_detection()], pose,
+        "stop sign", "green", (5.0, -0.3), 5.0, state)
+    # next frame: the chair is no longer detected, but it is remembered
+    assert nav._avoid_obstacle_ahead(
+        skills, _Perception(), frame, [], pose,
+        "stop sign", "green", (5.0, -0.3), 5.0, state)
+    assert len(skills.moves) == 2
+
+
+def test_sign_creeps_once_the_plate_is_cut_by_the_top_edge():
+    cut = Detection("stop sign", "yellow", 0.7, (281.0, 0.0, 407.0, 50.0))
+    whole = Detection("stop sign", "yellow", 0.7, (281.0, 60.0, 407.0, 150.0))
+    assert nav._sign_creep_distance("stop sign", cut, 1.06, 0.72) == pytest.approx(0.79)
+    assert nav._sign_creep_distance("stop sign", whole, 1.06, 0.72) == 1.06
+    assert nav._sign_creep_distance("chair", cut, 1.06, 0.56) == 1.06

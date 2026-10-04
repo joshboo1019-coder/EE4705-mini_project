@@ -312,8 +312,11 @@ def goto_object(object_class: str, color: str,
         if forward_attempt_start is None:
             forward_attempt_start = pose
             forward_attempt_started_at = time.monotonic()
-        step_duration = _approach_step(skills, distance,
-                                       _approach_stop_m(object_class))
+        step_duration = _approach_step(
+            skills,
+            _sign_creep_distance(object_class, target, distance,
+                                 _approach_stop_m(object_class)),
+            _approach_stop_m(object_class))
         if step_duration > 0.0:
             forward_attempt_duration += step_duration
             if recover_if_stuck():
@@ -717,6 +720,24 @@ _AVOID_STRAFE_VY = 0.3           # m/s sideways (+vy = left)
 _AVOID_STRAFE_S = 0.5            # one side-step: ~0.15 m
 _AVOID_MAX_STEPS = 12            # per goto_object (~1.8 m sideways in total)
 _AVOID_PLATE_COLORS = ("red", "yellow", "green")
+# Half-width priors per class for the cone test (an object is in the cone if
+# any part of it is): chair seat 0.22 m + legs, ball radius, sign pole + margin
+# (the plate is at 0.70-1.00 m, above the robot's body).
+_AVOID_HALF_WIDTH_M = {"chair": 0.25, "sports ball": 0.11, "stop sign": 0.05}
+# A chair close to the camera is often no longer detected (frame-filling,
+# relabelled); keep its last live-estimated position for this long.
+_AVOID_MEMORY_S = 6.0
+# Close to a sign, the plate rises out of the top of the frame within a
+# ~0.15 m band; once it is cut by the top edge, approach in short steps so
+# the near-strip stop rule fires before the plate is lost (S3_05 dev runs).
+_SIGN_CREEP_STEP_M = 0.07
+
+
+def _sign_creep_distance(object_class, target, distance, stop_m):
+    if (object_class == "stop sign" and target is not None
+            and target.bbox[1] <= _SIGN_EDGE_PX):
+        return min(distance, stop_m + _SIGN_CREEP_STEP_M)
+    return distance
 
 
 _OCCLUSION_SIDESTEP_CLASSES = ("stop sign",)  # thin, small targets hide behind a nearer object
@@ -742,18 +763,21 @@ def _occlusion_sidestep(skills, object_class: str, state) -> bool:
 
 def _avoid_decision(obstacles, target_distance: float,
                     target_bearing_deg: float = 0.0, sides=None):
-    """Pure decision. `obstacles`: iterable of (label, d_est, bearing_deg)
-    with bearing relative to the heading (+ = left). Returns
+    """Pure decision. `obstacles`: iterable of (label, d_est, bearing_deg
+    [, half_width_deg]) with bearing relative to the heading (+ = left); an
+    obstacle is in the cone if any part of it is. Returns
     (label, d_est, side) for the nearest obstacle that is within
     _AVOID_AHEAD_M, inside the +/-_AVOID_CONE_DEG cone and nearer than the
     target by _AVOID_TARGET_MARGIN_M; side is "L" or "R" (the direction to
     step: away from the obstacle, relative to the target line). `sides`
     keeps the first side chosen per label so the robot does not zig-zag."""
     best = None
-    for label, d_est, bearing in obstacles:
+    for obstacle in obstacles:
+        label, d_est, bearing = obstacle[:3]
+        half_deg = obstacle[3] if len(obstacle) > 3 else 0.0
         if not (math.isfinite(d_est) and math.isfinite(bearing)):
             continue
-        if d_est >= _AVOID_AHEAD_M or abs(bearing) > _AVOID_CONE_DEG:
+        if d_est >= _AVOID_AHEAD_M or abs(bearing) - half_deg > _AVOID_CONE_DEG:
             continue
         if not d_est < target_distance - _AVOID_TARGET_MARGIN_M:
             continue
@@ -769,9 +793,12 @@ def _avoid_decision(obstacles, target_distance: float,
 
 
 def _obstacle_estimates(skills, perception, frame, detections, pose,
-                        object_class, color, target_position):
-    """(label, d_est, bearing_deg) for each live non-target detection,
-    ranged with the same bbox models as the target (no ground truth)."""
+                        object_class, color, target_position, memory=None):
+    """(label, d_est, bearing_deg, half_width_deg) for each live non-target
+    detection, ranged with the same bbox models as the target (no ground
+    truth). `memory` (label -> (x, y, cls, time)) keeps each obstacle's last
+    live estimate for _AVOID_MEMORY_S so a frame-filling chair that YOLO
+    no longer reports is still avoided (the robot's own pose moves it)."""
     candidates = [d for d in detections
                   if d.class_name in _NOMINAL_CENTER_HEIGHTS_M
                   and not (d.class_name == object_class and d.color == color)]
@@ -787,6 +814,8 @@ def _obstacle_estimates(skills, perception, frame, detections, pose,
             if plate is not None:
                 candidates.append(plate)
     out = []
+    now = time.monotonic()
+    seen = set()
     for det in candidates:
         camera_height = _camera_height_above_ground(
             skills, det.class_name, det.color, det, frame.shape)
@@ -799,12 +828,28 @@ def _obstacle_estimates(skills, perception, frame, detections, pose,
                                position[1] - target_position[1])
                 < _AVOID_SAME_OBJECT_M):
             continue
-        d_est = math.hypot(position[0] - pose.x, position[1] - pose.y)
-        bearing = math.degrees(math.atan2(position[1] - pose.y,
-                                          position[0] - pose.x))
-        bearing = (bearing - pose.yaw_deg + 180.0) % 360.0 - 180.0
-        out.append((f"{det.color} {det.class_name}", d_est, bearing))
+        label = f"{det.color} {det.class_name}"
+        seen.add(label)
+        if memory is not None:
+            memory[label] = (position[0], position[1], det.class_name, now)
+        out.append(_relative_obstacle(label, det.class_name, position, pose))
+    if memory is not None:
+        for label, (x, y, cls, stamp) in list(memory.items()):
+            if now - stamp > _AVOID_MEMORY_S:
+                del memory[label]
+            elif label not in seen:
+                out.append(_relative_obstacle(label, cls, (x, y), pose))
     return out
+
+
+def _relative_obstacle(label, object_class, position, pose):
+    d_est = math.hypot(position[0] - pose.x, position[1] - pose.y)
+    bearing = math.degrees(math.atan2(position[1] - pose.y,
+                                      position[0] - pose.x))
+    bearing = (bearing - pose.yaw_deg + 180.0) % 360.0 - 180.0
+    half = _AVOID_HALF_WIDTH_M.get(object_class, 0.0)
+    half_deg = math.degrees(math.atan2(half, max(d_est, 1e-3)))
+    return (label, d_est, bearing, half_deg)
 
 
 def _avoid_obstacle_ahead(skills, perception, frame, detections, pose,
@@ -815,7 +860,8 @@ def _avoid_obstacle_ahead(skills, perception, frame, detections, pose,
         return False
     obstacles = _obstacle_estimates(skills, perception, frame, detections,
                                     pose, object_class, color,
-                                    target_position)
+                                    target_position,
+                                    state.setdefault("memory", {}))
     target_bearing = 0.0
     if target_position is not None:
         target_bearing = math.degrees(math.atan2(
