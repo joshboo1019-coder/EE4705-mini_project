@@ -1,0 +1,6 @@
+scenario,run,target_samples,other_object_samples,terrain_samples,objects_hit
+04,20261004-1350_f1gate_r1,0,0,0,
+01,20261004-1353_f1gate_r2,80,0,0,red_chair
+04,20261004-1353_f1gate_r2,0,0,0,
+01,20261004-1356_f1gate_r3,0,0,0,
+04,20261004-1356_f1gate_r3,0,0,0,

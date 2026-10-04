@@ -1,0 +1,20 @@
+run,dir,n_s3_scenarios,k_strict,fraction,era,stop_margin,plotted,note
+20261004-0101_baseline,eval/e2e/results/20261004-0101_baseline,10,3,0.30,GT height (sim xpos) + v4/v5,0,yes,merged main before the per-class stop margin
+20261004-0111_p2a_task4_via_main,eval/e2e/results/20261004-0111_p2a_task4_via_main,10,3,0.30,GT height (sim xpos) + v4/v5,0,yes,"S3 via main.py --scenario, before the stop margin"
+20261004-0118_p2b_c2_margin,eval/e2e/results/20261004-0118_p2b_c2_margin,10,4,0.40,GT height (sim xpos) + v4/v5,1,yes,stop margin v1 (one margin for all classes)
+20261004-0128_p2b_c2_margin_v2,eval/e2e/results/20261004-0128_p2b_c2_margin_v2,10,6,0.60,GT height (sim xpos) + v4/v5,1,yes,per-class stop margin
+20261004-0138_stopsign_eval,eval/e2e/results/20261004-0138_stopsign_eval,10,5,0.50,,,no,"excluded: assist/stopsign, never merged (COMPARISON.md)"
+20261004-0206_final,eval/e2e/results/20261004-0206_final,10,6,0.60,,,no,excluded: superseded by 0221_final (S2 STATE regression re-run)
+20261004-0221_final,eval/e2e/results/20261004-0221_final,10,5,0.50,GT height (sim xpos) + v4/v5,1,yes,b/overnight-all final
+20261004-0304_final_rep2,eval/e2e/results/20261004-0304_final_rep2,10,5,0.50,GT height (sim xpos) + v4/v5,1,yes,b/overnight-all final
+20261004-0311_baseline_rep2,eval/e2e/results/20261004-0311_baseline_rep2,10,3,0.30,GT height (sim xpos) + v4/v5,0,yes,merged main before the per-class stop margin
+20261004-0317_final_rep3,eval/e2e/results/20261004-0317_final_rep3,10,6,0.60,GT height (sim xpos) + v4/v5,1,yes,b/overnight-all final
+20261004-0324_baseline_rep3,eval/e2e/results/20261004-0324_baseline_rep3,10,3,0.30,GT height (sim xpos) + v4/v5,0,yes,merged main before the per-class stop margin
+20261004-1206_morning_merge,eval/e2e/results/20261004-1206_morning_merge,10,6,0.60,GT height (sim xpos) + v4/v5,1,yes,morning merge
+20261004-1216_no_gt_height,eval/e2e/results/20261004-1216_no_gt_height,10,6,0.60,no-GT height,1,yes,no-GT height estimate (assist/no-gt-height)
+20261004-1229_vt4_candidates,eval/e2e/results/20261004-1229_vt4_candidates,2,2,1.00,,,no,"excluded: video takes, 2 scenarios only"
+20261004-1337_premerge_gate,../../eval/e2e/results/20261004-1337_premerge_gate,10,6,0.60,no-GT height,1,yes,pre-final gate on release/merge (no-GT)
+20261004-1350_f1gate_r1,eval/e2e/results/20261004-1350_f1gate_r1,2,1,0.50,,,no,excluded: F1 gate ran 2 scenarios only
+20261004-1353_f1gate_r2,eval/e2e/results/20261004-1353_f1gate_r2,2,1,0.50,,,no,excluded: F1 gate ran 2 scenarios only
+20261004-1356_f1gate_r3,eval/e2e/results/20261004-1356_f1gate_r3,2,1,0.50,,,no,excluded: F1 gate ran 2 scenarios only
+20261004-1357_fixfinal_s3_r1,../final/eval/e2e/results/20261004-1357_fixfinal_s3_r1,8,4,0.50,,,no,excluded: incomplete (8/10 S3 scenarios)
