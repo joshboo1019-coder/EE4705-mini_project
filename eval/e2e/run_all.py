@@ -187,6 +187,17 @@ def suite_s5() -> List[Scenario]:
     return out
 
 
+# S7: the blue chair on the stairs (default scene) through Student C's own
+# sequence, tools/visual_test_blue_chair_stairs.py: walk to the stairs, detect,
+# climb, then navigation.goto_object for the final approach. No LLM.
+def suite_s7() -> List[Scenario]:
+    return [Scenario("S7", "blue_chair_stairs",
+                     "eval/run_env.sh tools/visual_test_blue_chair_stairs.py",
+                     ready=r"Booting RealSkills",
+                     driver_done=r"goto_object returned success=|\[MISSION\] status=FAIL reason=(approach|climb)_",
+                     driver_timeout=420)]
+
+
 # ---------------------------------------------------------------------------
 # Running one scenario
 # ---------------------------------------------------------------------------
@@ -391,6 +402,20 @@ def evaluate(rec: dict) -> dict:
         return ev
     if suite == "S5":
         return _eval_s5(rec, lines, ev)
+    if suite == "S7":
+        clean = [re.sub(r"^(User: )+", "", l) for l in lines]
+        rng = [m.groups() for l in clean
+               if (m := re.search(r"\[RANGE\] .*estimated_planar=([\d.]+) m ground_truth=([\d.]+) m(?: phase=(\w+))?", l))]
+        mission = next((l for l in clean if l.startswith("[MISSION]")), None)
+        found = next((l for l in clean if l.startswith("[FOUND]")), None)
+        d = float(m.group(1)) if found and (m := re.search(r" d=([\d.]+) m", found)) else None
+        errs = [round(float(gt) - float(est), 2) for est, gt, _ in rng]
+        ev.update(mission=mission, found=found, true_d=d, range_pairs=len(rng),
+                  err_first=errs[0] if errs else None, err_last=errs[-1] if errs else None,
+                  err_mean=round(sum(errs) / len(errs), 2) if errs else None,
+                  climb=next((l.strip() for l in clean if "climb outcome=" in l), None))
+        ev["pass"] = bool(mission and "SUCCESS" in mission and d is not None and d <= 0.80)
+        return ev
     return ev
 
 
@@ -592,6 +617,16 @@ def write_summary(run: Run, records: List[dict]) -> Path:
         out.append("")
         for r in by["S5"]:
             out += [f"### {r['scenario']}", "", "```"] + r["eval"].get("key_lines", [])[:40] + ["```", ""]
+    if "S7" in by:
+        out += ["## S7 — blue chair on the stairs (C's stairs sequence, default scene)", "",
+                "| Mission | [FOUND] | true d | range pairs | true − est (first / last / mean) | Climb | Pass | Clip |",
+                "|---|---|---|---|---|---|---|---|"]
+        for r in by["S7"]:
+            e = r["eval"]
+            out.append(f"| `{e.get('mission')}` | `{e.get('found')}` | {e.get('true_d')} | {e.get('range_pairs')} | "
+                       f"{e.get('err_first')} / {e.get('err_last')} / {e.get('err_mean')} | `{e.get('climb')}` | "
+                       f"{_yn(e.get('pass'))} | {_clip(r)} |")
+        out.append("")
     crashed = [r["suite"] + "_" + r["scenario"] for r in records if r.get("crash")]
     deleted = [r["suite"] + "_" + r["scenario"] for r in records if (r.get("frame") or {}).get("deleted")]
     out += ["## Run notes", "",
@@ -652,7 +687,7 @@ def main():
     scen: List[Scenario] = []
     for s in args.suites:
         scen += {"S1": suite_s1, "S2": suite_s2, "S3": lambda: suite_s3(args.s3_path),
-                 "S4": suite_s4, "S5": suite_s5}[s]()
+                 "S4": suite_s4, "S5": suite_s5, "S7": suite_s7}[s]()
     if args.only:
         scen = [s for s in scen if s.sid in args.only]
     print(f"[E2E] run {run.stamp}: {len(scen)} scenarios -> {run.dir}", flush=True)
