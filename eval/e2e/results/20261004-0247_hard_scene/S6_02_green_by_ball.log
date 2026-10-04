@@ -1,0 +1,919 @@
+
+=== Hard scene (assets/scenes/custom_scene_hard.xml) ===
+  target     green_chair#1        (-2.00, +2.00)
+  target     green_chair#2        (-3.50, +1.10)
+  target     red_chair            (-2.00, -2.00)
+  target     orange_sports ball   (-3.50, +0.00)
+  target     red_stop sign        (-1.30, +0.00)
+  target     yellow_stop sign     (-4.50, +2.00)
+  target     green_stop sign      (-4.50, -2.00)
+  target     blue_chair           (+3.45, +2.00)
+  distractor orange_box           (-3.60, -0.90)
+  distractor red_box              (-2.30, -3.10)
+  wall       wall_north           x=-4.00 y=[+1.45, +3.05]
+  wall       wall_south           x=-4.00 y=[-3.05, -1.45]
+  logs ([FOUND] d=, [RANGE] ground_truth=) measure to: green_chair -> green_chair#2
+  lighting x0.55
+
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/wt/int/assets/scenes/custom_scene_hard.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[HARD] lighting scaled to 55%: headlight diffuse=(0.33, 0.33, 0.33) ambient=(0.17, 0.17, 0.17), 1 light(s)
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=chair, color=green) n=1
+User: [EXEC] action=1/1 goto_object class=chair color=green
+[CMD] action=goto_object(class=chair, color=green)
+[DETECT] class=chair color=blue conf=0.65 bbox=[88.13, 81.43, 161.58, 179.68]
+[DETECT] class=chair color=blue conf=0.23 bbox=[122.03, 80.99, 162.14, 177.99]
+[DETECT] class=chair color=blue conf=0.75 bbox=[88.40, 81.33, 161.81, 179.67]
+[DETECT] class=chair color=blue conf=0.75 bbox=[88.40, 81.33, 161.81, 179.67]
+[DETECT] class=chair color=blue conf=0.75 bbox=[88.40, 81.33, 161.81, 179.67]
+[DETECT] class=chair color=blue conf=0.75 bbox=[88.39, 81.32, 161.79, 179.69]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=chair color=blue conf=0.85 bbox=[279.25, 103.91, 328.79, 185.38]
+[DETECT] class=chair color=blue conf=0.85 bbox=[279.25, 103.91, 328.79, 185.38]
+[DETECT] class=chair color=blue conf=0.85 bbox=[279.25, 103.91, 328.79, 185.38]
+[DETECT] class=chair color=blue conf=0.85 bbox=[279.25, 103.91, 328.79, 185.38]
+[DETECT] class=chair color=blue conf=0.85 bbox=[279.25, 103.91, 328.79, 185.38]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.2 deg
+[DETECT] class=chair color=blue conf=0.95 bbox=[435.12, 94.06, 502.23, 184.99]
+[DETECT] class=chair color=blue conf=0.95 bbox=[435.12, 94.06, 502.23, 184.99]
+[DETECT] class=chair color=blue conf=0.95 bbox=[435.12, 94.06, 502.23, 184.99]
+[DETECT] class=chair color=blue conf=0.95 bbox=[435.12, 94.06, 502.23, 184.99]
+[DETECT] class=chair color=blue conf=0.93 bbox=[456.12, 92.66, 528.72, 186.39]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.9 deg
+[DETECT] class=bench color=unknown conf=0.60 bbox=[371.06, 180.53, 639.47, 334.66]
+[DETECT] class=bench color=unknown conf=0.60 bbox=[371.06, 180.53, 639.47, 334.66]
+[DETECT] class=bench color=unknown conf=0.47 bbox=[381.48, 183.62, 639.36, 343.11]
+[DETECT] class=bench color=unknown conf=0.47 bbox=[381.48, 183.62, 639.36, 343.11]
+[DETECT] class=bench color=unknown conf=0.47 bbox=[381.48, 183.62, 639.36, 343.11]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[114.73, 107.35, 213.42, 240.75]
+[DETECT] class=airplane color=unknown conf=0.27 bbox=[502.09, 139.22, 639.55, 283.79]
+[DETECT] class=bench color=unknown conf=0.27 bbox=[502.23, 138.90, 639.60, 284.70]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[163.07, 117.27, 251.50, 242.61]
+[DETECT] class=chair color=green conf=0.49 bbox=[0.07, 177.38, 38.95, 236.82]
+[DETECT] class=chair color=green conf=0.23 bbox=[0.04, 99.05, 39.64, 236.68]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[185.79, 120.39, 270.24, 242.18]
+[DETECT] class=chair color=green conf=0.57 bbox=[0.11, 179.08, 68.64, 241.75]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.93 bbox=[0.09, 119.97, 94.84, 238.76]
+[DETECT] class=chair color=green conf=0.87 bbox=[206.89, 120.51, 287.13, 240.06]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.92 bbox=[44.97, 119.79, 132.27, 229.60]
+[DETECT] class=chair color=green conf=0.85 bbox=[236.87, 116.56, 313.99, 236.65]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.91 bbox=[71.88, 122.91, 151.81, 228.49]
+[DETECT] class=chair color=green conf=0.87 bbox=[253.22, 118.76, 328.62, 237.38]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[117.97, 129.88, 188.30, 228.56]
+[DETECT] class=chair color=green conf=0.83 bbox=[284.11, 120.13, 358.73, 238.66]
+[DETECT] class=mouse color=orange conf=0.66 bbox=[0.19, 211.75, 25.92, 240.91]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[156.91, 134.58, 218.82, 228.68]
+[DETECT] class=chair color=green conf=0.84 bbox=[312.66, 123.30, 387.07, 239.74]
+[DETECT] class=sports ball color=orange conf=0.55 bbox=[37.99, 211.47, 74.01, 237.81]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[176.78, 126.71, 235.35, 219.78]
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[63.65, 199.80, 96.32, 225.41]
+[DETECT] class=chair color=green conf=0.68 bbox=[329.15, 118.41, 404.54, 237.56]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[199.03, 128.82, 254.91, 219.22]
+[DETECT] class=chair color=green conf=0.81 bbox=[348.63, 116.14, 425.30, 238.15]
+[DETECT] class=sports ball color=orange conf=0.69 bbox=[94.24, 199.56, 123.18, 223.62]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[366.93, 118.09, 445.94, 240.79]
+[DETECT] class=chair color=green conf=0.83 bbox=[219.79, 132.94, 272.79, 221.76]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[120.11, 202.09, 147.35, 225.31]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.79 bbox=[230.63, 136.58, 282.33, 224.22]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[133.27, 205.19, 159.31, 227.97]
+[DETECT] class=chair color=green conf=0.77 bbox=[376.48, 120.59, 456.28, 243.70]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[381.57, 118.00, 462.15, 242.09]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[139.57, 204.16, 164.91, 226.99]
+[DETECT] class=chair color=green conf=0.74 bbox=[233.95, 135.57, 286.46, 222.76]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[240.78, 133.59, 292.89, 220.59]
+[DETECT] class=chair color=green conf=0.83 bbox=[387.78, 114.50, 470.53, 239.86]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[147.47, 201.94, 172.87, 224.15]
+[DETECT] class=chair color=green conf=0.85 bbox=[366.57, 109.99, 445.84, 234.76]
+[DETECT] class=chair color=green conf=0.85 bbox=[217.67, 129.05, 271.96, 217.47]
+[DETECT] class=sports ball color=orange conf=0.68 bbox=[118.80, 199.53, 146.06, 223.96]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[212.22, 129.25, 267.49, 218.19]
+[DETECT] class=chair color=green conf=0.75 bbox=[362.42, 110.57, 440.87, 234.50]
+[DETECT] class=sports ball color=orange conf=0.57 bbox=[112.28, 200.40, 140.38, 224.18]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[210.78, 131.60, 265.18, 220.32]
+[DETECT] class=chair color=green conf=0.78 bbox=[358.93, 112.72, 439.19, 236.16]
+[DETECT] class=sports ball color=orange conf=0.68 bbox=[110.38, 202.41, 138.42, 226.01]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[224.94, 129.09, 278.38, 217.14]
+[DETECT] class=chair color=green conf=0.84 bbox=[372.89, 109.21, 453.43, 235.07]
+[DETECT] class=sports ball color=orange conf=0.65 bbox=[127.93, 199.67, 155.03, 222.82]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.81 bbox=[255.36, 134.03, 306.34, 220.27]
+[DETECT] class=chair color=green conf=0.73 bbox=[403.00, 112.77, 488.75, 240.76]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[164.55, 202.15, 188.51, 223.74]
+[DETECT] class=chair color=green conf=0.47 bbox=[403.03, 112.23, 455.63, 239.77]
+[DETECT] class=chair color=green conf=0.87 bbox=[239.98, 127.52, 291.87, 215.94]
+[DETECT] class=chair color=green conf=0.83 bbox=[386.73, 109.02, 470.52, 236.91]
+[DETECT] class=sports ball color=orange conf=0.69 bbox=[144.78, 196.82, 171.06, 219.15]
+[RANGE] estimated_planar=3.34 m ground_truth=3.63 m phase=approach
+[DETECT] class=chair color=green conf=0.85 bbox=[384.58, 88.16, 471.16, 222.44]
+[DETECT] class=chair color=green conf=0.77 bbox=[231.56, 109.65, 285.54, 202.32]
+[DETECT] class=sports ball color=orange conf=0.58 bbox=[131.04, 180.12, 158.44, 203.90]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[376.59, 95.01, 462.08, 228.28]
+[DETECT] class=chair color=green conf=0.79 bbox=[223.49, 113.22, 278.25, 207.83]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[119.54, 184.93, 148.05, 208.93]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[359.94, 94.36, 443.00, 226.25]
+[DETECT] class=chair color=green conf=0.85 bbox=[203.71, 111.26, 260.22, 207.03]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[94.63, 183.89, 125.10, 208.98]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[161.67, 116.84, 225.06, 215.97]
+[DETECT] class=chair color=green conf=0.83 bbox=[324.48, 103.16, 403.60, 231.05]
+[DETECT] class=sports ball color=orange conf=0.66 bbox=[39.92, 195.52, 76.40, 222.72]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[157.51, 123.79, 222.32, 221.64]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[35.37, 202.96, 73.08, 230.58]
+[DETECT] class=chair color=green conf=0.73 bbox=[320.69, 107.57, 398.67, 233.43]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[198.41, 132.04, 255.42, 225.20]
+[DETECT] class=chair color=green conf=0.83 bbox=[353.59, 116.60, 433.39, 243.92]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[88.74, 206.04, 119.86, 231.26]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[370.36, 118.01, 454.32, 246.83]
+[DETECT] class=chair color=green conf=0.83 bbox=[218.27, 134.69, 272.54, 226.30]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[113.46, 206.23, 142.83, 230.94]
+[TURN] target=-5.0 deg final_error=-1.0 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[368.94, 116.18, 452.18, 245.41]
+[DETECT] class=chair color=green conf=0.86 bbox=[214.84, 133.95, 270.64, 226.16]
+[DETECT] class=sports ball color=orange conf=0.67 bbox=[110.25, 206.48, 139.01, 231.17]
+[DETECT] class=chair color=orange conf=0.21 bbox=[0.10, 76.17, 84.65, 369.35]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[196.54, 134.48, 255.04, 228.19]
+[DETECT] class=chair color=green conf=0.82 bbox=[352.88, 116.85, 433.35, 245.66]
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[87.37, 210.14, 118.84, 235.64]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[189.38, 132.43, 248.36, 226.38]
+[DETECT] class=chair color=green conf=0.80 bbox=[345.95, 113.06, 426.87, 241.43]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[77.93, 209.33, 110.17, 234.66]
+[DETECT] class=chair color=unknown conf=0.29 bbox=[0.07, 210.81, 43.24, 384.89]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[364.07, 110.77, 447.57, 242.61]
+[DETECT] class=chair color=green conf=0.84 bbox=[208.52, 130.47, 265.47, 223.37]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[103.29, 205.67, 133.13, 229.98]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[372.06, 111.86, 456.96, 243.89]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[114.99, 205.87, 143.91, 230.19]
+[DETECT] class=chair color=green conf=0.78 bbox=[218.43, 132.59, 273.69, 224.83]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.81 bbox=[202.85, 132.16, 259.81, 225.17]
+[DETECT] class=chair color=green conf=0.79 bbox=[357.04, 111.92, 441.09, 242.72]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[94.71, 207.13, 125.25, 232.01]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[339.32, 111.07, 421.16, 240.33]
+[DETECT] class=chair color=green conf=0.82 bbox=[180.17, 131.35, 241.86, 226.41]
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[67.10, 209.59, 100.61, 235.16]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[190.84, 129.70, 250.58, 224.53]
+[DETECT] class=chair color=green conf=0.78 bbox=[348.80, 110.41, 430.30, 240.89]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[80.58, 206.86, 112.32, 232.33]
+[DETECT] class=chair color=unknown conf=0.24 bbox=[0.06, 218.09, 42.30, 382.24]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[197.59, 129.81, 255.92, 223.37]
+[DETECT] class=chair color=green conf=0.82 bbox=[354.45, 109.12, 437.10, 240.17]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[88.64, 205.90, 119.86, 231.08]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[116.53, 203.82, 145.45, 228.06]
+[DETECT] class=chair color=green conf=0.84 bbox=[374.38, 105.33, 460.19, 239.32]
+[DETECT] class=chair color=green conf=0.78 bbox=[218.99, 129.01, 275.59, 221.63]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[382.82, 106.68, 470.40, 241.57]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[127.09, 202.82, 155.37, 226.94]
+[DETECT] class=chair color=green conf=0.76 bbox=[228.06, 129.22, 282.93, 222.42]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[183.46, 130.26, 243.98, 225.72]
+[DETECT] class=chair color=green conf=0.83 bbox=[341.44, 111.69, 422.98, 240.77]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[69.70, 207.99, 102.84, 233.95]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[178.46, 129.84, 240.34, 226.06]
+[DETECT] class=chair color=green conf=0.85 bbox=[337.96, 111.99, 419.22, 241.82]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[63.73, 209.22, 97.56, 235.00]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[369.88, 107.63, 455.76, 240.83]
+[DETECT] class=chair color=green conf=0.84 bbox=[214.99, 129.31, 271.40, 222.71]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[111.32, 203.79, 140.14, 228.37]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[363.54, 110.76, 448.02, 243.30]
+[DETECT] class=chair color=green conf=0.84 bbox=[208.13, 130.11, 265.26, 223.86]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[102.04, 205.26, 132.19, 229.89]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[191.01, 129.62, 250.61, 224.57]
+[DETECT] class=chair color=green conf=0.78 bbox=[348.86, 110.98, 431.06, 241.67]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[80.48, 206.64, 112.04, 232.06]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[194.37, 127.44, 254.22, 222.90]
+[DETECT] class=chair color=green conf=0.82 bbox=[351.72, 108.32, 434.60, 240.47]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[84.68, 205.28, 116.43, 230.41]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[216.35, 126.54, 272.41, 220.14]
+[DETECT] class=chair color=green conf=0.84 bbox=[370.80, 104.83, 456.31, 239.69]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[112.31, 201.92, 141.54, 225.82]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[396.06, 107.52, 486.62, 244.77]
+[DETECT] class=chair color=green conf=0.83 bbox=[242.20, 131.80, 296.13, 222.45]
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[144.69, 203.15, 171.76, 225.66]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[386.32, 112.54, 474.42, 247.22]
+[DETECT] class=chair color=green conf=0.83 bbox=[233.31, 133.20, 286.91, 224.98]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[132.84, 205.24, 159.80, 228.85]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[369.01, 112.40, 455.06, 245.01]
+[DETECT] class=chair color=green conf=0.84 bbox=[215.63, 132.70, 271.59, 225.20]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[111.28, 206.12, 139.77, 231.02]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[198.62, 132.21, 257.10, 226.48]
+[DETECT] class=chair color=green conf=0.81 bbox=[354.20, 112.31, 438.40, 244.16]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[89.92, 209.33, 120.62, 234.04]
+[DETECT] class=chair color=unknown conf=0.33 bbox=[0.03, 186.51, 48.33, 384.33]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[190.42, 132.44, 250.09, 226.54]
+[DETECT] class=chair color=green conf=0.77 bbox=[347.73, 111.56, 430.55, 242.53]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[79.71, 209.59, 111.84, 235.15]
+[DETECT] class=chair color=unknown conf=0.25 bbox=[0.05, 253.21, 34.86, 390.17]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[363.82, 108.54, 448.77, 241.45]
+[DETECT] class=chair color=green conf=0.84 bbox=[207.57, 130.23, 265.28, 223.44]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[101.85, 205.71, 132.19, 230.22]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[374.92, 108.44, 461.44, 242.44]
+[DETECT] class=chair color=green conf=0.83 bbox=[219.64, 131.51, 276.42, 222.93]
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[117.54, 205.52, 146.00, 229.62]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[200.92, 132.67, 259.11, 226.16]
+[DETECT] class=chair color=green conf=0.83 bbox=[355.70, 110.26, 441.78, 242.77]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[94.05, 209.58, 124.49, 234.45]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[185.98, 126.99, 247.10, 224.56]
+[DETECT] class=chair color=green conf=0.77 bbox=[344.57, 106.75, 427.65, 239.22]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[74.16, 206.93, 106.99, 232.71]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=sports ball color=orange conf=0.88 bbox=[104.21, 202.29, 133.73, 227.06]
+[DETECT] class=chair color=green conf=0.85 bbox=[365.98, 103.37, 451.28, 238.93]
+[DETECT] class=chair color=green conf=0.84 bbox=[209.08, 125.29, 266.46, 220.48]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[381.90, 102.24, 469.87, 239.62]
+[DETECT] class=chair color=green conf=0.82 bbox=[226.41, 125.12, 282.02, 219.62]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[125.50, 200.00, 152.67, 224.41]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[361.74, 106.17, 446.33, 239.91]
+[DETECT] class=chair color=green conf=0.86 bbox=[204.30, 126.09, 262.48, 221.98]
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[96.76, 203.18, 127.25, 228.40]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[172.49, 126.03, 234.76, 223.48]
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[54.98, 205.79, 89.08, 232.74]
+[DETECT] class=chair color=green conf=0.84 bbox=[334.03, 108.63, 415.32, 240.27]
+[TURN] target=5.0 deg final_error=1.0 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[172.24, 128.15, 234.67, 225.97]
+[DETECT] class=chair color=green conf=0.81 bbox=[333.27, 111.10, 414.60, 241.81]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[53.87, 207.78, 88.83, 234.72]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.80 bbox=[190.68, 126.25, 250.49, 222.41]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[79.53, 203.93, 111.92, 230.14]
+[DETECT] class=chair color=green conf=0.74 bbox=[349.32, 107.40, 432.32, 239.77]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[119.15, 205.33, 147.61, 229.21]
+[DETECT] class=chair color=green conf=0.81 bbox=[376.13, 110.01, 463.30, 245.70]
+[DETECT] class=chair color=green conf=0.79 bbox=[221.97, 132.13, 277.74, 224.50]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[371.37, 112.93, 457.50, 246.21]
+[DETECT] class=chair color=green conf=0.80 bbox=[217.96, 132.46, 272.69, 225.58]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[112.53, 206.16, 142.05, 231.06]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[198.41, 132.00, 256.65, 226.04]
+[DETECT] class=chair color=green conf=0.83 bbox=[354.15, 112.92, 437.93, 244.73]
+[DETECT] class=sports ball color=orange conf=0.68 bbox=[88.61, 208.65, 119.67, 233.64]
+[DETECT] class=chair color=unknown conf=0.22 bbox=[0.07, 202.88, 44.27, 385.64]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[191.02, 129.29, 251.07, 224.24]
+[DETECT] class=chair color=green conf=0.79 bbox=[349.22, 108.75, 432.51, 241.03]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[80.78, 206.78, 112.64, 232.17]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[365.62, 108.50, 451.13, 241.83]
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[104.41, 203.80, 133.99, 228.87]
+[DETECT] class=chair color=green conf=0.83 bbox=[210.27, 129.53, 266.80, 222.57]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[368.13, 110.86, 454.87, 244.51]
+[DETECT] class=chair color=green conf=0.83 bbox=[213.83, 132.23, 270.51, 224.97]
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[108.98, 205.98, 138.26, 230.27]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[198.28, 130.80, 256.68, 225.43]
+[DETECT] class=chair color=green conf=0.79 bbox=[354.13, 110.58, 438.94, 243.57]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[88.70, 207.78, 119.82, 232.89]
+[DETECT] class=chair color=orange conf=0.29 bbox=[0.05, 201.40, 42.17, 385.72]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[172.15, 127.25, 235.29, 224.78]
+[DETECT] class=chair color=green conf=0.80 bbox=[333.06, 106.67, 415.39, 239.27]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[56.16, 209.13, 90.96, 235.74]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[197.21, 123.35, 256.52, 219.27]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[88.54, 201.66, 119.85, 227.04]
+[DETECT] class=chair color=green conf=0.75 bbox=[353.58, 102.25, 439.59, 237.80]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[388.51, 104.22, 477.91, 242.51]
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[134.21, 202.15, 161.13, 225.58]
+[DETECT] class=chair color=green conf=0.80 bbox=[233.90, 128.95, 288.45, 221.61]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[399.37, 108.01, 492.11, 247.24]
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[148.70, 203.79, 174.36, 227.01]
+[DETECT] class=chair color=green conf=0.83 bbox=[246.82, 132.26, 299.49, 223.83]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[366.10, 110.91, 451.78, 245.03]
+[DETECT] class=chair color=green conf=0.81 bbox=[211.13, 131.27, 267.43, 225.15]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[104.88, 206.14, 134.14, 230.86]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[179.78, 132.48, 241.45, 229.56]
+[DETECT] class=chair color=green conf=0.85 bbox=[338.89, 113.24, 422.02, 244.91]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[65.69, 212.49, 99.04, 238.20]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[184.39, 130.90, 245.26, 225.94]
+[DETECT] class=chair color=green conf=0.80 bbox=[342.27, 107.70, 426.59, 240.96]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[71.35, 210.00, 104.78, 236.05]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[203.05, 130.93, 261.32, 224.56]
+[DETECT] class=chair color=green conf=0.81 bbox=[358.50, 106.81, 444.91, 241.28]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[95.67, 207.19, 125.84, 232.24]
+[DETECT] class=chair color=orange conf=0.30 bbox=[0.08, 189.63, 44.01, 383.99]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[117.12, 205.15, 145.97, 229.24]
+[DETECT] class=chair color=green conf=0.81 bbox=[219.60, 129.97, 276.51, 222.57]
+[DETECT] class=chair color=green conf=0.79 bbox=[375.53, 104.35, 462.91, 241.51]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[410.74, 107.07, 506.54, 248.76]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[161.51, 204.78, 186.42, 227.92]
+[DETECT] class=chair color=green conf=0.77 bbox=[256.94, 133.13, 309.07, 223.94]
+[TURN] target=-5.0 deg final_error=-0.9 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[408.61, 107.54, 503.25, 248.51]
+[DETECT] class=chair color=green conf=0.76 bbox=[254.75, 132.69, 306.99, 223.03]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[158.27, 203.85, 184.26, 226.90]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[231.80, 131.13, 285.70, 223.40]
+[DETECT] class=chair color=green conf=0.84 bbox=[384.40, 108.05, 474.01, 245.92]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[129.78, 204.25, 157.66, 228.41]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[373.64, 108.45, 461.14, 244.82]
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[115.02, 204.64, 144.01, 228.87]
+[DETECT] class=chair color=green conf=0.79 bbox=[219.10, 130.87, 274.92, 223.18]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[116.51, 204.81, 145.37, 228.99]
+[DETECT] class=chair color=green conf=0.81 bbox=[220.11, 131.07, 276.56, 223.01]
+[DETECT] class=chair color=green conf=0.81 bbox=[375.03, 108.24, 462.64, 245.04]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[368.01, 108.36, 455.72, 243.99]
+[DETECT] class=chair color=green conf=0.82 bbox=[213.62, 131.19, 270.48, 224.61]
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[108.74, 205.65, 138.02, 230.05]
+[DETECT] class=chair color=orange conf=0.24 bbox=[0.09, 127.90, 59.33, 378.34]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=sports ball color=orange conf=0.87 bbox=[121.96, 202.69, 150.03, 226.95]
+[DETECT] class=chair color=green conf=0.85 bbox=[379.18, 105.78, 467.69, 242.71]
+[DETECT] class=chair color=green conf=0.83 bbox=[224.41, 128.77, 279.16, 222.06]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[356.36, 108.27, 443.75, 242.16]
+[DETECT] class=chair color=green conf=0.80 bbox=[202.24, 129.03, 259.85, 223.76]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[93.62, 205.40, 124.07, 230.50]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[171.38, 128.07, 234.25, 226.14]
+[DETECT] class=chair color=green conf=0.84 bbox=[331.71, 109.84, 414.89, 241.27]
+[DETECT] class=sports ball color=orange conf=0.67 bbox=[52.44, 208.74, 88.09, 235.19]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[170.67, 130.78, 233.05, 228.39]
+[DETECT] class=chair color=green conf=0.74 bbox=[330.03, 113.76, 413.25, 244.95]
+[DETECT] class=sports ball color=orange conf=0.62 bbox=[50.43, 210.29, 86.44, 237.22]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[189.32, 127.56, 248.98, 223.79]
+[DETECT] class=chair color=green conf=0.81 bbox=[346.84, 107.85, 431.81, 241.25]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[76.26, 205.79, 109.46, 231.41]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[374.60, 109.33, 462.34, 245.75]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[116.02, 205.73, 144.97, 229.85]
+[DETECT] class=chair color=green conf=0.78 bbox=[219.87, 132.12, 275.82, 224.53]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[366.03, 112.56, 452.24, 246.53]
+[DETECT] class=chair color=green conf=0.81 bbox=[211.46, 132.83, 267.65, 226.74]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[104.65, 206.98, 133.97, 231.47]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[192.00, 131.47, 251.48, 227.60]
+[DETECT] class=chair color=green conf=0.76 bbox=[349.29, 112.99, 432.90, 245.53]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[81.07, 209.32, 112.81, 234.85]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.81 bbox=[192.03, 129.12, 252.09, 224.76]
+[DETECT] class=chair color=green conf=0.76 bbox=[349.37, 108.31, 433.82, 242.13]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[82.21, 207.57, 114.30, 232.92]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[365.04, 108.27, 452.51, 242.41]
+[DETECT] class=chair color=green conf=0.84 bbox=[210.16, 129.68, 267.02, 223.20]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[104.07, 204.18, 133.77, 229.27]
+[DETECT] class=chair color=orange conf=0.22 bbox=[0.19, 80.31, 53.84, 378.67]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[363.67, 110.50, 449.89, 245.66]
+[DETECT] class=chair color=green conf=0.83 bbox=[208.57, 130.67, 265.38, 225.66]
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[101.53, 206.29, 131.91, 231.08]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[192.66, 129.91, 251.96, 225.89]
+[DETECT] class=chair color=green conf=0.78 bbox=[349.31, 110.70, 433.86, 244.62]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[81.78, 207.33, 113.86, 232.93]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.79 bbox=[190.67, 124.31, 250.89, 221.80]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[79.99, 203.39, 112.34, 229.86]
+[DETECT] class=chair color=green conf=0.76 bbox=[348.44, 103.13, 433.12, 239.37]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[368.64, 102.46, 457.53, 240.61]
+[DETECT] class=chair color=green conf=0.86 bbox=[214.16, 124.92, 271.50, 219.73]
+[DETECT] class=sports ball color=orange conf=0.68 bbox=[110.17, 200.37, 139.12, 225.03]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[369.98, 106.84, 459.40, 243.76]
+[DETECT] class=chair color=green conf=0.83 bbox=[216.82, 127.91, 272.23, 222.57]
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[111.51, 202.76, 140.61, 227.21]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[199.79, 129.11, 258.15, 224.38]
+[DETECT] class=chair color=green conf=0.84 bbox=[354.97, 109.00, 442.06, 243.85]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[90.24, 205.53, 121.82, 230.56]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[338.92, 107.96, 423.32, 241.45]
+[DETECT] class=chair color=green conf=0.86 bbox=[179.36, 127.37, 241.57, 225.38]
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[64.46, 207.49, 97.92, 233.87]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[192.11, 130.12, 251.62, 225.27]
+[DETECT] class=chair color=green conf=0.80 bbox=[349.16, 108.91, 433.89, 243.71]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[81.06, 206.87, 112.75, 232.64]
+[DETECT] class=umbrella color=red conf=0.26 bbox=[0.08, 15.64, 16.16, 81.42]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[181.26, 124.39, 243.53, 222.52]
+[DETECT] class=chair color=green conf=0.86 bbox=[340.25, 102.18, 426.01, 238.42]
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[68.41, 205.69, 102.09, 231.90]
+[DETECT] class=chair color=unknown conf=0.22 bbox=[225.88, 106.22, 342.20, 211.78]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[202.57, 124.93, 260.41, 220.06]
+[DETECT] class=chair color=green conf=0.80 bbox=[357.78, 102.02, 445.79, 239.88]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[94.13, 201.96, 124.30, 227.31]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=sports ball color=orange conf=0.87 bbox=[135.63, 202.24, 162.31, 225.93]
+[DETECT] class=chair color=green conf=0.86 bbox=[388.59, 102.99, 481.64, 244.77]
+[DETECT] class=chair color=green conf=0.80 bbox=[235.06, 128.67, 290.11, 221.76]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[382.99, 109.60, 475.44, 248.68]
+[DETECT] class=chair color=green conf=0.79 bbox=[231.92, 132.19, 285.65, 225.34]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[129.03, 205.24, 157.33, 229.23]
+[DETECT] class=chair color=orange conf=0.47 bbox=[0.19, 71.60, 73.39, 374.68]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[368.13, 109.89, 457.33, 247.10]
+[DETECT] class=chair color=green conf=0.81 bbox=[215.53, 132.45, 271.43, 225.69]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[109.71, 206.06, 139.18, 231.03]
+[DETECT] class=chair color=orange conf=0.21 bbox=[0.11, 80.84, 48.24, 381.31]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[350.77, 111.49, 435.90, 246.75]
+[DETECT] class=chair color=green conf=0.85 bbox=[194.31, 131.92, 253.75, 228.73]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[83.89, 209.98, 115.47, 235.98]
+[DETECT] class=umbrella color=red conf=0.33 bbox=[0.10, 17.70, 15.27, 84.57]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[162.25, 134.36, 227.24, 232.79]
+[DETECT] class=chair color=green conf=0.83 bbox=[324.76, 112.84, 407.07, 246.13]
+[DETECT] class=sports ball color=orange conf=0.64 bbox=[42.20, 217.16, 78.39, 244.47]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[146.69, 131.41, 213.09, 232.23]
+[DETECT] class=chair color=green conf=0.83 bbox=[311.26, 115.45, 393.43, 246.70]
+[DETECT] class=sports ball color=orange conf=0.61 bbox=[15.25, 214.99, 55.01, 243.30]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[193.75, 127.76, 254.37, 224.59]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[83.40, 206.43, 115.72, 232.37]
+[DETECT] class=chair color=green conf=0.79 bbox=[352.13, 104.74, 438.14, 240.02]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[370.59, 107.04, 460.54, 244.91]
+[DETECT] class=chair color=green conf=0.83 bbox=[217.43, 129.91, 272.66, 223.80]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[111.72, 204.22, 140.83, 229.27]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[373.12, 106.57, 462.05, 244.74]
+[DETECT] class=chair color=green conf=0.80 bbox=[218.74, 130.12, 274.68, 223.19]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[114.37, 204.61, 143.77, 228.94]
+[TURN] target=-5.0 deg final_error=-1.0 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[170.38, 132.31, 233.30, 230.31]
+[DETECT] class=chair color=green conf=0.79 bbox=[329.04, 112.92, 413.89, 245.32]
+[DETECT] class=sports ball color=orange conf=0.59 bbox=[50.76, 213.63, 86.03, 240.30]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[159.97, 126.96, 225.06, 227.26]
+[DETECT] class=chair color=green conf=0.76 bbox=[322.90, 108.75, 405.37, 241.53]
+[DETECT] class=sports ball color=orange conf=0.60 bbox=[37.23, 210.12, 74.02, 237.13]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=chair color=green conf=0.80 bbox=[198.31, 124.74, 256.69, 221.84]
+[DETECT] class=chair color=green conf=0.79 bbox=[354.07, 105.06, 441.63, 241.88]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[87.53, 202.71, 119.19, 228.45]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[123.31, 202.41, 151.33, 226.69]
+[DETECT] class=chair color=green conf=0.84 bbox=[380.70, 106.52, 470.83, 245.70]
+[DETECT] class=chair color=green conf=0.76 bbox=[226.89, 128.73, 281.24, 222.47]
+[DETECT] class=chair color=orange conf=0.45 bbox=[0.25, 73.94, 67.70, 373.19]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[371.67, 111.67, 460.93, 248.66]
+[DETECT] class=chair color=green conf=0.81 bbox=[218.69, 132.57, 273.46, 226.04]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[112.02, 205.61, 141.48, 230.43]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[199.96, 131.62, 258.01, 226.49]
+[DETECT] class=chair color=green conf=0.80 bbox=[355.20, 111.54, 442.25, 247.43]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[89.40, 207.37, 120.66, 232.61]
+[DETECT] class=chair color=orange conf=0.21 bbox=[0.07, 194.48, 21.68, 390.33]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[359.98, 106.22, 447.53, 242.91]
+[DETECT] class=chair color=green conf=0.83 bbox=[204.01, 126.01, 262.27, 222.96]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[95.07, 203.42, 125.64, 229.27]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[366.31, 107.38, 454.53, 245.06]
+[DETECT] class=chair color=green conf=0.82 bbox=[211.02, 129.86, 267.76, 223.86]
+[DETECT] class=sports ball color=orange conf=0.68 bbox=[103.94, 204.54, 133.71, 229.50]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[166.35, 131.79, 230.22, 230.18]
+[DETECT] class=chair color=green conf=0.71 bbox=[327.99, 111.07, 411.70, 245.59]
+[DETECT] class=sports ball color=orange conf=0.66 bbox=[46.17, 214.18, 82.06, 241.40]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[340.48, 105.52, 426.47, 241.95]
+[DETECT] class=chair color=green conf=0.85 bbox=[181.33, 125.57, 242.50, 224.11]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[65.38, 205.75, 98.82, 232.25]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[340.17, 106.34, 426.44, 242.51]
+[DETECT] class=chair color=green conf=0.84 bbox=[181.02, 125.56, 242.02, 224.25]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[64.57, 205.76, 98.34, 232.16]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[139.26, 124.40, 207.61, 228.23]
+[DETECT] class=chair color=green conf=0.80 bbox=[308.17, 109.16, 390.33, 243.67]
+[DETECT] class=sports ball color=orange conf=0.52 bbox=[5.21, 209.82, 46.26, 238.51]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[146.58, 126.06, 213.51, 228.40]
+[DETECT] class=chair color=green conf=0.85 bbox=[313.21, 109.46, 395.56, 243.78]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[16.59, 210.31, 55.80, 238.64]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[54.22, 206.16, 88.73, 233.22]
+[DETECT] class=chair color=green conf=0.84 bbox=[173.16, 125.97, 235.26, 224.75]
+[DETECT] class=chair color=green conf=0.84 bbox=[333.84, 106.93, 418.46, 242.54]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[187.01, 126.45, 247.05, 224.91]
+[DETECT] class=chair color=green conf=0.80 bbox=[345.01, 107.53, 429.72, 242.93]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[72.36, 205.70, 105.22, 231.44]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[118.75, 203.73, 146.94, 228.30]
+[DETECT] class=chair color=green conf=0.84 bbox=[374.74, 109.13, 466.67, 248.69]
+[DETECT] class=chair color=green conf=0.78 bbox=[223.16, 131.38, 278.04, 224.60]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[370.77, 109.18, 460.37, 247.19]
+[DETECT] class=chair color=green conf=0.83 bbox=[217.97, 131.51, 272.94, 224.96]
+[DETECT] class=sports ball color=orange conf=0.69 bbox=[112.00, 205.00, 141.20, 229.69]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[193.70, 132.67, 252.45, 229.06]
+[DETECT] class=chair color=green conf=0.83 bbox=[349.61, 114.84, 435.16, 249.52]
+[DETECT] class=sports ball color=orange conf=0.64 bbox=[81.86, 209.94, 113.59, 235.23]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[172.03, 124.89, 234.75, 223.75]
+[DETECT] class=chair color=green conf=0.82 bbox=[332.65, 105.47, 417.60, 241.15]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[53.34, 205.29, 88.37, 231.59]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[352.11, 103.56, 438.86, 240.22]
+[DETECT] class=chair color=green conf=0.81 bbox=[194.94, 123.37, 254.01, 221.46]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[83.30, 202.35, 115.91, 227.59]
+[TURN] target=-5.0 deg final_error=-1.0 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[365.12, 108.43, 453.52, 245.26]
+[DETECT] class=chair color=green conf=0.83 bbox=[210.98, 130.51, 267.48, 224.28]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[103.24, 204.60, 133.29, 229.52]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[170.64, 130.77, 233.49, 228.97]
+[DETECT] class=chair color=green conf=0.77 bbox=[329.95, 111.44, 414.73, 245.51]
+[DETECT] class=sports ball color=orange conf=0.61 bbox=[50.85, 212.01, 86.04, 238.23]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[155.84, 129.17, 221.21, 228.92]
+[DETECT] class=chair color=green conf=0.81 bbox=[318.75, 108.28, 402.12, 242.13]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[31.04, 212.34, 68.40, 239.95]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[359.12, 101.91, 447.13, 240.95]
+[DETECT] class=chair color=green conf=0.83 bbox=[203.60, 124.73, 261.22, 221.39]
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[94.62, 202.15, 125.09, 227.29]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[202.08, 125.04, 259.59, 221.10]
+[DETECT] class=chair color=green conf=0.86 bbox=[357.04, 102.08, 445.64, 240.61]
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[92.44, 202.41, 123.38, 227.53]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[78.64, 202.38, 111.10, 228.64]
+[DETECT] class=chair color=green conf=0.78 bbox=[349.24, 102.56, 434.12, 240.74]
+[DETECT] class=chair color=green conf=0.78 bbox=[190.95, 123.91, 250.70, 221.30]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[187.50, 126.84, 247.57, 225.06]
+[DETECT] class=chair color=green conf=0.81 bbox=[344.92, 106.56, 429.99, 243.29]
+[DETECT] class=sports ball color=orange conf=0.67 bbox=[73.56, 206.00, 106.40, 231.82]
+[TURN] target=5.0 deg final_error=1.0 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[352.62, 100.11, 440.75, 239.45]
+[DETECT] class=chair color=green conf=0.83 bbox=[196.54, 122.10, 255.32, 218.92]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[85.13, 199.21, 117.38, 225.06]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[346.72, 106.49, 432.93, 243.65]
+[DETECT] class=chair color=green conf=0.80 bbox=[190.39, 126.21, 249.55, 223.89]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[76.76, 205.06, 109.98, 230.81]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=sports ball color=orange conf=0.87 bbox=[56.28, 206.55, 91.02, 233.31]
+[DETECT] class=chair color=green conf=0.83 bbox=[335.52, 107.56, 418.84, 243.67]
+[DETECT] class=chair color=green conf=0.81 bbox=[174.89, 126.00, 236.66, 224.89]
+[DETECT] class=chair color=green conf=0.22 bbox=[219.88, 108.27, 382.94, 240.57]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[152.64, 129.09, 218.55, 229.24]
+[DETECT] class=chair color=green conf=0.79 bbox=[316.09, 110.62, 398.99, 244.30]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[26.33, 212.33, 64.24, 239.96]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[133.63, 125.30, 204.69, 228.97]
+[DETECT] class=chair color=green conf=0.72 bbox=[301.71, 106.51, 386.03, 240.97]
+[DETECT] class=sports ball color=orange conf=0.66 bbox=[0.73, 213.23, 41.77, 242.30]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=sports ball color=orange conf=0.87 bbox=[60.85, 205.67, 95.38, 231.72]
+[DETECT] class=chair color=green conf=0.83 bbox=[177.14, 124.51, 239.33, 224.11]
+[DETECT] class=chair color=green conf=0.83 bbox=[337.35, 103.61, 421.82, 240.52]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[362.64, 106.28, 450.75, 244.77]
+[DETECT] class=chair color=green conf=0.82 bbox=[207.19, 129.07, 264.71, 224.31]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[99.83, 205.71, 130.27, 230.44]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[361.65, 105.83, 449.69, 244.55]
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[98.22, 203.14, 129.18, 228.49]
+[DETECT] class=chair color=green conf=0.80 bbox=[206.51, 126.51, 263.66, 222.71]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[31.28, 206.41, 69.03, 234.27]
+[DETECT] class=chair color=green conf=0.85 bbox=[157.61, 124.35, 221.75, 225.67]
+[DETECT] class=chair color=green conf=0.76 bbox=[321.18, 107.02, 404.28, 242.16]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[159.06, 125.61, 223.28, 226.57]
+[DETECT] class=chair color=green conf=0.72 bbox=[322.57, 107.50, 404.92, 243.10]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[34.77, 208.78, 71.50, 235.90]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[350.06, 105.86, 436.76, 243.29]
+[DETECT] class=chair color=green conf=0.82 bbox=[192.90, 125.73, 252.10, 223.85]
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[81.44, 204.67, 113.32, 230.26]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[357.90, 104.90, 446.32, 243.62]
+[DETECT] class=chair color=green conf=0.80 bbox=[203.28, 126.78, 260.47, 223.33]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[93.59, 203.09, 124.10, 229.23]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[159.47, 125.18, 223.51, 226.10]
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[34.74, 207.68, 71.58, 235.53]
+[DETECT] class=chair color=green conf=0.73 bbox=[322.83, 108.27, 405.04, 243.45]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[171.36, 124.66, 233.74, 224.78]
+[DETECT] class=chair color=green conf=0.83 bbox=[332.20, 106.68, 415.84, 242.94]
+[DETECT] class=sports ball color=orange conf=0.69 bbox=[50.33, 205.21, 85.76, 231.94]
+[DETECT] class=chair color=green conf=0.22 bbox=[217.74, 106.99, 379.02, 233.90]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[184.51, 124.86, 244.35, 223.07]
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[68.92, 203.76, 102.39, 229.89]
+[DETECT] class=chair color=green conf=0.85 bbox=[342.55, 104.98, 427.90, 242.62]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[367.76, 101.74, 459.19, 242.71]
+[DETECT] class=chair color=green conf=0.86 bbox=[214.15, 124.84, 271.21, 220.02]
+[DETECT] class=sports ball color=orange conf=0.71 bbox=[108.65, 200.10, 137.97, 224.53]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[361.50, 103.95, 449.59, 243.02]
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[98.42, 201.93, 129.36, 226.57]
+[DETECT] class=chair color=green conf=0.84 bbox=[206.45, 124.68, 263.57, 221.42]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[342.83, 106.28, 428.08, 243.18]
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[70.06, 203.79, 103.11, 229.81]
+[DETECT] class=chair color=green conf=0.84 bbox=[185.18, 125.20, 244.65, 223.42]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=chair color=green conf=0.81 bbox=[159.68, 125.71, 223.66, 226.42]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[35.14, 207.68, 72.01, 235.59]
+[DETECT] class=chair color=green conf=0.66 bbox=[322.90, 108.73, 404.84, 243.67]
+[DETECT] class=chair color=green conf=0.20 bbox=[206.61, 107.85, 376.82, 243.63]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[147.29, 124.74, 214.48, 227.15]
+[DETECT] class=chair color=green conf=0.83 bbox=[313.73, 106.87, 397.10, 242.31]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[19.22, 209.86, 57.76, 237.62]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[166.92, 123.12, 230.01, 224.21]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[45.76, 205.54, 81.81, 232.56]
+[DETECT] class=chair color=green conf=0.66 bbox=[328.51, 103.89, 413.02, 241.52]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[352.99, 104.32, 440.82, 242.90]
+[DETECT] class=chair color=green conf=0.81 bbox=[196.90, 125.70, 255.32, 223.24]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[85.32, 204.38, 117.23, 229.76]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[201.95, 127.78, 259.09, 224.69]
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[91.04, 203.85, 122.09, 229.35]
+[DETECT] class=chair color=green conf=0.80 bbox=[356.50, 107.86, 444.90, 246.58]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[193.61, 125.50, 252.25, 223.61]
+[DETECT] class=chair color=green conf=0.82 bbox=[350.67, 107.89, 436.65, 246.16]
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[80.60, 203.04, 113.06, 229.51]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[365.60, 106.27, 454.85, 244.95]
+[DETECT] class=chair color=green conf=0.84 bbox=[211.36, 125.84, 267.79, 222.77]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[103.51, 202.18, 133.29, 227.12]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[382.53, 107.53, 476.38, 249.45]
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[127.70, 202.95, 155.96, 227.32]
+[DETECT] class=chair color=green conf=0.81 bbox=[231.74, 130.36, 285.46, 224.24]
+[TURN] target=-5.0 deg final_error=-1.0 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[185.39, 132.36, 245.64, 229.58]
+[DETECT] class=chair color=green conf=0.80 bbox=[343.57, 111.15, 428.24, 247.73]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[70.69, 212.04, 104.26, 237.89]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=green conf=0.80 bbox=[197.78, 124.65, 256.23, 222.62]
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[87.01, 203.91, 118.45, 229.33]
+[DETECT] class=chair color=green conf=0.80 bbox=[354.22, 102.20, 442.36, 242.26]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[374.42, 101.01, 467.40, 244.16]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[116.68, 201.99, 145.83, 225.99]
+[DETECT] class=chair color=green conf=0.76 bbox=[220.80, 125.15, 276.99, 221.37]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[373.54, 101.59, 465.39, 244.94]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[114.66, 202.16, 144.16, 226.26]
+[DETECT] class=chair color=green conf=0.77 bbox=[219.51, 125.21, 275.97, 221.98]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[69.26, 206.62, 102.42, 232.97]
+[DETECT] class=chair color=green conf=0.82 bbox=[184.83, 126.69, 244.69, 225.58]
+[DETECT] class=chair color=green conf=0.81 bbox=[343.52, 106.36, 429.08, 244.31]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[175.31, 128.25, 236.29, 227.40]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[55.21, 208.56, 90.28, 235.41]
+[DETECT] class=chair color=green conf=0.74 bbox=[335.94, 108.44, 419.97, 246.61]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.87 bbox=[366.53, 103.82, 457.89, 245.70]
+[DETECT] class=chair color=green conf=0.83 bbox=[212.51, 127.19, 269.12, 223.64]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[105.07, 203.54, 134.94, 228.73]
+[TURN] target=-5.0 deg final_error=-1.7 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[363.79, 109.37, 453.78, 249.07]
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[100.65, 205.96, 130.90, 230.82]
+[DETECT] class=chair color=green conf=0.78 bbox=[209.67, 131.41, 265.70, 226.52]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.83 bbox=[349.92, 109.17, 436.09, 248.69]
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[78.65, 207.23, 111.40, 233.14]
+[DETECT] class=chair color=green conf=0.80 bbox=[192.51, 129.45, 251.26, 226.85]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[316.43, 113.85, 400.36, 248.23]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[27.22, 219.82, 64.87, 247.94]
+[DETECT] class=chair color=green conf=0.77 bbox=[153.22, 134.79, 219.72, 235.44]
+[RANGE] estimated_planar=3.14 m ground_truth=3.44 m phase=approach
+[DETECT] class=chair color=green conf=0.83 bbox=[306.60, 107.51, 394.45, 248.53]
+[DETECT] class=chair color=green conf=0.83 bbox=[136.73, 133.70, 207.08, 239.25]
+[DETECT] class=sports ball color=orange conf=0.65 bbox=[0.19, 223.24, 40.62, 253.16]
+[RANGE] estimated_planar=3.06 m ground_truth=3.35 m phase=approach
+[DETECT] class=chair color=green conf=0.89 bbox=[130.06, 127.56, 200.92, 239.47]
+[DETECT] class=chair color=green conf=0.78 bbox=[308.55, 103.28, 400.37, 255.26]
+[TURN] target=5.0 deg final_error=2.0 deg
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[2.41, 219.58, 46.27, 250.53]
+[DETECT] class=chair color=green conf=0.72 bbox=[147.67, 129.56, 216.33, 238.92]
+[DETECT] class=chair color=green conf=0.67 bbox=[323.90, 99.97, 418.13, 255.18]
+[TURN] target=5.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.80 bbox=[175.57, 130.41, 239.54, 237.73]
+[DETECT] class=chair color=green conf=0.72 bbox=[346.29, 98.94, 443.63, 257.71]
+[DETECT] class=sports ball color=orange conf=0.70 bbox=[42.27, 216.76, 81.03, 245.75]
+[DETECT] class=chair color=green conf=0.22 bbox=[225.30, 99.61, 444.13, 257.50]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=chair color=green conf=0.85 bbox=[363.09, 101.90, 463.16, 263.00]
+[DETECT] class=sports ball color=orange conf=0.73 bbox=[69.21, 213.60, 104.47, 242.54]
+[DETECT] class=chair color=green conf=0.66 bbox=[194.91, 132.38, 254.80, 237.25]
+[DETECT] class=chair color=green conf=0.25 bbox=[196.24, 116.00, 364.86, 237.92]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[377.60, 100.42, 483.44, 264.03]
+[DETECT] class=chair color=green conf=0.81 bbox=[213.21, 131.20, 271.21, 235.05]
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[92.59, 210.65, 125.53, 237.33]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.82 bbox=[343.19, 108.73, 440.78, 267.01]
+[DETECT] class=chair color=green conf=0.80 bbox=[172.21, 128.72, 234.62, 237.18]
+[DETECT] class=sports ball color=orange conf=0.65 bbox=[33.28, 212.18, 72.73, 241.87]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[328.79, 109.05, 424.91, 266.90]
+[DETECT] class=chair color=green conf=0.81 bbox=[153.94, 128.53, 219.98, 239.15]
+[DETECT] class=mouse color=orange conf=0.68 bbox=[5.40, 215.34, 48.66, 245.80]
+[DETECT] class=sports ball color=orange conf=0.28 bbox=[5.31, 215.41, 49.01, 245.42]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=green conf=0.86 bbox=[111.50, 124.99, 187.29, 241.05]
+[DETECT] class=chair color=green conf=0.81 bbox=[300.10, 106.41, 393.49, 263.54]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[94.98, 123.02, 175.61, 241.92]
+[DETECT] class=chair color=green conf=0.62 bbox=[288.80, 104.68, 383.59, 263.02]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=chair color=green conf=0.84 bbox=[323.86, 97.99, 421.53, 261.85]
+[DETECT] class=chair color=green conf=0.82 bbox=[143.12, 121.75, 213.66, 236.09]
+[DETECT] class=mouse color=orange conf=0.80 bbox=[0.19, 214.93, 36.90, 246.64]
+[RANGE] estimated_planar=2.86 m ground_truth=3.16 m phase=approach
+[DETECT] class=chair color=green conf=0.77 bbox=[329.96, 46.27, 437.27, 232.72]
+[DETECT] class=chair color=green conf=0.71 bbox=[135.61, 89.87, 214.71, 212.07]
+[DETECT] class=mouse color=orange conf=0.50 bbox=[0.36, 192.09, 32.22, 225.35]
+[TURN] target=-5.0 deg final_error=-1.3 deg
+[DETECT] class=chair color=green conf=0.71 bbox=[110.96, 82.41, 195.03, 212.52]
+[DETECT] class=chair color=green conf=0.65 bbox=[314.59, 46.93, 421.20, 235.37]
+[TURN] target=5.0 deg final_error=1.1 deg
+[DETECT] class=chair color=green conf=0.78 bbox=[307.26, 56.63, 412.85, 240.11]
+[DETECT] class=chair color=green conf=0.76 bbox=[103.13, 88.13, 187.68, 217.98]
+[RANGE] estimated_planar=2.75 m ground_truth=3.04 m phase=approach
+[DETECT] class=chair color=green conf=0.89 bbox=[330.17, 49.42, 445.94, 249.00]
+[DETECT] class=chair color=green conf=0.87 bbox=[125.64, 98.40, 208.09, 227.04]
+[DETECT] class=person color=orange conf=0.20 bbox=[0.11, 210.75, 11.58, 238.95]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=green conf=0.90 bbox=[326.42, 54.60, 441.97, 254.92]
+[DETECT] class=chair color=green conf=0.77 bbox=[120.58, 100.00, 202.92, 231.08]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=green conf=0.88 bbox=[303.72, 59.71, 417.47, 255.82]
+[DETECT] class=chair color=green conf=0.83 bbox=[88.45, 97.64, 179.33, 234.59]
+[RANGE] estimated_planar=2.62 m ground_truth=2.91 m phase=approach
+[DETECT] class=chair color=green conf=0.86 bbox=[263.21, 38.91, 388.54, 255.92]
+[DETECT] class=chair color=green conf=0.62 bbox=[11.27, 81.35, 132.35, 238.28]
+[RANGE] estimated_planar=2.52 m ground_truth=2.81 m phase=approach
+[DETECT] class=chair color=green conf=0.77 bbox=[261.84, 74.22, 390.42, 301.16]
+[DETECT] class=chair color=green conf=0.58 bbox=[4.29, 116.10, 120.13, 276.64]
+[RANGE] estimated_planar=2.41 m ground_truth=2.70 m phase=approach
+[DETECT] class=chair color=green conf=0.79 bbox=[252.58, 28.24, 399.02, 296.15]
+[RANGE] estimated_planar=2.29 m ground_truth=2.58 m phase=approach
+[DETECT] class=chair color=green conf=0.78 bbox=[235.86, 2.16, 403.02, 311.56]
+[RANGE] estimated_planar=2.18 m ground_truth=2.47 m phase=approach
+[DETECT] class=chair color=green conf=0.65 bbox=[220.97, 2.47, 413.12, 365.48]
+[DETECT] class=bed color=green conf=0.33 bbox=[0.95, 14.94, 431.05, 472.58]
+[RANGE] estimated_planar=2.07 m ground_truth=2.36 m phase=approach
+[DETECT] class=chair color=green conf=0.52 bbox=[204.25, 1.59, 430.86, 380.82]
+[RANGE] estimated_planar=1.97 m ground_truth=2.26 m phase=approach
+[TRACK] recovered green chair in live frame score=0.98
+[RANGE] estimated_planar=1.83 m ground_truth=2.10 m phase=approach
+[TRACK] recovered green chair in live frame score=0.94
+[RANGE] estimated_planar=1.74 m ground_truth=2.00 m phase=approach
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=71.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.93 bbox=[274.29, 72.58, 386.78, 286.24]
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[143.25, 216.76, 183.53, 252.25]
+[DETECT] class=chair color=green conf=0.92 bbox=[265.79, 65.52, 382.06, 282.89]
+[DETECT] class=sports ball color=orange conf=0.79 bbox=[135.33, 213.63, 176.53, 250.86]
+[RANGE] estimated_planar=1.61 m ground_truth=1.70 m phase=approach
+[DETECT] class=chair color=green conf=0.94 bbox=[252.70, 17.66, 384.67, 265.77]
+[DETECT] class=sports ball color=orange conf=0.92 bbox=[119.85, 196.03, 165.44, 235.83]
+[RANGE] estimated_planar=1.52 m ground_truth=1.61 m phase=approach
+[DETECT] class=chair color=green conf=0.95 bbox=[245.67, 40.31, 384.12, 300.67]
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[100.92, 224.14, 150.53, 266.77]
+[RANGE] estimated_planar=1.38 m ground_truth=1.47 m phase=approach
+[DETECT] class=chair color=green conf=0.90 bbox=[236.71, 19.12, 391.84, 315.63]
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[79.29, 228.83, 136.05, 274.85]
+[RANGE] estimated_planar=1.24 m ground_truth=1.33 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[46.24, 235.26, 113.06, 287.46]
+[DETECT] class=chair color=green conf=0.61 bbox=[221.67, 2.08, 409.87, 332.13]
+[RANGE] estimated_planar=1.10 m ground_truth=1.19 m phase=approach
+[DETECT] class=chair color=green conf=0.65 bbox=[190.08, 2.14, 420.91, 372.25]
+[DETECT] class=sports ball color=orange conf=0.37 bbox=[0.00, 240.68, 77.93, 300.60]
+[RANGE] estimated_planar=0.96 m ground_truth=1.05 m phase=approach
+[DETECT] class=chair color=green conf=0.76 bbox=[143.16, 3.02, 471.67, 420.77]
+[DETECT] class=mouse color=orange conf=0.46 bbox=[0.14, 258.09, 40.56, 325.79]
+[RANGE] estimated_planar=0.80 m ground_truth=0.90 m phase=approach
+[TRACK] recovered green chair in live frame score=0.99
+[RANGE] estimated_planar=0.58 m ground_truth=0.67 m phase=approach
+[TRACK] recovered green chair in live frame score=0.88
+[RANGE] estimated_planar=0.58 m ground_truth=0.68 m phase=approach
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=-30.5 deg final_error=-1.1 deg
+[TRACK] recovered green chair in live frame score=0.87
+[RANGE] estimated_planar=1.23 m ground_truth=0.72 m phase=approach
+[SEARCH] target lost, strafing right 2.2 s (attempt 2/4)
+[TURN] target=43.8 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.54 bbox=[0.78, 0.74, 316.14, 467.01]
+[DETECT] class=chair color=green conf=0.49 bbox=[0.17, 1.71, 313.77, 468.58]
+[DETECT] class=chair color=green conf=0.24 bbox=[0.51, 177.76, 316.15, 476.38]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.32 bbox=[0.80, 1.54, 323.88, 473.54]
+[DETECT] class=chair color=green conf=0.29 bbox=[0.73, 179.14, 324.44, 477.02]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=chair color=green conf=0.72 bbox=[14.25, 1.52, 359.99, 480.00]
+[DETECT] class=sports ball color=orange conf=0.57 bbox=[15.11, 238.48, 77.19, 290.41]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=sports ball color=orange conf=0.86 bbox=[45.04, 230.15, 105.80, 279.47]
+[DETECT] class=chair color=green conf=0.61 bbox=[17.25, 0.99, 380.03, 475.24]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=sports ball color=orange conf=0.88 bbox=[94.35, 230.14, 150.50, 276.21]
+[DETECT] class=chair color=green conf=0.71 bbox=[100.24, 1.56, 422.34, 474.66]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=sports ball color=orange conf=0.90 bbox=[120.60, 232.16, 173.08, 277.22]
+[DETECT] class=chair color=green conf=0.37 bbox=[80.05, 2.68, 440.53, 471.73]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=sports ball color=orange conf=0.91 bbox=[156.45, 230.37, 203.72, 273.01]
+[DETECT] class=chair color=green conf=0.50 bbox=[178.21, 1.61, 486.91, 465.76]
+[RANGE] estimated_planar=0.67 m ground_truth=0.91 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.89 bbox=[152.61, 195.00, 202.23, 239.58]
+[TRACK] recovered green chair in live frame score=0.84
+[RANGE] estimated_planar=0.54 m ground_truth=0.78 m phase=approach
+[DETECT] class=chair color=green conf=0.16 bbox=[138.93, 1.45, 532.02, 426.32]
+[DETECT] class=sports ball color=orange conf=0.14 bbox=[145.88, 228.72, 190.85, 275.27]
+[TRACK] recovered green chair in live frame score=0.88
+[RANGE] estimated_planar=0.54 m ground_truth=0.78 m phase=stop_check
+[FOUND] class=chair color=green t=81.5 s d=0.78 m
+[MISSION] status=SUCCESS
+[DONE] actions=1 t=81.5 s
+Robot: Done: reached the green chair; moved 3.4 m, net turn 132° right.

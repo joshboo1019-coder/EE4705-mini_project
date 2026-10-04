@@ -1,0 +1,99 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/wt/int/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=until_see(class=sports ball, color=orange, max_iter=8: turn(45 deg)), goto_object(class=sports ball, color=orange) n=2
+[PLAN] until I see the orange sports ball, up to 8x (turn left 45°), then go to the orange sports ball
+User: [EXEC] action=1/2 until_see class=sports ball color=orange max_iter=8
+[DETECT] class=chair color=blue conf=0.73 bbox=[89.08, 80.64, 162.13, 179.86]
+[UNTIL] iteration=1/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=1.9 deg
+[DETECT] class=chair color=blue conf=0.88 bbox=[366.37, 96.30, 421.08, 181.01]
+[DETECT] class=bench color=unknown conf=0.25 bbox=[456.96, 190.94, 639.40, 353.86]
+[UNTIL] iteration=2/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=1.5 deg
+[DETECT] class=bench color=unknown conf=0.32 bbox=[383.72, 179.97, 639.39, 341.79]
+[UNTIL] iteration=3/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.65 bbox=[252.00, 116.06, 328.72, 235.45]
+[UNTIL] iteration=4/8 target not seen yet
+[EXEC] action=1/2 turn angle=45.0 deg
+[TURN] target=45.0 deg final_error=1.4 deg
+[DETECT] class=chair color=green conf=0.38 bbox=[530.05, 95.90, 631.40, 258.54]
+[DETECT] class=sports ball color=orange conf=0.30 bbox=[281.13, 198.31, 296.85, 217.83]
+[UNTIL] seen class=sports ball color=orange conf=0.30 after 4 iteration(s)
+[EXEC] action=2/2 goto_object class=sports ball color=orange
+[CMD] action=goto_object(class=sports ball, color=orange)
+[DETECT] class=chair color=green conf=0.38 bbox=[530.05, 95.90, 631.40, 258.54]
+[DETECT] class=sports ball color=orange conf=0.30 bbox=[281.13, 198.31, 296.85, 217.83]
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[DETECT] class=sports ball color=orange conf=0.56 bbox=[313.81, 200.68, 333.82, 220.51]
+[DETECT] class=sports ball color=orange conf=0.26 bbox=[314.31, 195.71, 334.05, 215.83]
+[TRACK] recovered orange sports ball in live frame score=1.00
+[TRACK] recovered orange sports ball in live frame score=0.99
+[DETECT] class=sports ball color=orange conf=0.20 bbox=[313.77, 193.92, 333.98, 214.73]
+[RANGE] estimated_planar=3.53 m ground_truth=3.35 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.68 bbox=[312.54, 172.38, 333.54, 193.66]
+[DETECT] class=sports ball color=unknown conf=0.24 bbox=[312.94, 197.84, 333.40, 215.33]
+[RANGE] estimated_planar=3.44 m ground_truth=3.26 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.59 bbox=[310.15, 203.36, 330.84, 225.32]
+[RANGE] estimated_planar=3.31 m ground_truth=3.13 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.57 bbox=[308.16, 208.35, 330.84, 231.14]
+[DETECT] class=airplane color=red conf=0.23 bbox=[349.13, 2.31, 541.41, 404.02]
+[RANGE] estimated_planar=3.17 m ground_truth=2.99 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.67 bbox=[306.90, 213.53, 330.28, 237.10]
+[RANGE] estimated_planar=3.04 m ground_truth=2.86 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.76 bbox=[300.15, 209.75, 324.47, 235.17]
+[RANGE] estimated_planar=2.89 m ground_truth=2.71 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.69 bbox=[299.84, 224.21, 326.84, 251.21]
+[RANGE] estimated_planar=2.74 m ground_truth=2.56 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[298.89, 214.07, 326.95, 243.83]
+[RANGE] estimated_planar=2.59 m ground_truth=2.41 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[293.05, 223.65, 324.26, 255.06]
+[RANGE] estimated_planar=2.45 m ground_truth=2.27 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[288.95, 228.27, 320.95, 262.08]
+[RANGE] estimated_planar=2.31 m ground_truth=2.13 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[286.06, 226.28, 321.53, 261.76]
+[RANGE] estimated_planar=2.16 m ground_truth=1.98 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.92 bbox=[280.41, 227.15, 319.52, 266.86]
+[RANGE] estimated_planar=2.02 m ground_truth=1.84 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.92 bbox=[271.02, 223.96, 313.25, 268.09]
+[RANGE] estimated_planar=1.87 m ground_truth=1.69 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.91 bbox=[268.21, 236.67, 315.93, 284.55]
+[RANGE] estimated_planar=1.72 m ground_truth=1.54 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.92 bbox=[261.35, 241.07, 315.35, 295.73]
+[RANGE] estimated_planar=1.58 m ground_truth=1.40 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.89 bbox=[250.54, 250.74, 311.93, 312.54]
+[RANGE] estimated_planar=1.44 m ground_truth=1.26 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.91 bbox=[237.86, 268.94, 308.77, 341.17]
+[RANGE] estimated_planar=1.30 m ground_truth=1.12 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.90 bbox=[220.48, 271.17, 305.98, 358.64]
+[TURN] target=5.0 deg final_error=1.3 deg
+[DETECT] class=sports ball color=orange conf=0.88 bbox=[227.52, 271.44, 314.76, 361.20]
+[RANGE] estimated_planar=1.14 m ground_truth=0.96 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.90 bbox=[236.72, 283.75, 339.44, 392.43]
+[RANGE] estimated_planar=1.01 m ground_truth=0.83 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.85 bbox=[195.87, 308.63, 335.44, 461.86]
+[DETECT] class=mouse color=orange conf=0.27 bbox=[196.28, 308.34, 335.99, 461.14]
+[RANGE] estimated_planar=0.87 m ground_truth=0.69 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.56 bbox=[175.42, 338.84, 346.57, 477.33]
+[TURN] target=5.0 deg final_error=1.0 deg
+[TRACK] recovered orange sports ball in live frame score=0.98
+[RANGE] estimated_planar=0.68 m ground_truth=0.50 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.12 bbox=[210.43, 408.25, 387.02, 478.92]
+[TRACK] recovered orange sports ball in live frame score=0.94
+[RANGE] estimated_planar=0.68 m ground_truth=0.50 m phase=stop_check
+[FOUND] class=sports ball color=orange t=25.1 s d=0.50 m
+[MISSION] status=SUCCESS
+[DONE] actions=2 t=32.3 s
+Robot: Done: saw the orange sports ball after 4 tries; reached the orange sports ball; moved 3.0 m, net turn 177° left.
+[CMD] actions=status(seen) n=1
+User: [EXEC] action=1/1 status topic=seen
+Robot: I've seen 7 objects: the blue chair (first), last seen 32 s ago at heading +42°; the unknown bench, last seen 31 s ago at heading +87°; the green chair, last seen 28 s ago at heading +175°; the orange sports ball, last seen 3 s ago at heading +176°; the unknown sports ball, last seen 17 s ago at heading +175°; the red airplane, last seen 16 s ago at heading +174°; the orange mouse, last seen 8 s ago at heading +171°.
+[DONE] actions=1 t=0.0 s

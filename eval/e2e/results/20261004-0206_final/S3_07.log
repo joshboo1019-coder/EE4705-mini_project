@@ -1,0 +1,130 @@
+
+=== Scenario 7: side_start_hidden ===
+Robot faces -y, every object is behind/beside it.
+Robot start: x=-2.0 y=-3.0 yaw=-90.0 deg | target visible at start (expected): False
+Valid targets: green chair, yellow stop sign, orange sports ball
+Example: go to the green chair
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_co_14kfb/scenario_07_side_start_hidden.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_co_14kfb/scenario_07_side_start_hidden.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-2.00 y=-2.98 yaw=-90.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=sports ball, color=orange) n=1
+User: [EXEC] action=1/1 goto_object class=sports ball color=orange
+[CMD] action=goto_object(class=sports ball, color=orange)
+[DETECT] class=airplane color=unknown conf=0.32 bbox=[0.58, 178.89, 127.55, 208.66]
+[DETECT] class=airplane color=unknown conf=0.36 bbox=[0.42, 179.49, 127.51, 210.07]
+[DETECT] class=airplane color=unknown conf=0.36 bbox=[0.42, 179.49, 127.51, 210.07]
+[DETECT] class=airplane color=unknown conf=0.36 bbox=[0.42, 179.49, 127.51, 210.07]
+[DETECT] class=airplane color=unknown conf=0.36 bbox=[0.42, 179.49, 127.51, 210.07]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=airplane color=unknown conf=0.24 bbox=[0.20, 189.81, 149.21, 240.58]
+[DETECT] class=airplane color=unknown conf=0.24 bbox=[0.20, 189.81, 149.21, 240.58]
+[DETECT] class=airplane color=unknown conf=0.24 bbox=[0.20, 189.81, 149.21, 240.58]
+[DETECT] class=airplane color=unknown conf=0.24 bbox=[0.20, 189.81, 149.21, 240.58]
+[DETECT] class=airplane color=unknown conf=0.24 bbox=[0.20, 189.81, 149.21, 240.58]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[DETECT] class=chair color=red conf=0.50 bbox=[500.75, 183.35, 532.98, 211.23]
+[DETECT] class=chair color=red conf=0.50 bbox=[500.75, 183.35, 532.98, 211.23]
+[DETECT] class=chair color=red conf=0.50 bbox=[500.75, 183.35, 532.98, 211.23]
+[DETECT] class=chair color=red conf=0.50 bbox=[500.75, 183.35, 532.98, 211.23]
+[DETECT] class=chair color=red conf=0.50 bbox=[500.75, 183.35, 532.98, 211.23]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.0 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=chair color=green conf=0.24 bbox=[3.46, 119.66, 174.26, 242.18]
+[DETECT] class=chair color=green conf=0.24 bbox=[3.46, 119.66, 174.26, 242.18]
+[DETECT] class=chair color=green conf=0.24 bbox=[3.46, 119.66, 174.26, 242.18]
+[DETECT] class=chair color=green conf=0.24 bbox=[3.46, 119.66, 174.26, 242.18]
+[DETECT] class=chair color=green conf=0.29 bbox=[23.39, 121.33, 184.86, 240.05]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=airplane color=unknown conf=0.27 bbox=[357.18, 155.81, 455.95, 192.49]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[359.81, 158.11, 638.91, 229.60]
+[DETECT] class=airplane color=unknown conf=0.27 bbox=[357.18, 155.81, 455.95, 192.49]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[359.81, 158.11, 638.91, 229.60]
+[DETECT] class=airplane color=unknown conf=0.27 bbox=[357.18, 155.81, 455.95, 192.49]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[359.81, 158.11, 638.91, 229.60]
+[DETECT] class=airplane color=unknown conf=0.27 bbox=[357.18, 155.81, 455.95, 192.49]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[359.81, 158.11, 638.91, 229.60]
+[DETECT] class=airplane color=unknown conf=0.31 bbox=[378.99, 158.86, 639.70, 222.71]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[DETECT] class=sports ball color=orange conf=0.72 bbox=[195.42, 215.51, 226.92, 245.70]
+[DETECT] class=airplane color=unknown conf=0.66 bbox=[549.05, 154.76, 639.57, 214.92]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=sports ball color=orange conf=0.75 bbox=[209.61, 213.34, 240.52, 242.85]
+[DETECT] class=airplane color=unknown conf=0.61 bbox=[568.04, 155.80, 639.62, 208.77]
+[TURN] target=5.0 deg final_error=1.2 deg
+[DETECT] class=sports ball color=orange conf=0.61 bbox=[239.80, 211.08, 269.02, 239.66]
+[TURN] target=5.0 deg final_error=1.9 deg
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[263.04, 211.12, 290.95, 239.82]
+[DETECT] class=chair color=green conf=0.43 bbox=[469.57, 126.76, 546.45, 234.86]
+[DETECT] class=sports ball color=orange conf=0.77 bbox=[273.31, 205.81, 301.02, 234.14]
+[DETECT] class=chair color=green conf=0.35 bbox=[484.16, 116.18, 617.24, 228.89]
+[RANGE] estimated_planar=2.58 m ground_truth=2.47 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.65 bbox=[269.05, 183.21, 298.98, 213.76]
+[RANGE] estimated_planar=2.49 m ground_truth=2.39 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.74 bbox=[264.11, 218.93, 295.44, 250.95]
+[DETECT] class=chair color=green conf=0.58 bbox=[478.45, 119.43, 619.07, 240.60]
+[RANGE] estimated_planar=2.35 m ground_truth=2.25 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[258.03, 221.90, 291.84, 256.20]
+[DETECT] class=chair color=green conf=0.61 bbox=[495.04, 117.14, 621.40, 244.38]
+[RANGE] estimated_planar=2.21 m ground_truth=2.10 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.89 bbox=[251.62, 226.13, 289.06, 262.79]
+[DETECT] class=chair color=green conf=0.49 bbox=[477.20, 115.04, 618.37, 249.85]
+[RANGE] estimated_planar=2.06 m ground_truth=1.96 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[240.10, 225.91, 280.91, 266.71]
+[DETECT] class=chair color=green conf=0.75 bbox=[515.20, 102.34, 623.74, 249.58]
+[TURN] target=5.0 deg final_error=1.5 deg
+[DETECT] class=sports ball color=orange conf=0.83 bbox=[254.75, 226.71, 295.89, 267.55]
+[RANGE] estimated_planar=1.90 m ground_truth=1.80 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.87 bbox=[257.74, 213.95, 302.79, 258.77]
+[RANGE] estimated_planar=1.77 m ground_truth=1.66 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.90 bbox=[251.15, 250.44, 300.47, 299.66]
+[RANGE] estimated_planar=1.62 m ground_truth=1.51 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.87 bbox=[240.41, 239.24, 297.03, 295.59]
+[RANGE] estimated_planar=1.48 m ground_truth=1.37 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.81 bbox=[220.95, 244.32, 286.41, 308.47]
+[TURN] target=5.0 deg final_error=1.4 deg
+[DETECT] class=sports ball color=orange conf=0.82 bbox=[221.77, 254.92, 287.93, 320.51]
+[TURN] target=5.0 deg final_error=1.8 deg
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[260.86, 248.02, 324.89, 313.42]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[554.65, 200.73, 639.64, 213.12]
+[RANGE] estimated_planar=1.32 m ground_truth=1.21 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.80 bbox=[269.11, 252.21, 341.65, 326.66]
+[DETECT] class=airplane color=unknown conf=0.54 bbox=[581.86, 195.52, 639.83, 207.65]
+[RANGE] estimated_planar=1.19 m ground_truth=1.08 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.78 bbox=[254.87, 273.30, 342.99, 365.19]
+[RANGE] estimated_planar=1.04 m ground_truth=0.94 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.84 bbox=[229.83, 287.13, 340.57, 404.29]
+[DETECT] class=airplane color=unknown conf=0.48 bbox=[577.19, 195.36, 639.82, 207.40]
+[DETECT] class=mouse color=orange conf=0.21 bbox=[229.76, 286.95, 340.59, 403.16]
+[RANGE] estimated_planar=0.90 m ground_truth=0.80 m phase=approach
+[DETECT] class=sports ball color=orange conf=0.64 bbox=[211.08, 313.05, 348.13, 465.44]
+[DETECT] class=airplane color=unknown conf=0.30 bbox=[579.25, 202.17, 639.78, 214.43]
+[DETECT] class=mouse color=orange conf=0.26 bbox=[211.30, 312.90, 348.28, 466.10]
+[RANGE] estimated_planar=0.79 m ground_truth=0.68 m phase=approach
+[DETECT] class=mouse color=orange conf=0.55 bbox=[204.43, 323.84, 348.06, 477.22]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[579.45, 204.39, 639.61, 216.87]
+[TRACK] recovered orange sports ball in live frame score=1.00
+[RANGE] estimated_planar=0.70 m ground_truth=0.59 m phase=approach
+[DETECT] class=toilet color=orange conf=0.77 bbox=[173.73, 365.58, 346.30, 478.53]
+[DETECT] class=airplane color=unknown conf=0.16 bbox=[586.49, 190.08, 639.78, 203.79]
+[TRACK] recovered orange sports ball in live frame score=0.97
+[TRACK] final label corrected from=toilet/orange to=sports ball/orange
+[RANGE] estimated_planar=0.70 m ground_truth=0.59 m phase=stop_check
+[FOUND] class=sports ball color=orange t=20.1 s d=0.59 m
+[MISSION] status=SUCCESS
+[DONE] actions=1 t=20.1 s
+Robot: Done: reached the orange sports ball; moved 1.9 m, net turn 142° right.

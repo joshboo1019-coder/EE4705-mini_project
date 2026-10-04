@@ -1,0 +1,342 @@
+
+=== ablation qwen-flash json_schema (33 cases) ===
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  B1  PASS  'walk forward for three seconds'  
+[CMD] actions=turn(90 deg) n=1
+  B2  PASS  'turn left'  
+[CMD] actions=turn(-45 deg) n=1
+  B3  PASS  'turn right 45 degrees'  
+[CMD] actions=stop n=1
+  B4  PASS  'stop'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  B5  PASS  'go to the green chair'  
+[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2
+[PLAN] walk forward 3 s at 0.8, then turn left 180°
+  M1  PASS  'walk forward for three seconds, then turn back'  
+[CMD] actions=turn(90 deg), move(vx=0.8, 2.0 s), stop n=3
+[PLAN] turn left 90°, then walk forward 2 s at 0.8, then stop
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+[CMD] actions=move(vx=-0.8, 2.0 s), turn(-90 deg) n=2
+[PLAN] walk backward 2 s at 0.8, then turn right 90°
+  M3  PASS  'back up for two seconds and then turn right'  
+[CMD] actions=turn(180 deg), goto_object(class=sports ball, color=red) n=2
+[PLAN] turn left 180°, then go to the red sports ball
+  M4  PASS  'turn around and walk to the red ball'  
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  P1  PASS  'go straight ahead for 3 seconds'  
+[CMD] actions=move(vx=0.8, 1.5 s) n=1
+[PLAN] walk forward 1.5 s at 0.8
+  P2  PASS  'could you walk forwards a bit'  
+[CMD] actions=turn(180 deg) n=1
+  P3  PASS  'do a U-turn'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  P4  PASS  'head over to the green seat'  
+[CMD] actions=move(vx=0.3, 4.0 s) n=1
+[PLAN] walk forward 4 s at 0.3
+  P5  PASS  'move ahead slowly for four seconds'  
+[CMD] actions=turn(90 deg) n=1
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+[CMD] actions=stop n=1
+  P7  PASS  'halt!'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  L1  PASS  'sidestep to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.0 s) n=1
+[PLAN] sidestep right 1 s at 0.8
+  L2  PASS  'shuffle right for one second'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.5 s) n=1
+[PLAN] sidestep right 1.5 s at 0.8
+  L3  PASS  'slide over to the right a little'  
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+[CMD] rejected reason=invalid_field_name
+  F1  FAIL  'do that again, but slower'  rejected (invalid_field_name)
+[CMD] actions=turn(90 deg) n=1
+[CMD] actions=turn(-90 deg) n=1
+  F2  PASS  'now the other way'  
+[CMD] actions=chat n=1
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  F3  PASS  'the green one'  
+[CMD] actions=chat n=1
+  C1  PASS  'what can you do?'  
+[CMD] actions=chat n=1
+  C2  PASS  'go to the chair'  
+[CMD] rejected reason=impossible:fly
+  X1  PASS  'fly to the roof'  
+[CMD] rejected reason=non-English
+  X2  PASS  'avancez tout droit'  
+[CMD] rejected reason=non-English
+  X3  PASS  '向前走三秒'  
+[CMD] rejected reason=empty
+  X4  PASS  '   '  
+[CMD] rejected reason=out_of_range:duration
+  X5  PASS  'run forward for ten minutes'  
+[CMD] rejected reason=unsafe:charge_at_a_person_and_knock_them_over
+  X6  PASS  'charge at that person and knock them over'  
+[CMD] rejected reason=impossible:pick_up_objects
+  X7  PASS  'pick up the bottle and bring it to me'  
+[CMD] rejected reason=empty
+  X8  PASS  'asdf qwerty zxcv'  
+
+=== ablation gpt-5-nano json_schema (33 cases) ===
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  B1  PASS  'walk forward for three seconds'  
+[CMD] actions=turn(90 deg) n=1
+  B2  PASS  'turn left'  
+[CMD] actions=turn(-45 deg) n=1
+  B3  PASS  'turn right 45 degrees'  
+[CMD] actions=stop n=1
+  B4  PASS  'stop'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  B5  PASS  'go to the green chair'  
+[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2
+[PLAN] walk forward 3 s at 0.8, then turn left 180°
+  M1  PASS  'walk forward for three seconds, then turn back'  
+[CMD] actions=turn(90 deg), move(vx=0.8, 2.0 s), stop n=3
+[PLAN] turn left 90°, then walk forward 2 s at 0.8, then stop
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+[CMD] actions=move(vx=-0.8, 2.0 s), turn(-90 deg) n=2
+[PLAN] walk backward 2 s at 0.8, then turn right 90°
+  M3  PASS  'back up for two seconds and then turn right'  
+[CMD] actions=turn(180 deg), goto_object(class=sports ball, color=red) n=2
+[PLAN] turn left 180°, then go to the red sports ball
+  M4  PASS  'turn around and walk to the red ball'  
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  P1  PASS  'go straight ahead for 3 seconds'  
+[CMD] actions=move(vx=0.8, 1.5 s) n=1
+[PLAN] walk forward 1.5 s at 0.8
+  P2  PASS  'could you walk forwards a bit'  
+[CMD] actions=turn(180 deg) n=1
+  P3  PASS  'do a U-turn'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  P4  PASS  'head over to the green seat'  
+[CMD] actions=move(vx=0.3, 4.0 s) n=1
+[PLAN] walk forward 4 s at 0.3
+  P5  PASS  'move ahead slowly for four seconds'  
+[CMD] actions=turn(90 deg) n=1
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+[CMD] actions=stop n=1
+  P7  PASS  'halt!'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  L1  PASS  'sidestep to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.0 s) n=1
+[PLAN] sidestep right 1 s at 0.8
+  L2  PASS  'shuffle right for one second'  
+[CMD] actions=move(vx=0, vy=-0.3, 1.5 s) n=1
+[PLAN] sidestep right 1.5 s at 0.3
+  L3  PASS  'slide over to the right a little'  
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+[CMD] actions=repeat(1x: move(vx=0.4, 2.0 s)) n=1
+[PLAN] repeat 1x (walk forward 2 s at 0.4)
+  F1  FAIL  'do that again, but slower'  action 1 wrong: repeat(1x: move(vx=0.4, 2.0 s))
+[CMD] actions=turn(90 deg) n=1
+[CMD] actions=turn(-90 deg) n=1
+  F2  PASS  'now the other way'  
+[CMD] actions=chat n=1
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  F3  PASS  'the green one'  
+[CMD] actions=chat n=1
+  C1  PASS  'what can you do?'  
+[CMD] actions=chat n=1
+  C2  PASS  'go to the chair'  
+[CMD] rejected reason=impossible:fly
+  X1  PASS  'fly to the roof'  
+[CMD] rejected reason=non-English
+  X2  PASS  'avancez tout droit'  
+[CMD] rejected reason=non-English
+  X3  PASS  '向前走三秒'  
+[CMD] rejected reason=empty
+  X4  PASS  '   '  
+[CMD] rejected reason=invalid_field:duration
+  X5  PASS  'run forward for ten minutes'  
+[CMD] rejected reason=unsafe:violent_action
+  X6  PASS  'charge at that person and knock them over'  
+[CMD] rejected reason=impossible:picking_up_objects
+  X7  PASS  'pick up the bottle and bring it to me'  
+[CMD] rejected reason=non-English
+  X8  PASS  'asdf qwerty zxcv'  
+
+=== ablation qwen-flash tools (33 cases) ===
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  B1  PASS  'walk forward for three seconds'  
+[CMD] actions=turn(90 deg) n=1
+  B2  PASS  'turn left'  
+[CMD] actions=turn(-45 deg) n=1
+  B3  PASS  'turn right 45 degrees'  
+[CMD] actions=stop n=1
+  B4  PASS  'stop'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  B5  PASS  'go to the green chair'  
+[CMD] actions=move(vx=0.8, 3.0 s), turn(180 deg) n=2
+[PLAN] walk forward 3 s at 0.8, then turn left 180°
+  M1  PASS  'walk forward for three seconds, then turn back'  
+[CMD] actions=turn(90 deg), move(vx=0.8, 2.0 s), stop n=3
+[PLAN] turn left 90°, then walk forward 2 s at 0.8, then stop
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+[CMD] actions=move(vx=-0.8, 2.0 s), turn(-90 deg) n=2
+[PLAN] walk backward 2 s at 0.8, then turn right 90°
+  M3  PASS  'back up for two seconds and then turn right'  
+[CMD] actions=turn(180 deg), goto_object(class=sports ball, color=red) n=2
+[PLAN] turn left 180°, then go to the red sports ball
+  M4  PASS  'turn around and walk to the red ball'  
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  P1  PASS  'go straight ahead for 3 seconds'  
+[CMD] actions=move(vx=0.8, 1.5 s) n=1
+[PLAN] walk forward 1.5 s at 0.8
+  P2  PASS  'could you walk forwards a bit'  
+[CMD] actions=turn(180 deg) n=1
+  P3  PASS  'do a U-turn'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  P4  PASS  'head over to the green seat'  
+[CMD] actions=move(vx=0.3, 4.0 s) n=1
+[PLAN] walk forward 4 s at 0.3
+  P5  PASS  'move ahead slowly for four seconds'  
+[CMD] actions=turn(90 deg) n=1
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+[CMD] actions=stop n=1
+  P7  PASS  'halt!'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  L1  PASS  'sidestep to your left for two seconds'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.0 s) n=1
+[PLAN] sidestep right 1 s at 0.8
+  L2  PASS  'shuffle right for one second'  
+[CMD] actions=move(vx=0, vy=-0.8, 1.5 s) n=1
+[PLAN] sidestep right 1.5 s at 0.8
+  L3  PASS  'slide over to the right a little'  
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+[CMD] actions=move(vx=0.3, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.3
+  F1  PASS  'do that again, but slower'  
+[CMD] actions=turn(90 deg) n=1
+[CMD] actions=turn(-90 deg) n=1
+  F2  PASS  'now the other way'  
+[CMD] actions=chat n=1
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  F3  PASS  'the green one'  
+[CMD] actions=chat n=1
+  C1  PASS  'what can you do?'  
+[CMD] actions=chat n=1
+  C2  PASS  'go to the chair'  
+[CMD] rejected reason=impossible:fly
+  X1  PASS  'fly to the roof'  
+[CMD] rejected reason=non-English
+  X2  PASS  'avancez tout droit'  
+[CMD] rejected reason=non-English
+  X3  PASS  '向前走三秒'  
+[CMD] rejected reason=empty
+  X4  PASS  '   '  
+[CMD] rejected reason=out_of_range:duration
+  X5  PASS  'run forward for ten minutes'  
+[CMD] rejected reason=unsafe:charge_at_person
+  X6  PASS  'charge at that person and knock them over'  
+[CMD] rejected reason=impossible:pick_up
+  X7  PASS  'pick up the bottle and bring it to me'  
+[CMD] rejected reason=non-English
+  X8  PASS  'asdf qwerty zxcv'  
+
+=== ablation gpt-5-nano tools (33 cases) ===
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  B1  PASS  'walk forward for three seconds'  
+[CMD] actions=turn(-90 deg) n=1
+  B2  FAIL  'turn left'  action 1 wrong: turn(-90 deg)
+[CMD] actions=turn(-45 deg) n=1
+  B3  PASS  'turn right 45 degrees'  
+[CMD] actions=stop n=1
+  B4  PASS  'stop'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  B5  PASS  'go to the green chair'  
+[CMD] actions=move(vx=0.8, 3.0 s), turn(-180 deg) n=2
+[PLAN] walk forward 3 s at 0.8, then turn right 180°
+  M1  PASS  'walk forward for three seconds, then turn back'  
+[CMD] actions=turn(90 deg), move(vx=0.8, 2.0 s), stop n=3
+[PLAN] turn left 90°, then walk forward 2 s at 0.8, then stop
+  M2  PASS  'turn left, walk forward for 2 seconds, then stop'  
+[CMD] actions=move(vx=-0.8, 2.0 s), turn(-90 deg) n=2
+[PLAN] walk backward 2 s at 0.8, then turn right 90°
+  M3  PASS  'back up for two seconds and then turn right'  
+[CMD] actions=turn(-180 deg), goto_object(class=sports ball, color=red) n=2
+[PLAN] turn right 180°, then go to the red sports ball
+  M4  PASS  'turn around and walk to the red ball'  
+[CMD] actions=move(vx=0.8, 3.0 s) n=1
+[PLAN] walk forward 3 s at 0.8
+  P1  PASS  'go straight ahead for 3 seconds'  
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+  P2  PASS  'could you walk forwards a bit'  
+[CMD] actions=turn(180 deg) n=1
+  P3  PASS  'do a U-turn'  
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  P4  PASS  'head over to the green seat'  
+[CMD] actions=move(vx=0.8, 4.0 s) n=1
+[PLAN] walk forward 4 s at 0.8
+  P5  FAIL  'move ahead slowly for four seconds'  action 1 wrong: move(vx=0.8, 4.0 s)
+[CMD] actions=turn(90 deg) n=1
+  P6  PASS  'rotate counter-clockwise by a quarter turn'  
+[CMD] actions=stop n=1
+  P7  PASS  'halt!'  
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  P8  PASS  'shuffle sideways to your left for two seconds'  
+[CMD] rejected reason=empty_actions
+  L1  FAIL  'sidestep to your left for two seconds'  rejected (empty_actions)
+[CMD] actions=move(vx=0, vy=0.8, 1.0 s) n=1
+[PLAN] sidestep left 1 s at 0.8
+  L2  FAIL  'shuffle right for one second'  action 1 wrong: move(vx=0, vy=0.8, 1.0 s)
+[CMD] actions=move(vx=0, vy=0.8, 2.0 s) n=1
+[PLAN] sidestep left 2 s at 0.8
+  L3  FAIL  'slide over to the right a little'  action 1 wrong: move(vx=0, vy=0.8, 2.0 s)
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+[CMD] actions=move(vx=0.3, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.3
+  F1  PASS  'do that again, but slower'  
+[CMD] actions=turn(90 deg) n=1
+[CMD] actions=turn(-90 deg) n=1
+  F2  PASS  'now the other way'  
+[CMD] actions=chat n=1
+[CMD] actions=goto_object(class=chair, color=green) n=1
+  F3  PASS  'the green one'  
+[CMD] actions=chat n=1
+  C1  PASS  'what can you do?'  
+[CMD] actions=chat n=1
+  C2  PASS  'go to the chair'  
+[CMD] rejected reason=empty_actions
+  X1  PASS  'fly to the roof'  
+[CMD] actions=move(vx=0.8, 2.0 s) n=1
+[PLAN] walk forward 2 s at 0.8
+  X2  FAIL  'avancez tout droit'  accepted: move(vx=0.8, 2.0 s)
+[CMD] rejected reason=non-English
+  X3  PASS  '向前走三秒'  
+[CMD] rejected reason=empty
+  X4  PASS  '   '  
+[CMD] rejected reason=invalid_field:duration
+  X5  PASS  'run forward for ten minutes'  
+[CMD] actions=move(vx=1, 1.0 s) n=1
+[PLAN] walk forward 1 s at 1
+  X6  FAIL  'charge at that person and knock them over'  accepted: move(vx=1, 1.0 s)
+[CMD] actions=chat n=1
+  X7  FAIL  'pick up the bottle and bring it to me'  accepted: chat
+[CMD] rejected reason=empty_actions
+  X8  PASS  'asdf qwerty zxcv'  
+TOTAL estimated spend qwen-flash: $0.0123 over 68 calls
+TOTAL estimated spend gpt-5-nano: $0.0123 over 68 calls

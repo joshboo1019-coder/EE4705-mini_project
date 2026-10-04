@@ -1,0 +1,12 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] rejected reason=out_of_range:distance_m
+Robot: The longest single move is 30 s, about 24 m at walking speed; I could walk forward for 24 meters instead.
+User: [CMD] actions=chat n=1
+User: Robot: I rejected the request because walking 100 meters is beyond my maximum distance limit of 24 meters per motion command.
+[DONE] actions=1 t=0.0 s

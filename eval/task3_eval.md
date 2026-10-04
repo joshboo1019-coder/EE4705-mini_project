@@ -1,5 +1,8 @@
 # Task 3.iv — LLM command parser evaluation
 
+> **Upgrade (prompt v5, programs, talk-back, state, repair, Hard set):** see
+> [`upgrade_eval.md`](upgrade_eval.md). v4 is now frozen in `eval/prompt_v4.py`; `--prompt v5` is the live prompt.
+
 v1 and v2 were run on 2026-10-01 and v3 on 2026-10-02, all from branch `task_3_llm`; v4 (bonus, visual QA) on branch `bonus_b`. The system prompts compared are:
 
 - **v1:** the original prompt, frozen in `eval/prompt_v1.py` (identical to `llm_parser.SYSTEM_PROMPT` at commit `3c2abc9`).
@@ -363,7 +366,7 @@ Optional extra: `向前走三秒` is rejected by the local precheck before any L
 
 Notes for recording:
 
-- **Don't demo a mid-move stop.** The executor runs each move to completion (`skills.move()` blocks),
+- **(Video_Task3 only — superseded on b/upgrade by the stop fast path, `[ESTOP]`, see eval/upgrade_eval.md.)** **Don't demo a mid-move stop.** The executor runs each move to completion (`skills.move()` blocks),
   so a "stop" typed during a move is only queued. It runs after the move has already finished, so on
   camera it looks like stop did nothing. "stop" on its own is parsed correctly (P7 / M2 in the eval).
 - **No `goto_object` in this video**, apart from the optional step 8. Object search and approach belong in Video_Task4.

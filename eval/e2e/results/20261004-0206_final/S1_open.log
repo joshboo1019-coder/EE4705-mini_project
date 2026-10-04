@@ -1,0 +1,16 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[S1] ready
+[S1] mode=open target=45 trial=1 achieved=9.7 error=-35.3 deg t=1.3 s wz=0.6 duration=0.75 s
+[S1] mode=open target=45 trial=2 achieved=11.2 error=-33.8 deg t=1.3 s wz=0.6 duration=0.75 s
+[S1] mode=open target=45 trial=3 achieved=10.5 error=-34.5 deg t=1.3 s wz=0.6 duration=0.75 s
+[S1] mode=open target=90 trial=1 achieved=21.8 error=-68.2 deg t=2.0 s wz=0.6 duration=1.50 s
+[S1] mode=open target=90 trial=2 achieved=21.0 error=-69.0 deg t=2.0 s wz=0.6 duration=1.50 s
+[S1] mode=open target=90 trial=3 achieved=21.6 error=-68.4 deg t=2.0 s wz=0.6 duration=1.50 s
+[S1] mode=open target=180 trial=1 achieved=44.7 error=-135.3 deg t=3.6 s wz=0.6 duration=3.00 s
+[S1] mode=open target=180 trial=2 achieved=42.2 error=-137.8 deg t=3.6 s wz=0.6 duration=3.00 s
+[S1] mode=open target=180 trial=3 achieved=44.1 error=-135.9 deg t=3.6 s wz=0.6 duration=3.00 s
+[S1] done

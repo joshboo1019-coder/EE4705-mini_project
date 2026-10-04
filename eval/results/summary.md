@@ -99,6 +99,28 @@ Failures (v4):
 | gpt-5-nano | 1 | V5 | look out! | `{"action": "look", "question": "what would you like me to look for or describe in the scene?"}` | produced a look action |
 | gpt-5-nano | 1 | V7 | heads up, there's a wall | `{"action": "look", "question": "is there a wall ahead?"}` | produced a look action |
 
+### Prompt v5
+
+| Service | Run 1 | Run 2 | Run 3 | Average | API errors | Latency median / p90 (s) | Tokens in / out per call | Cost per 1k calls (USD) |
+|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% (45/45) | – | – | **100.0% (45/45)** | 0 | 0.32 / 0.49 | 2694 / 31 | 0.147 |
+| gemini-3.8-flash | 100.0% (45/45) | – | – | **100.0% (45/45)** | 0 | 1.63 / 1.91 | 2791 / 30 | 2.207 |
+| gpt-5-nano | 93.3% (42/45) | – | – | **93.3% (42/45)** | 0 | 0.89 / 1.08 | 2660 / 41 | 0.149 |
+
+| Service | basic | multi-step | paraphrase | lateral | follow-up | chat | look | multi-goal | invalid |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gemini-3.8-flash | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| gpt-5-nano | 100.0% | 100.0% | 100.0% | 100.0% | 66.7% | 100.0% | 75.0% | 100.0% | 100.0% |
+
+Failures (v5):
+
+| Service | Run | Case | Utterance | Got | Why |
+|---|---|---|---|---|---|
+| gpt-5-nano | 1 | F1 | do that again, but slower | `{"action": "repeat", "times": 1, "actions": [{"action": "move", "vx": 0.3, "vy": 0.0, "wz": 0.0, "duration": 2.0}]}` | action 1 wrong: repeat(1x: move(vx=0.3, 2.0 s)) |
+| gpt-5-nano | 1 | V5 | look out! | `{"action": "look", "question": "look out!"}` | produced a look action |
+| gpt-5-nano | 1 | V7 | heads up, there's a wall | `{"action": "look", "question": "is there a wall ahead?"}` | produced a look action |
+
 ### Items that flipped between v1 and v2 (passes / runs)
 
 | Service | Case | Utterance | v1 | v2 |
@@ -124,15 +146,24 @@ Failures (v4):
 | Service | Case | Utterance | v3 | v4 |
 |---|---|---|---|---|
 
+### Items that flipped between v4 and v5 (passes / runs)
+
+| Service | Case | Utterance | v4 | v5 |
+|---|---|---|---|---|
+| gpt-5-nano | F1 | do that again, but slower | 1/1 | 0/1 |
+
 ### Logged spend this evaluation (scored calls + follow-up setup turns)
 
 - qwen-flash v2: $0.0065
 - qwen-flash v3: $0.0073
 - qwen-flash v4: $0.0038
+- qwen-flash v5: $0.0068
 - gemini-3.8-flash v1: $0.0813
 - gemini-3.8-flash v2: $0.0945
 - gemini-3.8-flash v3: $0.0355
 - gemini-3.8-flash v4: $0.0555
+- gemini-3.8-flash v5: $0.1015
 - gpt-5-nano v2: $0.0068
 - gpt-5-nano v3: $0.0077
 - gpt-5-nano v4: $0.0039
+- gpt-5-nano v5: $0.0069

@@ -4,6 +4,36 @@ Prepared 2026-10-03 for the bonus video. **Nothing has been recorded yet**: the 
 the speaker is at the machine. Segments: (1) speech, (2) look, (3) multi-goal, which is filmed only if Part 3
 succeeded on the real sim (see segment 3 below).
 
+## Update 2026-10-04 (overnight run): typed take recorded automatically + cue sheet for the re-record
+
+An automatic **typed** take of the upgraded bonus features was recorded overnight on a virtual display
+(`eval/e2e/demo_bonus.py`; `~/Videos/Video_Bonus_typed_auto.mp4` = take 1, 288 s; per-segment frames, timings
+and terminal log as `Video_Bonus_typed_auto_take1_*`; take 2 is next to it). Record your own version from **`b/overnight-all`** (or main once it is
+merged): it has prompt v5, talk-back, programs, state and the stop fast path. One fresh launch for the whole take
+(`eval/run_env.sh main.py --gui`); type each line after the previous `[DONE]` / `[CMD] rejected` (+ the `Robot:`
+line that follows). Moves are chosen to stay on clear floor: the terrain track starts at x ≈ 1.3–1.5 m ahead of
+the spawn heading, the red stop sign stands at (−1.3, 0) behind it.
+
+| # | Segment | Type exactly | What to expect (dry run 2026-10-04 02:00) |
+|---|---|---|---|
+| 1 | look ×2 | `turn around` · `what can you see?` · `turn right 45 degrees` · `is there a chair in front of you?` | `Robot:` VLM answers (signs + red chair; "Yes, a green chair … centre-right") |
+| 2 | multi-goal | `go to the red chair, then the orange ball` | `[GOAL] 1/2 …`, `[GOAL] 2/2 …`, `[MULTI] status=SUCCESS reached=2/2` (the red chair is the weak goal: `PARTIAL 1/2` in the dry run and takes 4–5, SUCCESS in takes 1–2 — a PARTIAL is still a valid "skip and continue" shot, but redo the take if you want SUCCESS) |
+| 3 | until_see → goto | `keep turning until you see the green chair, then go to it` | `[PLAN] until I see the green chair, up to 8x (turn left 45°) …`, `[UNTIL] … seen …`, `[FOUND] … d≈0.7 m`. **Reliability:** the until_see part worked in all 5 automatic runs, but the green-chair goto succeeded in only 2 of them (dry run, take 4); in takes 1, 2, 5 it failed at close range (`target_not_found` / `stop_verification`, Task 4's frame-filling-chair issue). If it fails, redo the take or keep it as a failure-report shot. Don't swap in the orange ball here: from the ball, `go back to where you started` walks straight through the red sign pole at (−1.3, 0). |
+| 4 | 1 m square, then return home | `go back to where you started` · `turn left 90 degrees` · `walk in a square with 1 meter sides` · `go back to where you started` | `[PLAN]`, 4× `[MOVE] target=1.00 m final_error≈±0.02 m`, `Robot: … ending ~0.2 m from where I began`; return home `[PLAN] return home: turn …, walk …, turn …` |
+| 5 | undo / repair | `turn left 45 degrees` · `no, the other way` · `undo that` | repair = `turn(-45 deg)` (back to the start heading); undo → `[PLAN] undo: turn …` |
+| 6 | status | `what did you just do?` | `Robot: I just did this: …` (answered from the state store, no motion) |
+| 7 | mid-program stop | `walk forward half a meter and back half a meter, three times`, then type `stop` while it walks (after `[REPEAT] iteration=2/3`) | `[ESTOP] latency=0.1 ms` (software latency; the robot is at rest ~0.6 s later), `Robot: Emergency stop: …` |
+| 8 | non-English → redirect | `gira a la derecha noventa grados` · then `turn right 90 degrees` | `[CMD] rejected reason=non-English`, `Robot: I only take commands in English. Did you mean "turn right 90 degrees"?` — the suggestion is never executed; you type it |
+
+**Speech segment** (your morning addition): use Segment 1 below (two spoken commands, one multi-step, plus the
+Mandarin sentence), pressing `v` + ENTER before each. The spoken Mandarin is rejected by whisper's language ID
+before any LLM call, so the reply is `Robot: I only take commands in English. Please say it again in English.` (the typed path adds a "Did you mean …?"
+suggestion from the LLM; the speech path doesn't).
+
+**Display tonight:** there was no external monitor, so the automatic take used a virtual display (Xvfb :99,
+1920×1080: demo terminal left, panel right). For your own take, the original DP-1 recipe below still applies when
+the monitor is connected.
+
 ## Setup (once, before the first take)
 
 1. **Code.** Record from the merged code (main after the `bonus_b` + `fix/task4-color-grounding` merge, or the

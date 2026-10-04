@@ -1,0 +1,3082 @@
+{
+ "started": "2026-10-04 01:15:49",
+ "loadavg_start": [
+  3.84,
+  5.39,
+  3.94
+ ],
+ "yolo": {
+  "model": "yolo11n.pt",
+  "conf": 0.2,
+  "imgsz": 736
+ },
+ "camera": {
+  "name": "dog_front_camera",
+  "fovy_deg": 80.0,
+  "hfov_deg": 96.4,
+  "px": [
+   640,
+   480
+  ],
+  "render_hz": 15
+ },
+ "clip": {
+  "file": "task2_onboard_yolo_turn.mp4",
+  "fps": 15,
+  "n_frames": 150,
+  "duration_s": 10.0,
+  "capture_wall_s": 10.66,
+  "cmd": {
+   "vx": 0,
+   "vy": 0,
+   "wz": 0.6,
+   "duration_s": 10.5
+  },
+  "start_yaw_cmd_deg": 100.0,
+  "yaw_first_last_deg": [
+   99.51,
+   -102.71
+  ],
+  "frames": [
+   {
+    "frame": 0,
+    "t_sim_s": 0.0,
+    "yaw_deg": 99.51,
+    "x": -2.194,
+    "y": -0.02,
+    "detections": [
+     {
+      "class_name": "airplane",
+      "color": "unknown",
+      "conf": 0.363,
+      "bbox": [
+       544.7,
+       135.7,
+       639.9,
+       199.9
+      ]
+     },
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.261,
+      "bbox": [
+       351.4,
+       76.0,
+       505.0,
+       262.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 1,
+    "t_sim_s": 0.04,
+    "yaw_deg": 100.2,
+    "x": -2.194,
+    "y": -0.02,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.289,
+      "bbox": [
+       354.8,
+       76.0,
+       508.0,
+       262.5
+      ]
+     },
+     {
+      "class_name": "airplane",
+      "color": "unknown",
+      "conf": 0.221,
+      "bbox": [
+       547.9,
+       137.1,
+       639.9,
+       200.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 2,
+    "t_sim_s": 0.11,
+    "yaw_deg": 101.95,
+    "x": -2.195,
+    "y": -0.021,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "yellow",
+      "conf": 0.276,
+      "bbox": [
+       24.6,
+       87.4,
+       86.5,
+       236.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 3,
+    "t_sim_s": 0.18,
+    "yaw_deg": 103.49,
+    "x": -2.195,
+    "y": -0.022,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.269,
+      "bbox": [
+       392.7,
+       73.2,
+       533.5,
+       265.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 4,
+    "t_sim_s": 0.25,
+    "yaw_deg": 104.81,
+    "x": -2.195,
+    "y": -0.023,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.439,
+      "bbox": [
+       377.4,
+       73.7,
+       542.1,
+       266.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 5,
+    "t_sim_s": 0.32,
+    "yaw_deg": 105.86,
+    "x": -2.196,
+    "y": -0.025,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.383,
+      "bbox": [
+       406.0,
+       73.4,
+       532.0,
+       268.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 6,
+    "t_sim_s": 0.39,
+    "yaw_deg": 106.66,
+    "x": -2.196,
+    "y": -0.027,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.433,
+      "bbox": [
+       391.5,
+       74.3,
+       560.4,
+       271.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 7,
+    "t_sim_s": 0.46,
+    "yaw_deg": 107.24,
+    "x": -2.196,
+    "y": -0.029,
+    "detections": []
+   },
+   {
+    "frame": 8,
+    "t_sim_s": 0.53,
+    "yaw_deg": 107.59,
+    "x": -2.196,
+    "y": -0.031,
+    "detections": []
+   },
+   {
+    "frame": 9,
+    "t_sim_s": 0.6,
+    "yaw_deg": 107.99,
+    "x": -2.195,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.216,
+      "bbox": [
+       396.8,
+       76.6,
+       566.6,
+       272.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 10,
+    "t_sim_s": 0.67,
+    "yaw_deg": 109.33,
+    "x": -2.195,
+    "y": -0.035,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.337,
+      "bbox": [
+       408.0,
+       72.5,
+       581.5,
+       273.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 11,
+    "t_sim_s": 0.74,
+    "yaw_deg": 110.69,
+    "x": -2.195,
+    "y": -0.035,
+    "detections": []
+   },
+   {
+    "frame": 12,
+    "t_sim_s": 0.81,
+    "yaw_deg": 112.5,
+    "x": -2.195,
+    "y": -0.033,
+    "detections": []
+   },
+   {
+    "frame": 13,
+    "t_sim_s": 0.885,
+    "yaw_deg": 114.1,
+    "x": -2.196,
+    "y": -0.031,
+    "detections": []
+   },
+   {
+    "frame": 14,
+    "t_sim_s": 0.955,
+    "yaw_deg": 115.33,
+    "x": -2.196,
+    "y": -0.031,
+    "detections": []
+   },
+   {
+    "frame": 15,
+    "t_sim_s": 1.015,
+    "yaw_deg": 116.14,
+    "x": -2.197,
+    "y": -0.031,
+    "detections": []
+   },
+   {
+    "frame": 16,
+    "t_sim_s": 1.085,
+    "yaw_deg": 116.81,
+    "x": -2.197,
+    "y": -0.031,
+    "detections": []
+   },
+   {
+    "frame": 17,
+    "t_sim_s": 1.155,
+    "yaw_deg": 117.19,
+    "x": -2.197,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.208,
+      "bbox": [
+       479.6,
+       71.8,
+       639.5,
+       295.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 18,
+    "t_sim_s": 1.225,
+    "yaw_deg": 117.34,
+    "x": -2.196,
+    "y": -0.034,
+    "detections": []
+   },
+   {
+    "frame": 19,
+    "t_sim_s": 1.295,
+    "yaw_deg": 118.42,
+    "x": -2.195,
+    "y": -0.035,
+    "detections": []
+   },
+   {
+    "frame": 20,
+    "t_sim_s": 1.37,
+    "yaw_deg": 120.01,
+    "x": -2.195,
+    "y": -0.035,
+    "detections": []
+   },
+   {
+    "frame": 21,
+    "t_sim_s": 1.44,
+    "yaw_deg": 121.77,
+    "x": -2.196,
+    "y": -0.033,
+    "detections": []
+   },
+   {
+    "frame": 22,
+    "t_sim_s": 1.51,
+    "yaw_deg": 123.5,
+    "x": -2.198,
+    "y": -0.03,
+    "detections": []
+   },
+   {
+    "frame": 23,
+    "t_sim_s": 1.58,
+    "yaw_deg": 124.9,
+    "x": -2.199,
+    "y": -0.03,
+    "detections": []
+   },
+   {
+    "frame": 24,
+    "t_sim_s": 1.65,
+    "yaw_deg": 126.12,
+    "x": -2.201,
+    "y": -0.029,
+    "detections": []
+   },
+   {
+    "frame": 25,
+    "t_sim_s": 1.72,
+    "yaw_deg": 127.03,
+    "x": -2.202,
+    "y": -0.029,
+    "detections": []
+   },
+   {
+    "frame": 26,
+    "t_sim_s": 1.79,
+    "yaw_deg": 127.66,
+    "x": -2.203,
+    "y": -0.03,
+    "detections": []
+   },
+   {
+    "frame": 27,
+    "t_sim_s": 1.86,
+    "yaw_deg": 128.04,
+    "x": -2.203,
+    "y": -0.031,
+    "detections": []
+   },
+   {
+    "frame": 28,
+    "t_sim_s": 1.93,
+    "yaw_deg": 128.21,
+    "x": -2.202,
+    "y": -0.033,
+    "detections": []
+   },
+   {
+    "frame": 29,
+    "t_sim_s": 2.005,
+    "yaw_deg": 129.43,
+    "x": -2.2,
+    "y": -0.034,
+    "detections": []
+   },
+   {
+    "frame": 30,
+    "t_sim_s": 2.065,
+    "yaw_deg": 130.7,
+    "x": -2.2,
+    "y": -0.033,
+    "detections": []
+   },
+   {
+    "frame": 31,
+    "t_sim_s": 2.135,
+    "yaw_deg": 132.39,
+    "x": -2.201,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "unknown",
+      "conf": 0.375,
+      "bbox": [
+       0.1,
+       370.2,
+       15.1,
+       427.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 32,
+    "t_sim_s": 2.205,
+    "yaw_deg": 134.18,
+    "x": -2.202,
+    "y": -0.029,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.343,
+      "bbox": [
+       0.1,
+       292.5,
+       35.5,
+       437.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 33,
+    "t_sim_s": 2.275,
+    "yaw_deg": 135.63,
+    "x": -2.204,
+    "y": -0.029,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.458,
+      "bbox": [
+       0.2,
+       282.1,
+       50.6,
+       439.8
+      ]
+     },
+     {
+      "class_name": "mouse",
+      "color": "orange",
+      "conf": 0.254,
+      "bbox": [
+       0.2,
+       282.8,
+       34.8,
+       359.4
+      ]
+     },
+     {
+      "class_name": "toilet",
+      "color": "unknown",
+      "conf": 0.222,
+      "bbox": [
+       0.2,
+       362.4,
+       50.3,
+       440.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 34,
+    "t_sim_s": 2.345,
+    "yaw_deg": 136.83,
+    "x": -2.206,
+    "y": -0.029,
+    "detections": [
+     {
+      "class_name": "mouse",
+      "color": "orange",
+      "conf": 0.608,
+      "bbox": [
+       0.2,
+       279.2,
+       48.3,
+       362.5
+      ]
+     },
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.391,
+      "bbox": [
+       0.2,
+       278.2,
+       62.6,
+       439.7
+      ]
+     },
+     {
+      "class_name": "airplane",
+      "color": "unknown",
+      "conf": 0.32,
+      "bbox": [
+       601.9,
+       206.2,
+       639.8,
+       222.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 35,
+    "t_sim_s": 2.42,
+    "yaw_deg": 137.79,
+    "x": -2.207,
+    "y": -0.029,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.567,
+      "bbox": [
+       0.1,
+       277.6,
+       72.2,
+       439.0
+      ]
+     },
+     {
+      "class_name": "mouse",
+      "color": "orange",
+      "conf": 0.364,
+      "bbox": [
+       0.2,
+       278.5,
+       57.6,
+       363.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 36,
+    "t_sim_s": 2.49,
+    "yaw_deg": 138.42,
+    "x": -2.207,
+    "y": -0.03,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.529,
+      "bbox": [
+       0.2,
+       278.6,
+       78.6,
+       437.5
+      ]
+     },
+     {
+      "class_name": "mouse",
+      "color": "orange",
+      "conf": 0.345,
+      "bbox": [
+       0.3,
+       278.7,
+       64.9,
+       364.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 37,
+    "t_sim_s": 2.56,
+    "yaw_deg": 138.79,
+    "x": -2.207,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.38,
+      "bbox": [
+       0.2,
+       277.7,
+       81.9,
+       435.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 38,
+    "t_sim_s": 2.63,
+    "yaw_deg": 138.95,
+    "x": -2.205,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.321,
+      "bbox": [
+       0.2,
+       276.0,
+       84.2,
+       433.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 39,
+    "t_sim_s": 2.7,
+    "yaw_deg": 140.06,
+    "x": -2.204,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.263,
+      "bbox": [
+       0.1,
+       271.0,
+       94.4,
+       425.5
+      ]
+     },
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.233,
+      "bbox": [
+       0.1,
+       272.7,
+       81.2,
+       356.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 40,
+    "t_sim_s": 2.77,
+    "yaw_deg": 141.56,
+    "x": -2.203,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.362,
+      "bbox": [
+       0.5,
+       268.0,
+       95.1,
+       347.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 41,
+    "t_sim_s": 2.84,
+    "yaw_deg": 143.15,
+    "x": -2.204,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.593,
+      "bbox": [
+       6.0,
+       267.2,
+       108.4,
+       344.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 42,
+    "t_sim_s": 2.91,
+    "yaw_deg": 144.74,
+    "x": -2.206,
+    "y": -0.03,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.738,
+      "bbox": [
+       25.3,
+       266.3,
+       122.5,
+       343.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 43,
+    "t_sim_s": 2.98,
+    "yaw_deg": 146.07,
+    "x": -2.208,
+    "y": -0.03,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.763,
+      "bbox": [
+       40.0,
+       265.5,
+       133.5,
+       340.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 44,
+    "t_sim_s": 3.05,
+    "yaw_deg": 147.17,
+    "x": -2.21,
+    "y": -0.03,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.801,
+      "bbox": [
+       52.7,
+       264.9,
+       142.9,
+       338.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 45,
+    "t_sim_s": 3.125,
+    "yaw_deg": 148.08,
+    "x": -2.211,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.742,
+      "bbox": [
+       62.0,
+       264.8,
+       150.2,
+       337.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 46,
+    "t_sim_s": 3.195,
+    "yaw_deg": 148.65,
+    "x": -2.211,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.806,
+      "bbox": [
+       68.4,
+       264.4,
+       155.2,
+       336.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 47,
+    "t_sim_s": 3.255,
+    "yaw_deg": 148.94,
+    "x": -2.21,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.78,
+      "bbox": [
+       72.4,
+       264.5,
+       157.9,
+       336.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 48,
+    "t_sim_s": 3.325,
+    "yaw_deg": 149.13,
+    "x": -2.209,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.806,
+      "bbox": [
+       75.3,
+       263.4,
+       160.1,
+       334.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 49,
+    "t_sim_s": 3.395,
+    "yaw_deg": 150.38,
+    "x": -2.207,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.879,
+      "bbox": [
+       87.2,
+       258.5,
+       168.8,
+       328.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 50,
+    "t_sim_s": 3.465,
+    "yaw_deg": 151.88,
+    "x": -2.207,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.85,
+      "bbox": [
+       99.8,
+       255.7,
+       179.5,
+       324.3
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 51,
+    "t_sim_s": 3.535,
+    "yaw_deg": 153.52,
+    "x": -2.208,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.885,
+      "bbox": [
+       113.2,
+       257.5,
+       190.5,
+       324.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 52,
+    "t_sim_s": 3.61,
+    "yaw_deg": 155.2,
+    "x": -2.21,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.878,
+      "bbox": [
+       127.2,
+       257.6,
+       202.1,
+       323.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 53,
+    "t_sim_s": 3.68,
+    "yaw_deg": 156.47,
+    "x": -2.211,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.878,
+      "bbox": [
+       138.0,
+       257.3,
+       210.6,
+       323.2
+      ]
+     },
+     {
+      "class_name": "traffic light",
+      "color": "unknown",
+      "conf": 0.236,
+      "bbox": [
+       398.9,
+       294.7,
+       426.8,
+       335.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 54,
+    "t_sim_s": 3.75,
+    "yaw_deg": 157.51,
+    "x": -2.213,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.907,
+      "bbox": [
+       146.7,
+       257.0,
+       218.2,
+       322.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 55,
+    "t_sim_s": 3.82,
+    "yaw_deg": 158.27,
+    "x": -2.213,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.906,
+      "bbox": [
+       153.2,
+       256.7,
+       223.0,
+       322.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 56,
+    "t_sim_s": 3.89,
+    "yaw_deg": 158.78,
+    "x": -2.213,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.895,
+      "bbox": [
+       157.7,
+       257.6,
+       227.1,
+       321.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 57,
+    "t_sim_s": 3.96,
+    "yaw_deg": 159.05,
+    "x": -2.212,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.887,
+      "bbox": [
+       160.1,
+       257.3,
+       229.5,
+       321.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 58,
+    "t_sim_s": 4.035,
+    "yaw_deg": 159.48,
+    "x": -2.21,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.892,
+      "bbox": [
+       162.2,
+       255.2,
+       230.9,
+       319.7
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 59,
+    "t_sim_s": 4.095,
+    "yaw_deg": 160.81,
+    "x": -2.208,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.898,
+      "bbox": [
+       173.4,
+       250.6,
+       240.4,
+       314.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 60,
+    "t_sim_s": 4.165,
+    "yaw_deg": 162.33,
+    "x": -2.209,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.901,
+      "bbox": [
+       183.7,
+       250.3,
+       249.6,
+       312.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 61,
+    "t_sim_s": 4.235,
+    "yaw_deg": 164.11,
+    "x": -2.21,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.87,
+      "bbox": [
+       195.3,
+       252.6,
+       260.0,
+       315.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 62,
+    "t_sim_s": 4.305,
+    "yaw_deg": 165.58,
+    "x": -2.212,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.918,
+      "bbox": [
+       206.2,
+       252.0,
+       269.1,
+       314.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 63,
+    "t_sim_s": 4.375,
+    "yaw_deg": 166.89,
+    "x": -2.214,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.92,
+      "bbox": [
+       215.3,
+       253.0,
+       277.5,
+       314.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 64,
+    "t_sim_s": 4.45,
+    "yaw_deg": 167.98,
+    "x": -2.215,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.912,
+      "bbox": [
+       222.1,
+       253.6,
+       284.0,
+       314.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 65,
+    "t_sim_s": 4.52,
+    "yaw_deg": 168.71,
+    "x": -2.216,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.9,
+      "bbox": [
+       227.3,
+       254.1,
+       288.9,
+       315.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 66,
+    "t_sim_s": 4.59,
+    "yaw_deg": 169.19,
+    "x": -2.215,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.906,
+      "bbox": [
+       230.7,
+       254.2,
+       291.9,
+       315.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 67,
+    "t_sim_s": 4.66,
+    "yaw_deg": 169.44,
+    "x": -2.213,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.923,
+      "bbox": [
+       233.1,
+       254.0,
+       293.4,
+       314.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 68,
+    "t_sim_s": 4.73,
+    "yaw_deg": 170.03,
+    "x": -2.211,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.932,
+      "bbox": [
+       235.9,
+       251.6,
+       296.2,
+       312.7
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 69,
+    "t_sim_s": 4.8,
+    "yaw_deg": 171.65,
+    "x": -2.21,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.899,
+      "bbox": [
+       245.9,
+       248.4,
+       305.7,
+       308.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 70,
+    "t_sim_s": 4.875,
+    "yaw_deg": 173.4,
+    "x": -2.212,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.874,
+      "bbox": [
+       255.5,
+       248.9,
+       315.1,
+       309.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 71,
+    "t_sim_s": 4.945,
+    "yaw_deg": 175.12,
+    "x": -2.214,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.905,
+      "bbox": [
+       266.7,
+       250.6,
+       326.2,
+       310.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 72,
+    "t_sim_s": 5.005,
+    "yaw_deg": 176.39,
+    "x": -2.216,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.897,
+      "bbox": [
+       275.8,
+       251.2,
+       334.3,
+       311.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 73,
+    "t_sim_s": 5.075,
+    "yaw_deg": 177.8,
+    "x": -2.217,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.84,
+      "bbox": [
+       284.7,
+       251.9,
+       343.6,
+       312.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 74,
+    "t_sim_s": 5.145,
+    "yaw_deg": 178.85,
+    "x": -2.218,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.911,
+      "bbox": [
+       291.1,
+       252.8,
+       350.4,
+       313.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 75,
+    "t_sim_s": 5.215,
+    "yaw_deg": 179.63,
+    "x": -2.219,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.905,
+      "bbox": [
+       296.1,
+       253.8,
+       355.1,
+       314.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 76,
+    "t_sim_s": 5.285,
+    "yaw_deg": -179.84,
+    "x": -2.218,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.904,
+      "bbox": [
+       299.4,
+       254.1,
+       358.5,
+       314.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 77,
+    "t_sim_s": 5.36,
+    "yaw_deg": -179.52,
+    "x": -2.217,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.897,
+      "bbox": [
+       301.3,
+       253.9,
+       360.6,
+       314.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 78,
+    "t_sim_s": 5.43,
+    "yaw_deg": -179.11,
+    "x": -2.215,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.896,
+      "bbox": [
+       303.2,
+       251.9,
+       361.7,
+       312.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 79,
+    "t_sim_s": 5.5,
+    "yaw_deg": -177.61,
+    "x": -2.214,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.826,
+      "bbox": [
+       311.8,
+       248.8,
+       371.2,
+       309.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 80,
+    "t_sim_s": 5.57,
+    "yaw_deg": -176.07,
+    "x": -2.215,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.895,
+      "bbox": [
+       320.6,
+       249.9,
+       380.0,
+       309.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 81,
+    "t_sim_s": 5.64,
+    "yaw_deg": -174.18,
+    "x": -2.217,
+    "y": -0.031,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.894,
+      "bbox": [
+       331.6,
+       251.9,
+       392.3,
+       312.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 82,
+    "t_sim_s": 5.71,
+    "yaw_deg": -172.71,
+    "x": -2.219,
+    "y": -0.032,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.875,
+      "bbox": [
+       341.5,
+       251.9,
+       402.4,
+       313.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 83,
+    "t_sim_s": 5.78,
+    "yaw_deg": -171.41,
+    "x": -2.22,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.898,
+      "bbox": [
+       349.3,
+       253.0,
+       411.0,
+       315.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 84,
+    "t_sim_s": 5.85,
+    "yaw_deg": -170.33,
+    "x": -2.221,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.911,
+      "bbox": [
+       356.0,
+       254.5,
+       418.3,
+       316.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 85,
+    "t_sim_s": 5.925,
+    "yaw_deg": -169.54,
+    "x": -2.221,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.893,
+      "bbox": [
+       360.9,
+       254.8,
+       424.3,
+       317.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 86,
+    "t_sim_s": 5.985,
+    "yaw_deg": -169.12,
+    "x": -2.221,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.855,
+      "bbox": [
+       364.5,
+       255.5,
+       427.9,
+       317.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 87,
+    "t_sim_s": 6.055,
+    "yaw_deg": -168.86,
+    "x": -2.219,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.865,
+      "bbox": [
+       366.1,
+       255.7,
+       429.5,
+       318.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 88,
+    "t_sim_s": 6.125,
+    "yaw_deg": -168.39,
+    "x": -2.217,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.902,
+      "bbox": [
+       368.7,
+       254.6,
+       431.6,
+       317.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 89,
+    "t_sim_s": 6.195,
+    "yaw_deg": -166.82,
+    "x": -2.217,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.893,
+      "bbox": [
+       377.8,
+       251.9,
+       442.6,
+       314.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 90,
+    "t_sim_s": 6.265,
+    "yaw_deg": -165.27,
+    "x": -2.218,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.91,
+      "bbox": [
+       387.2,
+       253.5,
+       453.1,
+       316.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 91,
+    "t_sim_s": 6.335,
+    "yaw_deg": -163.46,
+    "x": -2.22,
+    "y": -0.033,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.895,
+      "bbox": [
+       399.0,
+       255.4,
+       467.0,
+       320.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 92,
+    "t_sim_s": 6.41,
+    "yaw_deg": -161.86,
+    "x": -2.222,
+    "y": -0.034,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.886,
+      "bbox": [
+       409.3,
+       256.2,
+       479.0,
+       321.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 93,
+    "t_sim_s": 6.48,
+    "yaw_deg": -160.52,
+    "x": -2.223,
+    "y": -0.035,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.878,
+      "bbox": [
+       418.0,
+       258.4,
+       490.2,
+       324.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 94,
+    "t_sim_s": 6.55,
+    "yaw_deg": -159.46,
+    "x": -2.223,
+    "y": -0.036,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.879,
+      "bbox": [
+       426.0,
+       260.1,
+       498.7,
+       327.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 95,
+    "t_sim_s": 6.62,
+    "yaw_deg": -158.73,
+    "x": -2.223,
+    "y": -0.037,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.917,
+      "bbox": [
+       431.2,
+       261.4,
+       505.1,
+       328.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 96,
+    "t_sim_s": 6.69,
+    "yaw_deg": -158.27,
+    "x": -2.222,
+    "y": -0.037,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.904,
+      "bbox": [
+       434.7,
+       262.1,
+       509.6,
+       329.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 97,
+    "t_sim_s": 6.76,
+    "yaw_deg": -158.04,
+    "x": -2.221,
+    "y": -0.037,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.896,
+      "bbox": [
+       436.7,
+       262.1,
+       511.5,
+       330.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 98,
+    "t_sim_s": 6.83,
+    "yaw_deg": -157.37,
+    "x": -2.219,
+    "y": -0.035,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.888,
+      "bbox": [
+       439.6,
+       261.3,
+       514.6,
+       329.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 99,
+    "t_sim_s": 6.9,
+    "yaw_deg": -155.85,
+    "x": -2.219,
+    "y": -0.035,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.873,
+      "bbox": [
+       449.9,
+       259.5,
+       527.3,
+       328.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 100,
+    "t_sim_s": 6.975,
+    "yaw_deg": -154.13,
+    "x": -2.22,
+    "y": -0.035,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.894,
+      "bbox": [
+       460.5,
+       262.1,
+       541.2,
+       331.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 101,
+    "t_sim_s": 7.045,
+    "yaw_deg": -152.18,
+    "x": -2.223,
+    "y": -0.036,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.787,
+      "bbox": [
+       475.3,
+       265.2,
+       560.6,
+       337.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 102,
+    "t_sim_s": 7.105,
+    "yaw_deg": -150.9,
+    "x": -2.223,
+    "y": -0.037,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.805,
+      "bbox": [
+       488.1,
+       265.6,
+       577.8,
+       339.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 103,
+    "t_sim_s": 7.175,
+    "yaw_deg": -149.61,
+    "x": -2.224,
+    "y": -0.039,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.547,
+      "bbox": [
+       498.8,
+       268.3,
+       591.7,
+       343.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 104,
+    "t_sim_s": 7.245,
+    "yaw_deg": -148.63,
+    "x": -2.223,
+    "y": -0.04,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.723,
+      "bbox": [
+       508.0,
+       270.4,
+       603.3,
+       347.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 105,
+    "t_sim_s": 7.315,
+    "yaw_deg": -147.92,
+    "x": -2.223,
+    "y": -0.041,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.818,
+      "bbox": [
+       514.4,
+       272.3,
+       611.7,
+       349.8
+      ]
+     },
+     {
+      "class_name": "traffic light",
+      "color": "green",
+      "conf": 0.224,
+      "bbox": [
+       254.2,
+       113.2,
+       284.8,
+       154.7
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 106,
+    "t_sim_s": 7.385,
+    "yaw_deg": -147.47,
+    "x": -2.222,
+    "y": -0.041,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.709,
+      "bbox": [
+       517.6,
+       273.1,
+       617.5,
+       351.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 107,
+    "t_sim_s": 7.455,
+    "yaw_deg": -147.26,
+    "x": -2.22,
+    "y": -0.041,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.641,
+      "bbox": [
+       520.1,
+       273.9,
+       619.3,
+       352.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 108,
+    "t_sim_s": 7.53,
+    "yaw_deg": -146.55,
+    "x": -2.219,
+    "y": -0.039,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.727,
+      "bbox": [
+       522.9,
+       273.0,
+       623.7,
+       351.3
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 109,
+    "t_sim_s": 7.6,
+    "yaw_deg": -145.01,
+    "x": -2.219,
+    "y": -0.039,
+    "detections": [
+     {
+      "class_name": "sports ball",
+      "color": "orange",
+      "conf": 0.582,
+      "bbox": [
+       536.0,
+       273.1,
+       639.7,
+       353.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 110,
+    "t_sim_s": 7.67,
+    "yaw_deg": -143.4,
+    "x": -2.22,
+    "y": -0.039,
+    "detections": [
+     {
+      "class_name": "traffic light",
+      "color": "green",
+      "conf": 0.244,
+      "bbox": [
+       280.9,
+       111.0,
+       310.1,
+       151.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 111,
+    "t_sim_s": 7.74,
+    "yaw_deg": -141.56,
+    "x": -2.222,
+    "y": -0.041,
+    "detections": [
+     {
+      "class_name": "mouse",
+      "color": "orange",
+      "conf": 0.458,
+      "bbox": [
+       569.5,
+       280.9,
+       639.8,
+       365.8
+      ]
+     },
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.36,
+      "bbox": [
+       555.5,
+       280.8,
+       639.9,
+       438.7
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 112,
+    "t_sim_s": 7.81,
+    "yaw_deg": -140.06,
+    "x": -2.223,
+    "y": -0.043,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.458,
+      "bbox": [
+       570.7,
+       282.0,
+       639.9,
+       444.8
+      ]
+     },
+     {
+      "class_name": "mouse",
+      "color": "orange",
+      "conf": 0.209,
+      "bbox": [
+       586.8,
+       282.7,
+       639.8,
+       368.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 113,
+    "t_sim_s": 7.88,
+    "yaw_deg": -138.76,
+    "x": -2.223,
+    "y": -0.044,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.446,
+      "bbox": [
+       584.8,
+       288.4,
+       639.9,
+       450.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 114,
+    "t_sim_s": 7.95,
+    "yaw_deg": -137.75,
+    "x": -2.223,
+    "y": -0.046,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.261,
+      "bbox": [
+       596.2,
+       296.6,
+       639.9,
+       451.4
+      ]
+     },
+     {
+      "class_name": "traffic light",
+      "color": "green",
+      "conf": 0.253,
+      "bbox": [
+       314.8,
+       114.8,
+       344.5,
+       154.5
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 115,
+    "t_sim_s": 8.02,
+    "yaw_deg": -137.04,
+    "x": -2.222,
+    "y": -0.046,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.397,
+      "bbox": [
+       604.4,
+       303.2,
+       639.9,
+       451.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 116,
+    "t_sim_s": 8.09,
+    "yaw_deg": -136.59,
+    "x": -2.221,
+    "y": -0.046,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.301,
+      "bbox": [
+       609.7,
+       309.3,
+       639.9,
+       448.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 117,
+    "t_sim_s": 8.165,
+    "yaw_deg": -136.38,
+    "x": -2.22,
+    "y": -0.045,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.272,
+      "bbox": [
+       611.7,
+       311.4,
+       639.9,
+       447.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 118,
+    "t_sim_s": 8.235,
+    "yaw_deg": -135.53,
+    "x": -2.218,
+    "y": -0.043,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "orange",
+      "conf": 0.495,
+      "bbox": [
+       615.7,
+       318.3,
+       639.9,
+       443.9
+      ]
+     },
+     {
+      "class_name": "toilet",
+      "color": "unknown",
+      "conf": 0.203,
+      "bbox": [
+       616.5,
+       379.9,
+       639.8,
+       443.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 119,
+    "t_sim_s": 8.295,
+    "yaw_deg": -134.25,
+    "x": -2.218,
+    "y": -0.043,
+    "detections": [
+     {
+      "class_name": "toilet",
+      "color": "unknown",
+      "conf": 0.31,
+      "bbox": [
+       632.0,
+       387.7,
+       639.8,
+       429.1
+      ]
+     },
+     {
+      "class_name": "traffic light",
+      "color": "green",
+      "conf": 0.285,
+      "bbox": [
+       335.7,
+       110.5,
+       365.9,
+       150.7
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 120,
+    "t_sim_s": 8.365,
+    "yaw_deg": -132.71,
+    "x": -2.22,
+    "y": -0.043,
+    "detections": []
+   },
+   {
+    "frame": 121,
+    "t_sim_s": 8.435,
+    "yaw_deg": -130.88,
+    "x": -2.222,
+    "y": -0.045,
+    "detections": []
+   },
+   {
+    "frame": 122,
+    "t_sim_s": 8.505,
+    "yaw_deg": -129.44,
+    "x": -2.222,
+    "y": -0.047,
+    "detections": []
+   },
+   {
+    "frame": 123,
+    "t_sim_s": 8.575,
+    "yaw_deg": -128.19,
+    "x": -2.222,
+    "y": -0.048,
+    "detections": []
+   },
+   {
+    "frame": 124,
+    "t_sim_s": 8.65,
+    "yaw_deg": -127.17,
+    "x": -2.222,
+    "y": -0.05,
+    "detections": []
+   },
+   {
+    "frame": 125,
+    "t_sim_s": 8.72,
+    "yaw_deg": -126.51,
+    "x": -2.221,
+    "y": -0.05,
+    "detections": []
+   },
+   {
+    "frame": 126,
+    "t_sim_s": 8.79,
+    "yaw_deg": -126.11,
+    "x": -2.22,
+    "y": -0.049,
+    "detections": []
+   },
+   {
+    "frame": 127,
+    "t_sim_s": 8.86,
+    "yaw_deg": -125.94,
+    "x": -2.219,
+    "y": -0.048,
+    "detections": []
+   },
+   {
+    "frame": 128,
+    "t_sim_s": 8.93,
+    "yaw_deg": -125.01,
+    "x": -2.218,
+    "y": -0.046,
+    "detections": []
+   },
+   {
+    "frame": 129,
+    "t_sim_s": 9.0,
+    "yaw_deg": -123.5,
+    "x": -2.218,
+    "y": -0.046,
+    "detections": []
+   },
+   {
+    "frame": 130,
+    "t_sim_s": 9.07,
+    "yaw_deg": -121.95,
+    "x": -2.22,
+    "y": -0.047,
+    "detections": []
+   },
+   {
+    "frame": 131,
+    "t_sim_s": 9.14,
+    "yaw_deg": -120.34,
+    "x": -2.221,
+    "y": -0.049,
+    "detections": []
+   },
+   {
+    "frame": 132,
+    "t_sim_s": 9.21,
+    "yaw_deg": -118.97,
+    "x": -2.221,
+    "y": -0.051,
+    "detections": []
+   },
+   {
+    "frame": 133,
+    "t_sim_s": 9.28,
+    "yaw_deg": -117.85,
+    "x": -2.221,
+    "y": -0.052,
+    "detections": []
+   },
+   {
+    "frame": 134,
+    "t_sim_s": 9.355,
+    "yaw_deg": -116.92,
+    "x": -2.22,
+    "y": -0.053,
+    "detections": []
+   },
+   {
+    "frame": 135,
+    "t_sim_s": 9.415,
+    "yaw_deg": -116.39,
+    "x": -2.22,
+    "y": -0.053,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.339,
+      "bbox": [
+       4.1,
+       88.1,
+       156.1,
+       296.7
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 136,
+    "t_sim_s": 9.485,
+    "yaw_deg": -116.01,
+    "x": -2.219,
+    "y": -0.053,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.522,
+      "bbox": [
+       9.6,
+       90.2,
+       158.8,
+       296.9
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 137,
+    "t_sim_s": 9.555,
+    "yaw_deg": -115.81,
+    "x": -2.219,
+    "y": -0.051,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.313,
+      "bbox": [
+       11.7,
+       89.8,
+       160.6,
+       295.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 138,
+    "t_sim_s": 9.625,
+    "yaw_deg": -114.77,
+    "x": -2.218,
+    "y": -0.049,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.703,
+      "bbox": [
+       21.0,
+       86.7,
+       167.4,
+       291.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 139,
+    "t_sim_s": 9.695,
+    "yaw_deg": -113.22,
+    "x": -2.218,
+    "y": -0.048,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.618,
+      "bbox": [
+       36.9,
+       85.8,
+       178.8,
+       285.2
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 140,
+    "t_sim_s": 9.77,
+    "yaw_deg": -111.42,
+    "x": -2.22,
+    "y": -0.049,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.375,
+      "bbox": [
+       52.7,
+       90.8,
+       188.4,
+       285.6
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 141,
+    "t_sim_s": 9.84,
+    "yaw_deg": -109.85,
+    "x": -2.221,
+    "y": -0.051,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.675,
+      "bbox": [
+       68.9,
+       95.0,
+       200.3,
+       284.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 142,
+    "t_sim_s": 9.91,
+    "yaw_deg": -108.54,
+    "x": -2.221,
+    "y": -0.053,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.714,
+      "bbox": [
+       81.3,
+       96.9,
+       207.8,
+       284.4
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 143,
+    "t_sim_s": 9.98,
+    "yaw_deg": -107.43,
+    "x": -2.221,
+    "y": -0.055,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.582,
+      "bbox": [
+       94.1,
+       98.1,
+       214.7,
+       283.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 144,
+    "t_sim_s": 10.05,
+    "yaw_deg": -106.57,
+    "x": -2.221,
+    "y": -0.056,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.746,
+      "bbox": [
+       101.0,
+       99.7,
+       220.6,
+       283.0
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 145,
+    "t_sim_s": 10.12,
+    "yaw_deg": -105.97,
+    "x": -2.22,
+    "y": -0.056,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.773,
+      "bbox": [
+       110.0,
+       101.2,
+       224.7,
+       283.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 146,
+    "t_sim_s": 10.195,
+    "yaw_deg": -105.61,
+    "x": -2.22,
+    "y": -0.055,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.659,
+      "bbox": [
+       109.3,
+       101.7,
+       227.1,
+       284.2
+      ]
+     },
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.253,
+      "bbox": [
+       524.1,
+       101.9,
+       578.3,
+       245.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 147,
+    "t_sim_s": 10.255,
+    "yaw_deg": -105.45,
+    "x": -2.219,
+    "y": -0.053,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.639,
+      "bbox": [
+       115.1,
+       101.5,
+       228.0,
+       282.8
+      ]
+     },
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.24,
+      "bbox": [
+       525.8,
+       101.5,
+       580.3,
+       243.8
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 148,
+    "t_sim_s": 10.325,
+    "yaw_deg": -104.26,
+    "x": -2.219,
+    "y": -0.051,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.764,
+      "bbox": [
+       125.1,
+       98.1,
+       235.0,
+       276.9
+      ]
+     },
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.543,
+      "bbox": [
+       535.5,
+       95.1,
+       593.4,
+       242.1
+      ]
+     }
+    ]
+   },
+   {
+    "frame": 149,
+    "t_sim_s": 10.395,
+    "yaw_deg": -102.71,
+    "x": -2.22,
+    "y": -0.051,
+    "detections": [
+     {
+      "class_name": "chair",
+      "color": "red",
+      "conf": 0.715,
+      "bbox": [
+       138.7,
+       98.0,
+       245.2,
+       273.5
+      ]
+     },
+     {
+      "class_name": "chair",
+      "color": "green",
+      "conf": 0.414,
+      "bbox": [
+       548.2,
+       94.7,
+       610.2,
+       243.9
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "shots": [
+  {
+   "file": "yolo_01_overview_both_chairs.png",
+   "pose_name": "overview_both_chairs",
+   "robot_pose": [
+    0.6,
+    0.0,
+    180.0
+   ],
+   "trunk_above_ground_m": 0.322,
+   "detections": [
+    {
+     "class_name": "chair",
+     "color": "red",
+     "conf": 0.617,
+     "bbox": [
+      0.1,
+      108.5,
+      119.9,
+      236.1
+     ]
+    }
+   ],
+   "cam_xyz": [
+    0.32,
+    0.0,
+    0.482
+   ],
+   "cam_yaw_deg": -180.0,
+   "graded_in_hfov": [
+    {
+     "object": "green_chair",
+     "bearing_deg": -40.8,
+     "dist_m": 3.06
+    },
+    {
+     "object": "red_chair",
+     "bearing_deg": 40.8,
+     "dist_m": 3.06
+    },
+    {
+     "object": "orange_sports ball",
+     "bearing_deg": 0.0,
+     "dist_m": 3.82
+    },
+    {
+     "object": "red_stop sign",
+     "bearing_deg": 0.0,
+     "dist_m": 1.62
+    },
+    {
+     "object": "yellow_stop sign",
+     "bearing_deg": -22.5,
+     "dist_m": 5.22
+    },
+    {
+     "object": "green_stop sign",
+     "bearing_deg": 22.5,
+     "dist_m": 5.22
+    }
+   ]
+  },
+  {
+   "file": "yolo_02_green_chair_1p6m.png",
+   "pose_name": "green_chair_1p6m",
+   "robot_pose": [
+    -0.9,
+    0.9,
+    135.0
+   ],
+   "trunk_above_ground_m": 0.322,
+   "detections": [
+    {
+     "class_name": "chair",
+     "color": "green",
+     "conf": 0.662,
+     "bbox": [
+      241.4,
+      28.7,
+      391.4,
+      298.0
+     ]
+    }
+   ],
+   "cam_xyz": [
+    -1.098,
+    1.098,
+    0.482
+   ],
+   "cam_yaw_deg": 135.0,
+   "graded_in_hfov": [
+    {
+     "object": "green_chair",
+     "bearing_deg": 0.0,
+     "dist_m": 1.28
+    },
+    {
+     "object": "yellow_stop sign",
+     "bearing_deg": 30.2,
+     "dist_m": 3.52
+    }
+   ]
+  },
+  {
+   "file": "yolo_03_red_chair_1p6m.png",
+   "pose_name": "red_chair_1p6m",
+   "robot_pose": [
+    -0.9,
+    -0.9,
+    -135.0
+   ],
+   "trunk_above_ground_m": 0.322,
+   "detections": [
+    {
+     "class_name": "chair",
+     "color": "red",
+     "conf": 0.405,
+     "bbox": [
+      242.1,
+      63.4,
+      392.3,
+      297.1
+     ]
+    }
+   ],
+   "cam_xyz": [
+    -1.098,
+    -1.098,
+    0.482
+   ],
+   "cam_yaw_deg": -135.0,
+   "graded_in_hfov": [
+    {
+     "object": "red_chair",
+     "bearing_deg": 0.0,
+     "dist_m": 1.28
+    },
+    {
+     "object": "green_stop sign",
+     "bearing_deg": -30.2,
+     "dist_m": 3.52
+    }
+   ]
+  },
+  {
+   "file": "yolo_04_ball_1p6m.png",
+   "pose_name": "ball_1p6m",
+   "robot_pose": [
+    -2.0,
+    0.5,
+    -161.6
+   ],
+   "trunk_above_ground_m": 0.322,
+   "detections": [
+    {
+     "class_name": "sports ball",
+     "color": "orange",
+     "conf": 0.912,
+     "bbox": [
+      296.3,
+      226.2,
+      343.2,
+      273.5
+     ]
+    }
+   ],
+   "cam_xyz": [
+    -2.266,
+    0.412,
+    0.482
+   ],
+   "cam_yaw_deg": -161.6,
+   "graded_in_hfov": [
+    {
+     "object": "orange_sports ball",
+     "bearing_deg": 0.0,
+     "dist_m": 1.3
+    },
+    {
+     "object": "green_stop sign",
+     "bearing_deg": 28.8,
+     "dist_m": 3.29
+    }
+   ]
+  },
+  {
+   "file": "yolo_05_green_chair_side_1p6m.png",
+   "pose_name": "green_chair_side_1p6m",
+   "robot_pose": [
+    -2.0,
+    0.4,
+    90.0
+   ],
+   "trunk_above_ground_m": 0.322,
+   "detections": [
+    {
+     "class_name": "airplane",
+     "color": "unknown",
+     "conf": 0.208,
+     "bbox": [
+      474.6,
+      132.3,
+      617.5,
+      196.9
+     ]
+    }
+   ],
+   "cam_xyz": [
+    -2.0,
+    0.68,
+    0.482
+   ],
+   "cam_yaw_deg": 90.0,
+   "graded_in_hfov": [
+    {
+     "object": "green_chair",
+     "bearing_deg": 0.0,
+     "dist_m": 1.32
+    }
+   ]
+  },
+  {
+   "file": "yolo_06_yellow_stop_sign_1p8m.png",
+   "pose_name": "yellow_stop_sign_1p8m",
+   "robot_pose": [
+    -3.0,
+    1.0,
+    146.3
+   ],
+   "trunk_above_ground_m": 0.322,
+   "detections": [],
+   "cam_xyz": [
+    -3.233,
+    1.155,
+    0.482
+   ],
+   "cam_yaw_deg": 146.3,
+   "graded_in_hfov": [
+    {
+     "object": "yellow_stop sign",
+     "bearing_deg": 0.0,
+     "dist_m": 1.52
+    }
+   ]
+  }
+ ],
+ "loadavg_end": [
+  4.1,
+  5.32,
+  3.96
+ ]
+}

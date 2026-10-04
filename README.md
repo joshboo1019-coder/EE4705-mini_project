@@ -1,4 +1,5 @@
 # MiniLab 1.3 — Backbone
+<!-- Change contributed by Student B (assist), pending review by the group: install/run steps re-checked on a fresh clone (docs/REPRODUCE.md) -->
  
 Owner: backbone (ALL)
  
@@ -22,36 +23,53 @@ panel makes the GUI usable over WSL2). No GPU is needed — everything but
 the LLM call runs on CPU.
  
 ```bash
-# 1. Environment
-conda create -n quadruped_mujoco python=3.11 -y
-conda activate quadruped_mujoco
- 
-# 2. Example platform (skip if your group chose a different platform —
-#    see Section V of the handout for alternatives, and point skills/
-#    skills_real.py's TODOs at your platform's API instead)
+# 0. Clone this repo and the example platform SIDE BY SIDE — eval/run_env.sh
+#    looks for ../quadruped_mujoco (override with $QUADRUPED_MUJOCO_ROOT).
+#    Skip the platform if your group chose a different one (Section V of the
+#    handout) and point skills/skills_real.py's TODOs at its API instead.
+git clone https://github.com/joshboo1019-coder/EE4705-mini_project.git
 git clone https://github.com/aoqianz/quadruped_mujoco.git
-cd quadruped_mujoco && pip install -e .
-cd ..
+cd EE4705-mini_project
  
-# 3. This backbone's dependencies (either works)
-pip install -r requirements.txt
-# or: pip install -e ".[dev]"
+# 1. Environment: a venv at .venv/ (eval/run_env.sh runs .venv/bin/python)
+python3 -m venv .venv            # Python >= 3.11 (fresh-clone check: 3.13.5)
+source .venv/bin/activate
+unset PYTHONPATH                 # if ROS set it — it breaks the venv and pytest
+ 
+# 2. Platform + this backbone's dependencies
+pip install -e ../quadruped_mujoco
+pip install -r requirements.txt  # pulls torch via ultralytics: ~6 GB in .venv/
 ```
  
-Tested with Python 3.11. Each student's own guide has setup specific to
-their task (API keys for Task 3, the YOLO weight download for Task 4, etc).
+Conda also works (`conda create -n quadruped_mujoco python=3.11 -y`, then
+the two `pip install` lines), but `eval/run_env.sh` only uses `.venv/`: with
+conda, run the commands below as plain `python ...` from the repo root with
+`PYTHONPATH` unset and `MUJOCO_GL=egl` exported. Use `requirements.txt`
+rather than `pip install -e ".[dev]"` — the pyproject extras lack
+`python-dotenv` (reads `.env`) and `faster-whisper` (voice input).
+ 
+The YOLO weights (`core.config.YOLO_MODEL` = `yolo11n.pt`, ~5.6 MB) are
+downloaded automatically into the repo root the first time `RealPerception`
+is built (internet needed once; `*.pt` is git-ignored). Each student's own
+guide has task-specific setup.
  
 ## API configuration (Task 3 only)
  
 Offline development and every mock-based test need no API key. The live
-LLM parser does. Export credentials as environment variables — never
-commit them:
+LLM parser (and the `look` VLM) does. `dialogue/llm_parser.py` reads each key
+from the environment first, then from a git-ignored `.env` in the repo root
+(next to `main.py`). Never commit it:
  
 ```bash
-export OPENAI_API_KEY=...
-export DASHSCOPE_API_KEY=...      # Alibaba Cloud (Qwen)
-export GOOGLE_API_KEY=...         # Gemini
+# .env — only the provider behind core/config.LLM_SERVICE / VLM_SERVICE is needed
+DASHSCOPE_API_KEY=...   # Alibaba Model Studio, international region (default qwen-flash, qwen3-vl-flash)
+GOOGLE_API_KEY=...      # Gemini
+OPENAI_API_KEY=...      # OpenAI
 ```
+ 
+A key exported in your shell overrides `.env`. Without a valid key everything
+still starts; each typed command is just rejected with
+`[CMD] rejected reason=llm_error:...`.
  
 See [the B guide](docs/STUDENT_B_README.md) for which services to compare
 and how `core/config.LLM_SERVICE` selects between them.
@@ -61,25 +79,40 @@ and how `core/config.LLM_SERVICE` selects between them.
 Source for the four packages below, mock implementations and tests for
 isolated development, scene assets, and per-task student guides. Course
 submission zips separately add the report, demo videos, and any exported
-scene meshes — see the handout's submission instructions.
+scene meshes — see the handout's submission instructions. Build the zip with
+`tools/make_submission_zip.sh <commit> --video demo.mp4 --report report.pdf
+--out DIR`: it packs `minilab_1.3_group_9.zip` from `git archive <commit>`
+(so `.env`, `.venv/` and `*.pt` never ship), drops files over 5 MB under
+`eval/results/` and `docs/` unless `--keep PATH`, and aborts if anything looks
+like an API key.
  
-Tests are split one file per student, plus two backbone-owned checks:
+Run everything from the repo root through `eval/run_env.sh` (unsets
+`PYTHONPATH`, sets `QUADRUPED_MUJOCO_ROOT` and `MUJOCO_GL=egl`, uses
+`.venv/bin/python`). Tests are split one file per student, plus two
+backbone-owned checks:
  
 ```bash
-python -m pytest -q tests/                  # everything below, in one go
-python tests/test_student_a.py              # A's SkillsAPI contract, against the mock
-python tests/test_student_b.py              # B's parser+executor pipeline, mocked A & C
-python tests/test_student_c.py              # C's nav logic, mocked A
-python -m pytest -q tests/test_architecture.py   # enforces the dialogue/ import boundary
-python -m pytest -q tests/test_handoff.py        # main.py's own real-vs-mock wiring, end to end
+eval/run_env.sh -m pytest -q tests/                  # everything, offline (fake LLM), ~40 s
+eval/run_env.sh tests/test_student_a.py              # A's SkillsAPI contract, against the mock
+eval/run_env.sh tests/test_student_b.py              # B's parser+executor, mocked A & C — LIVE LLM, needs a key
+eval/run_env.sh tests/test_student_c.py              # C's nav logic, mocked A
+eval/run_env.sh -m pytest -q tests/test_architecture.py   # enforces the dialogue/ import boundary
+eval/run_env.sh -m pytest -q tests/test_handoff.py        # main.py's wiring (real flags on: boots headless sim + YOLO)
 ```
  
-And the standalone / real-module commands:
+Known failures on a fresh clone of `main` are listed in
+[`docs/REPRODUCE.md`](docs/REPRODUCE.md).
+ 
+And the standalone / real-module commands (all headless unless `--gui`):
  
 ```bash
-python -m skills.skills_real                                 # Student A's real sim, standalone
-python -m perception.perception_real --image test_frame.png  # Student C's real detector
-python main.py                                                # full system once all three are wired in
+eval/run_env.sh -m skills.skills_real                 # A's real sim: type w/s/a/d/q/e/c/t/p, `quit` exits
+eval/run_env.sh -m skills.skills_real --compare-turn  # A's closed- vs open-loop turn numbers
+cp docs/test_result/camera_evidence/20hz/frame_0119.png /tmp/frame.png
+eval/run_env.sh -m perception.perception_real --image /tmp/frame.png  # C's detector -> /tmp/frame_detections.{jpg,json}
+eval/run_env.sh eval/mock_main.py                     # B's chat loop on mock A & C (live LLM)
+eval/run_env.sh main.py                               # full system, headless: type commands, Ctrl+C quits
+eval/run_env.sh main.py --gui                         # same + browser panel at http://localhost:8765
 ```
  
 ## Directory ownership and student entry points
