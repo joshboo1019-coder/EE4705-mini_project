@@ -56,6 +56,10 @@ VERIFY_SCAN_DEG = 20.0
 APPROACH_STOP_M_BY_CLASS = {
     "chair": 0.56,         # 0.80 - p95(+0.237)
     "sports ball": 0.78,   # estimate reads long: stop just inside 0.80 (hysteresis)
+    # iter/stopsign-plate (Student B assist, pending review by Student C):
+    # the sign plate leaves the top of the frame at a true ~0.68 m, so the
+    # stop check (C1) can only see it in a narrow band below 0.80 m.
+    "stop sign": 0.72,
 }
 APPROACH_TIMEOUT_S = 120.0
 SEARCH_TURN_DEG = 30.0

@@ -1,5 +1,9 @@
 """
 Change contributed by Student B (assist), pending review by Student C:
+colour-plate fallback + plate range model for "stop sign" targets (branch
+iter/stopsign-plate, docs/iter_stopsign_plate.md; image pixels only).
+
+Change contributed by Student B (assist), pending review by Student C:
 the approach stops at config.APPROACH_STOP_M (docs/task4_c2_margin.md);
 no simulator ground truth in the range estimate (assist/no-gt-height,
 docs/task4_no_gt_height.md): the target's height comes from nominal
@@ -55,6 +59,20 @@ _TARGET_HEIGHTS_M = {
     "stop sign": 0.30,
 }
 _SAME_HEIGHT_TOLERANCE_M = 0.03
+# Stop-sign plate range model, planar trunk-to-sign range from the plate bbox
+# (fitted offline on rendered dog-camera views, docs/iter_stopsign_plate.md):
+#   whole plate in view:      d = A + B / bbox_height   (sd 0.07 m, centred)
+#   plate cut by the top edge: d = A + B / bbox_width    (close range, +-0.2 m)
+# B is in pixels for a 480-row frame.
+_SIGN_RANGE_FROM_HEIGHT = (0.75, 91.2)
+_SIGN_RANGE_FROM_WIDTH = (0.31, 94.4)
+_SIGN_EDGE_PX = 1.0
+# Close range: the plate rises out of the top of the frame. Once only its
+# bottom strip (<= _SIGN_NEAR_STRIP_PX rows of a 480-row frame) is left, the
+# sign is ~0.75-0.80 m away (renders + S3_05 logs): report _SIGN_NEAR_RANGE_M
+# so the approach stops while the plate is still in view for the stop check.
+_SIGN_NEAR_STRIP_PX = 40.0
+_SIGN_NEAR_RANGE_M = 0.70
 _NEAR_HORIZONTAL_RAY_ANGLE_DEG = 5.0
 
 def goto_object(object_class: str, color: str,
@@ -132,6 +150,9 @@ def goto_object(object_class: str, color: str,
     clear_target_history = getattr(perception, "clear_target_history", None)
     if callable(clear_target_history):
         clear_target_history()
+    if object_class == "stop sign" and callable(
+            getattr(perception, "detect_plate", None)):
+        perception = _PlateFallbackPerception(perception, color)
 
     while time.time() - t0 < config.APPROACH_TIMEOUT_S:
         frame = skills.get_camera_frame()
@@ -235,7 +256,13 @@ def goto_object(object_class: str, color: str,
         camera_height = _camera_height_above_ground(
             skills, target.class_name, target.color, target, frame.shape
         )
-        if target_position is None:
+        if object_class == "stop sign":
+            # signs: re-range from every live plate bbox (keep the last
+            # position when this frame gives none)
+            target_position = _estimated_target_position(
+                pose, target, frame.shape, camera_height
+            ) or target_position
+        elif target_position is None:
             target_position = _estimated_target_position(
                 pose, target, frame.shape, camera_height
             )
@@ -277,6 +304,59 @@ def goto_object(object_class: str, color: str,
     print("[MISSION] status=FAIL reason=timeout")
     skills.stop()
     return False
+
+
+class _PlateFallbackPerception:
+    """Wraps the perception for a "stop sign" goal: when YOLO returns no
+    stop sign of the requested colour, add the colour-plate detection
+    (perception.detect_plate) so search/approach/stop run unchanged.
+    Everything else is delegated."""
+
+    def __init__(self, inner, color: str):
+        self._inner = inner
+        self._color = color
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+    def detect(self, frame, conf_threshold=None):
+        if conf_threshold is None:
+            detections = self._inner.detect(frame)
+        else:
+            detections = self._inner.detect(frame, conf_threshold=conf_threshold)
+        if any(d.class_name == "stop sign" and d.color == self._color
+               for d in detections):
+            return detections
+        plate = self._inner.detect_plate(frame, self._color)
+        if plate is None:
+            return detections
+        return list(detections) + [plate]
+
+
+def _sign_plate_uncut(detection, frame_shape) -> bool:
+    frame_height, frame_width = frame_shape[:2]
+    x1, y1, x2, y2 = detection.bbox
+    return (y1 > _SIGN_EDGE_PX and y2 < frame_height - _SIGN_EDGE_PX
+            and x1 > _SIGN_EDGE_PX and x2 < frame_width - _SIGN_EDGE_PX)
+
+
+def _sign_planar_range(detection, frame_shape) -> float | None:
+    """Planar trunk-to-sign range from the plate bbox size (model above)."""
+    frame_height, frame_width = frame_shape[:2]
+    x1, y1, x2, y2 = detection.bbox
+    scale = frame_height / 480.0
+    if _sign_plate_uncut(detection, frame_shape) and y2 - y1 > 0:
+        a, b = _SIGN_RANGE_FROM_HEIGHT
+        return a + b * scale / (y2 - y1)
+    if (x1 > _SIGN_EDGE_PX and x2 < frame_width - _SIGN_EDGE_PX
+            and x2 - x1 > 0):
+        a, b = _SIGN_RANGE_FROM_WIDTH
+        d = a + b * scale / (x2 - x1)
+    else:
+        d = None
+    if y1 <= _SIGN_EDGE_PX and y2 <= _SIGN_NEAR_STRIP_PX * scale:
+        return _SIGN_NEAR_RANGE_M if d is None else min(d, _SIGN_NEAR_RANGE_M)
+    return d
 
 
 def _pick_target(detections, object_class: str, color: str):
@@ -464,7 +544,12 @@ def _estimated_target_position(pose: RobotPose, detection, frame_shape,
         (bbox_center_y - frame_height / 2.0) / focal_length_px
     )
     ray_down_angle = math.radians(_CAMERA_DOWN_PITCH_DEG) + image_down_angle
-    if (abs(camera_height) <= _SAME_HEIGHT_TOLERANCE_M
+    if detection.class_name == "stop sign":
+        sign_range = _sign_planar_range(detection, frame_shape)
+        if sign_range is None:
+            return None
+        camera_forward = max(sign_range - _CAMERA_FORWARD_OFFSET_M, 0.05)
+    elif (abs(camera_height) <= _SAME_HEIGHT_TOLERANCE_M
             or abs(ray_down_angle)
             <= math.radians(_NEAR_HORIZONTAL_RAY_ANGLE_DEG)):
         bbox_height = y2 - y1

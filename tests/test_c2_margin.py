@@ -57,7 +57,7 @@ def test_far_target_uses_the_normal_step():
 def test_per_class_thresholds():
     for cls, stop in config.APPROACH_STOP_M_BY_CLASS.items():
         assert navigation._approach_stop_m(cls) == stop < config.FOUND_DISTANCE_M
-    assert navigation._approach_stop_m("stop sign") == config.APPROACH_STOP_M
+    assert navigation._approach_stop_m("unlisted class") == config.APPROACH_STOP_M  # iter/stopsign-plate: "stop sign" now has its own entry
     s = _Skills()
     assert navigation._approach_step(s, 0.7, navigation._approach_stop_m("sports ball")) == 0.0
     s = _Skills()

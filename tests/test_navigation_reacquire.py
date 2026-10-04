@@ -249,7 +249,9 @@ def test_target_projection_uses_bbox_center_without_fixed_range_bias():
 
 @pytest.mark.parametrize(
     ("object_class", "target_height"),
-    [("chair", 0.88), ("sports ball", 0.22), ("stop sign", 0.30)],
+    # iter/stopsign-plate: "stop sign" uses the plate range model
+    # (tests/test_stopsign_plate.py::test_sign_range_model)
+    [("chair", 0.88), ("sports ball", 0.22)],
 )
 def test_target_projection_uses_bbox_size_at_camera_height(
         object_class, target_height):
