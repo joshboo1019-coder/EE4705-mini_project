@@ -66,3 +66,43 @@ def test_without_the_config_values_behaviour_is_unchanged(monkeypatch):
     monkeypatch.delattr(config, "APPROACH_STOP_M")
     monkeypatch.delattr(config, "APPROACH_STOP_M_BY_CLASS")
     assert navigation._approach_stop_m("chair") == config.FOUND_DISTANCE_M
+
+
+def test_failed_stop_check_backs_off_rescans_and_retries_once(monkeypatch, capsys):
+    """F1: C1 fails at close range -> [VERIFY] retry=1 backoff=..., back up with
+    the move skill, re-scan, and re-run the stop check once."""
+    calls = []
+
+    class S(_Skills):
+        def turn(self, a):
+            calls.append(("turn", a))
+
+        def get_camera_frame(self):
+            import numpy as np
+            return np.zeros((480, 640, 3), dtype=np.uint8)
+
+    s = S()
+    finish = iter([True])
+    monkeypatch.setattr(navigation, "_finish_if_found", lambda *a, **k: next(finish))
+    monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
+    from core.schema import Detection
+
+    class P:
+        def detect(self, frame, conf_threshold=None):
+            return [Detection("chair", "red", 0.9, (300, 100, 340, 300))]   # centred
+    assert navigation._reverify_after_backoff(s, P(), "chair", "red", 0.0, (1.0, 1.0)) is True
+    assert "[VERIFY] retry=1 backoff=0.15m" in capsys.readouterr().out
+    assert s.moves and s.moves[0][0] < 0                      # backed up
+    assert abs(s.moves[0][3] * abs(config.APPROACH_VX) - config.VERIFY_BACKOFF_M) < 1e-9
+
+
+def test_reverify_gives_up_after_one_scan(monkeypatch):
+    s = _Skills()
+    s.turn = lambda a: None
+    s.get_camera_frame = lambda: __import__("numpy").zeros((480, 640, 3), dtype="uint8")
+    monkeypatch.setattr(navigation.time, "sleep", lambda _: None)
+
+    class P:
+        def detect(self, frame, conf_threshold=None):
+            return []
+    assert navigation._reverify_after_backoff(s, P(), "chair", "red", 0.0, (1.0, 1.0)) is False

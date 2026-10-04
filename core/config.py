@@ -46,6 +46,11 @@ FOUND_DISTANCE_M = 0.8      # evaluation definition of "found" (C2), unchanged
 # margin is per class; other classes use the pooled value
 # (docs/task4_c2_margin.md). The stop check (C2) still uses FOUND_DISTANCE_M.
 APPROACH_STOP_M = 0.57
+# F1: one re-verification when the stop check fails at close range: back up
+# this far (0.15 m, not 0.25: the failing chair stops are at a true 0.57-0.64 m,
+# so 0.25 m would end outside C2), re-scan +/- VERIFY_SCAN_DEG, re-check.
+VERIFY_BACKOFF_M = 0.15
+VERIFY_SCAN_DEG = 20.0
 APPROACH_STOP_M_BY_CLASS = {
     "chair": 0.56,         # 0.80 - p95(+0.237)
     "sports ball": 0.78,   # estimate reads long: stop just inside 0.80 (hysteresis)
