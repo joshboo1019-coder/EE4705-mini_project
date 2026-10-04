@@ -1,0 +1,439 @@
+[
+ {
+  "id": "real_20261002-232010-231387",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/eval/results/vlm/20261002-232010-231387.png",
+  "scenario": "look session 2026-10-02 (real_sim_check.log), look 1",
+  "expected": [
+   "green stop sign",
+   "red chair",
+   "red stop sign",
+   "yellow stop sign"
+  ],
+  "marginal": [
+   "green chair",
+   "orange sports ball"
+  ],
+  "labels": "hand"
+ },
+ {
+  "id": "real_20261002-232018-702459",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/eval/results/vlm/20261002-232018-702459.png",
+  "scenario": "look session 2026-10-02 (real_sim_check.log), look 2",
+  "expected": [
+   "green chair",
+   "orange sports ball",
+   "yellow stop sign"
+  ],
+  "marginal": [
+   "red stop sign"
+  ],
+  "labels": "hand"
+ },
+ {
+  "id": "real_20261002-232027-560433",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/eval/results/vlm/20261002-232027-560433.png",
+  "scenario": "look session 2026-10-02 (real_sim_check.log), look 3",
+  "expected": [],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_20261004-010952-986951",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/eval/results/vlm/20261004-010952-986951.png",
+  "scenario": "e2e 20261004-0101_baseline S4_look, look 3",
+  "expected": [
+   "green stop sign",
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_probe_frame_spawn",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/eval/results/vlm/probe_frame_spawn.png",
+  "scenario": "VLM probe frame (spawn, task3_eval.md 'VLM choice')",
+  "expected": [
+   "blue chair"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_probe_frame_turned_around",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/eval/results/vlm/probe_frame_turned_around.png",
+  "scenario": "VLM probe frame (turned around)",
+  "expected": [
+   "green stop sign",
+   "red stop sign",
+   "yellow stop sign"
+  ],
+  "marginal": [
+   "green chair",
+   "orange sports ball",
+   "red chair"
+  ],
+  "labels": "hand"
+ },
+ {
+  "id": "real_yolo_01_overview_both_chairs",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/docs/report_assets/task2/yolo_screenshots/raw/yolo_01_overview_both_chairs.png",
+  "scenario": "Task 2 camera evidence, overview",
+  "expected": [
+   "green chair",
+   "green stop sign",
+   "red chair",
+   "red stop sign",
+   "yellow stop sign"
+  ],
+  "marginal": [
+   "orange sports ball"
+  ],
+  "labels": "hand"
+ },
+ {
+  "id": "real_yolo_02_green_chair_1p6m",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/docs/report_assets/task2/yolo_screenshots/raw/yolo_02_green_chair_1p6m.png",
+  "scenario": "Task 2 camera evidence, green chair 1.6 m",
+  "expected": [
+   "green chair",
+   "yellow stop sign"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_yolo_03_red_chair_1p6m",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/docs/report_assets/task2/yolo_screenshots/raw/yolo_03_red_chair_1p6m.png",
+  "scenario": "Task 2 camera evidence, red chair 1.6 m",
+  "expected": [
+   "green stop sign",
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_yolo_04_ball_1p6m",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/docs/report_assets/task2/yolo_screenshots/raw/yolo_04_ball_1p6m.png",
+  "scenario": "Task 2 camera evidence, ball 1.6 m",
+  "expected": [
+   "green stop sign",
+   "orange sports ball"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_yolo_05_green_chair_side_1p6m",
+  "source": "real",
+  "subset": "real",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/docs/report_assets/task2/yolo_screenshots/raw/yolo_05_green_chair_side_1p6m.png",
+  "scenario": "Task 2 camera evidence, green chair side",
+  "expected": [
+   "green chair"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "real_yolo_06_yellow_stop_sign_1p8m",
+  "source": "real",
+  "subset": "stop sign",
+  "path": "/home/jiamo/EE4705/EE4705-mini_project/.worktrees/vlm/docs/report_assets/task2/yolo_screenshots/raw/yolo_06_yellow_stop_sign_1p8m.png",
+  "scenario": "Task 2 camera evidence, yellow sign 1.8 m",
+  "expected": [
+   "yellow stop sign"
+  ],
+  "marginal": [],
+  "labels": "hand"
+ },
+ {
+  "id": "rend_hold_0100",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/hold/frames/0100.png",
+  "scenario": "S3_09 goal view: red stop sign at 1.1 m, bearing 202.5 deg (pose x=-2.32 y=-0.42 yaw=22)",
+  "expected": [
+   "red stop sign"
+  ],
+  "marginal": [
+   "blue chair"
+  ],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0136",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0136.png",
+  "scenario": "S3_09 goal view: red stop sign at 1.4 m, bearing 187.0 deg (pose x=-2.69 y=-0.17 yaw=19)",
+  "expected": [
+   "blue chair",
+   "red stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0144",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0144.png",
+  "scenario": "S3_09 goal view: red stop sign at 2.5 m, bearing 291.0 deg (pose x=-0.40 y=-2.33 yaw=123)",
+  "expected": [
+   "green chair",
+   "red chair",
+   "red stop sign"
+  ],
+  "marginal": [
+   "orange sports ball",
+   "yellow stop sign"
+  ],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_hold_0131",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/hold/frames/0131.png",
+  "scenario": "S3_05 goal view: yellow stop sign at 1.1 m, bearing 337.5 deg (pose x=-3.48 y=1.58 yaw=158)",
+  "expected": [
+   "yellow stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_hold_0112",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/hold/frames/0112.png",
+  "scenario": "S3_05 goal view: yellow stop sign at 1.7 m, bearing 29.5 deg (pose x=-3.02 y=2.84 yaw=-138)",
+  "expected": [
+   "green stop sign",
+   "orange sports ball",
+   "yellow stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_hold_0119",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/hold/frames/0119.png",
+  "scenario": "S3_05 goal view: yellow stop sign at 2.3 m, bearing 126.5 deg (pose x=-5.87 y=3.85 yaw=-54)",
+  "expected": [
+   "blue chair",
+   "green chair",
+   "green stop sign",
+   "red chair",
+   "yellow stop sign"
+  ],
+  "marginal": [
+   "orange sports ball",
+   "red stop sign"
+  ],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_hold_0136",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/hold/frames/0136.png",
+  "scenario": "S3_06 goal view: green stop sign at 1.1 m, bearing 67.5 deg (pose x=-4.08 y=-0.98 yaw=-100)",
+  "expected": [
+   "green stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_hold_0137",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/hold/frames/0137.png",
+  "scenario": "S3_06 goal view: green stop sign at 1.7 m, bearing 74.5 deg (pose x=-4.05 y=-0.36 yaw=-118)",
+  "expected": [
+   "green stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0197",
+  "source": "rendered",
+  "subset": "stop sign",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0197.png",
+  "scenario": "S3_06 goal view: green stop sign at 2.5 m, bearing 201.0 deg (pose x=-6.83 y=-2.90 yaw=21)",
+  "expected": [
+   "green chair",
+   "green stop sign",
+   "red chair",
+   "yellow stop sign"
+  ],
+  "marginal": [
+   "blue chair",
+   "orange sports ball",
+   "red stop sign"
+  ],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0036",
+  "source": "rendered",
+  "subset": "close red chair",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0036.png",
+  "scenario": "S3_01/S3_04 goal view: red chair at 0.8 m, bearing 90.0 deg (pose x=-2.00 y=-1.20 yaw=-102)",
+  "expected": [
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0048",
+  "source": "rendered",
+  "subset": "close red chair",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0048.png",
+  "scenario": "S3_01/S3_04 goal view: red chair at 0.8 m, bearing 225.0 deg (pose x=-2.57 y=-2.57 yaw=57)",
+  "expected": [
+   "green chair",
+   "red chair",
+   "red stop sign"
+  ],
+  "marginal": [
+   "blue chair"
+  ],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0030",
+  "source": "rendered",
+  "subset": "close red chair",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0030.png",
+  "scenario": "S3_01/S3_04 goal view: red chair at 0.8 m, bearing 0.0 deg (pose x=-1.20 y=-2.00 yaw=180)",
+  "expected": [
+   "green stop sign",
+   "orange sports ball",
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0044",
+  "source": "rendered",
+  "subset": "close red chair",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0044.png",
+  "scenario": "S3_01/S3_04 goal view: red chair at 0.8 m, bearing 180.0 deg (pose x=-2.80 y=-2.00 yaw=0)",
+  "expected": [
+   "blue chair",
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0034",
+  "source": "rendered",
+  "subset": "close red chair",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0034.png",
+  "scenario": "S3_01/S3_04 goal view: red chair at 0.8 m, bearing 45.0 deg (pose x=-1.43 y=-1.43 yaw=-123)",
+  "expected": [
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0052",
+  "source": "rendered",
+  "subset": "close red chair",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0052.png",
+  "scenario": "S3_01/S3_04 goal view: red chair at 0.8 m, bearing 270.0 deg (pose x=-2.00 y=-2.80 yaw=78)",
+  "expected": [
+   "blue chair",
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0004",
+  "source": "rendered",
+  "subset": "other",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0004.png",
+  "scenario": "S3_03 goal view: green chair at 0.8 m, bearing 45.0 deg (pose x=-1.43 y=2.57 yaw=-123)",
+  "expected": [
+   "green chair",
+   "red chair",
+   "red stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0000",
+  "source": "rendered",
+  "subset": "other",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0000.png",
+  "scenario": "S3_03 goal view: green chair at 0.8 m, bearing 0.0 deg (pose x=-1.20 y=2.00 yaw=180)",
+  "expected": [
+   "green chair",
+   "orange sports ball",
+   "yellow stop sign"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0068",
+  "source": "rendered",
+  "subset": "other",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0068.png",
+  "scenario": "S3_08/S3_10 goal view: blue chair at 0.8 m, bearing 90.0 deg (pose x=3.45 y=2.80 yaw=-102)",
+  "expected": [
+   "blue chair",
+   "red chair"
+  ],
+  "marginal": [
+   "green stop sign"
+  ],
+  "labels": "segmentation seen_px"
+ },
+ {
+  "id": "rend_tune_0101",
+  "source": "rendered",
+  "subset": "other",
+  "path": "/tmp/claude-1000/-home-jiamo-EE4705-EE4705-mini-project/ab620e83-df18-4d02-b2c1-c8dc233c4674/scratchpad/runs/base/tune/frames/0101.png",
+  "scenario": "S3_02/S3_07 goal view: orange sports ball at 1.4 m, bearing 97.0 deg (pose x=-3.67 y=1.39 yaw=-83)",
+  "expected": [
+   "green stop sign",
+   "orange sports ball",
+   "red chair"
+  ],
+  "marginal": [],
+  "labels": "segmentation seen_px"
+ }
+]
