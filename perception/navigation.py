@@ -1,6 +1,9 @@
 """
 Change contributed by Student B (assist), pending review by Student C:
-the approach stops at config.APPROACH_STOP_M (docs/task4_c2_margin.md).
+the approach stops at config.APPROACH_STOP_M (docs/task4_c2_margin.md);
+no simulator ground truth in the range estimate (assist/no-gt-height,
+docs/task4_no_gt_height.md): the target's height comes from nominal
+per-class floor heights or from the bbox, never from data.xpos.
 
 navigation.py — STUDENT C OWNS THIS FILE (other half of Task 4, 60% w/ perception).
 
@@ -13,8 +16,10 @@ skills_mock.MockSkills before Student A's simulation exists:
     python tests/test_navigation_with_mock.py
 
 Ground-truth object positions (config.OBJECT_POSITIONS) are used only for
-the [FOUND] distance log. Navigation and the found decision use a calibrated
-range estimate from the live detection bounding box.
+the [FOUND] distance log (and the [RANGE] ground_truth= field). Navigation
+and the found decision use a calibrated range estimate from the live
+detection bounding box and the robot's own trunk height; nothing reads the
+target's simulator state.
 """
 
 import json
@@ -29,20 +34,21 @@ _CAMERA_DOWN_PITCH_DEG = 14.0
 _CAMERA_HEIGHT_ABOVE_TRUNK_M = 0.16
 _DEFAULT_TRUNK_HEIGHT_M = 0.45
 _CAMERA_FORWARD_OFFSET_M = 0.45
-_TARGET_CENTER_OFFSETS_M = {
+# Height of the bbox centre above the floor for a target standing on the
+# floor, per class (chair: 0.88 m tall, centre 0.44; ball: radius 0.11;
+# stop sign: Student C's 0.50). These are prior knowledge of the object
+# classes, not simulator state.
+_NOMINAL_CENTER_HEIGHTS_M = {
     "chair": 0.44,
-    "sports ball": 0.0,
+    "sports ball": 0.11,
     "stop sign": 0.50,
 }
-_DEFAULT_TARGET_CENTER_HEIGHTS_M = {
-    "green_chair": 0.44,
-    "red_chair": 0.44,
-    "orange_sports ball": 0.11,
-    "red_stop sign": 0.50,
-    "yellow_stop sign": 0.50,
-    "green_stop sign": 0.50,
-    "blue_chair": 0.84,
-}
+# Classes whose elevation is estimated from the bbox (their nominal height is
+# the centre of their full-height bbox). Signs keep the nominal height.
+_ELEVATION_CLASSES = ("chair", "sports ball")
+_ELEVATED_THRESHOLD_M = 0.20     # bbox-centre height this far above nominal = elevated
+_ELEVATION_MIN_BBOX_PX = 24
+_ELEVATION_EDGE_MARGIN_PX = 2.0
 _TARGET_HEIGHTS_M = {
     "chair": 0.88,
     "sports ball": 0.22,
@@ -50,12 +56,6 @@ _TARGET_HEIGHTS_M = {
 }
 _SAME_HEIGHT_TOLERANCE_M = 0.03
 _NEAR_HORIZONTAL_RAY_ANGLE_DEG = 5.0
-_CLASS_MATERIAL_TOKENS = {
-    "chair": ("chair",),
-    "sports ball": ("sports_ball", "ball"),
-    "stop sign": ("stop_sign", "sign"),
-}
-
 
 def goto_object(object_class: str, color: str,
                  skills: SkillsAPI, perception: PerceptionAPI,
@@ -233,7 +233,7 @@ def goto_object(object_class: str, color: str,
 
         pose = skills.get_robot_pose()
         camera_height = _camera_height_above_ground(
-            skills, target.class_name, target.color
+            skills, target.class_name, target.color, target, frame.shape
         )
         if target_position is None:
             target_position = _estimated_target_position(
@@ -352,12 +352,17 @@ def _approach_step(skills: SkillsAPI, distance: float,
 
 
 def _camera_height_above_ground(skills: SkillsAPI, object_class: str,
-                                color: str) -> float:
-    """Return camera z minus the target center's live world-frame z."""
-    target_key = f"{color}_{object_class}"
-    target_center_z = _target_center_world_height(
-        skills, target_key, object_class
-    )
+                                color: str, detection=None,
+                                frame_shape=None) -> float:
+    """Camera z minus the target centre's z, both in the world frame.
+
+    The camera z comes from the robot's own measured trunk height
+    (proprioception, like get_robot_pose). The target centre's z is NOT read
+    from the simulator: it is the class's nominal floor height, or — when
+    the live bbox says the target stands clearly higher (e.g. the blue chair
+    on the stairs) — an estimate from the bbox (_target_center_height).
+    `color` is unused (kept for callers)."""
+    camera_z = _DEFAULT_TRUNK_HEIGHT_M + _CAMERA_HEIGHT_ABOVE_TRUNK_M
     get_trunk_height = getattr(skills, "get_trunk_height", None)
     if callable(get_trunk_height):
         try:
@@ -367,95 +372,47 @@ def _camera_height_above_ground(skills: SkillsAPI, object_class: str,
         else:
             if math.isfinite(trunk_height) and trunk_height > 0.0:
                 camera_z = trunk_height + _CAMERA_HEIGHT_ABOVE_TRUNK_M
-                return camera_z - target_center_z
-    camera_z = _DEFAULT_TRUNK_HEIGHT_M + _CAMERA_HEIGHT_ABOVE_TRUNK_M
-    return camera_z - target_center_z
+    return camera_z - _target_center_height(
+        object_class, detection, frame_shape, camera_z)
 
 
-def _target_center_world_height(skills: SkillsAPI, target_key: str,
-                                object_class: str) -> float:
-    """Read target body z from its colored geoms and add its center offset."""
-    model = getattr(skills, "_model", None)
-    data = getattr(skills, "_data", None)
-    if model is not None or data is not None:
-        if model is None or data is None:
-            raise RuntimeError(
-                "Simulator target height requires both skills._model and "
-                "skills._data"
-            )
-        target_color = target_key.split("_", 1)[0]
-        body_id = _find_target_body_id(model, target_color, object_class)
-        if body_id is None:
-            raise LookupError(
-                f"Cannot locate {target_key!r} in the compiled simulator "
-                "model by its colored geometry"
-            )
-        body_z = float(data.xpos[body_id][2])
-        center_offset = _TARGET_CENTER_OFFSETS_M[object_class]
-        center_z = body_z + center_offset
-        if not math.isfinite(center_z):
-            raise ValueError(
-                f"Non-finite world height for target {target_key!r}"
-            )
-        return center_z
+def _target_center_height(object_class: str, detection, frame_shape,
+                          camera_z: float) -> float:
+    """World z of the target's bbox centre, without ground truth.
 
-    # SkillsAPI test doubles do not expose simulator model/data state.
-    return _DEFAULT_TARGET_CENTER_HEIGHTS_M[target_key]
-
-
-def _find_target_body_id(model, target_color: str,
-                         object_class: str) -> int | None:
-    """Find a target body after the map loader has renamed imported bodies."""
-    geom_ids_by_body: dict[int, list[int]] = {}
-    for geom_id in range(model.ngeom):
-        material_id = int(model.geom_matid[geom_id])
-        if material_id < 0:
-            continue
-        material_name = model.mat(material_id).name
-        material_tokens = set(material_name.split("_"))
-        if target_color not in material_tokens:
-            continue
-        body_id = int(model.geom_bodyid[geom_id])
-        geom_ids_by_body.setdefault(body_id, []).append(geom_id)
-
-    candidates = []
-    class_tokens = _CLASS_MATERIAL_TOKENS[object_class]
-    for body_id, geom_ids in geom_ids_by_body.items():
-        material_names = {
-            model.mat(int(model.geom_matid[geom_id])).name
-            for geom_id in geom_ids
-        }
-        named_for_class = any(
-            token in material_name.split("_")
-            for material_name in material_names
-            for token in class_tokens
-        )
-        if named_for_class or _geometry_matches_class(
-                model, geom_ids, object_class):
-            candidates.append(body_id)
-
-    if len(candidates) > 1:
-        raise LookupError(
-            f"Multiple simulator bodies match color={target_color!r}, "
-            f"class={object_class!r}: {candidates}"
-        )
-    return candidates[0] if candidates else None
-
-
-def _geometry_matches_class(model, geom_ids: list[int],
-                            object_class: str) -> bool:
-    """Recognize Task 4 primitive props when their material is color-only."""
-    box_geoms = [
-        geom_id for geom_id in geom_ids
-        if all(float(size) > 0.0 for size in model.geom_size[geom_id])
-    ]
-    if object_class == "chair":
-        return len(box_geoms) >= 4
-    if object_class == "stop sign":
-        return len(box_geoms) == 2
-    if object_class == "sports ball":
-        return any(geom_id not in box_geoms for geom_id in geom_ids)
-    return False
+    Range the target by its known size (f * H / bbox height), then read
+    the bbox centre's height off the ray through it:
+        z = camera_z - range * tan(ray_down_angle)
+    If that is more than _ELEVATED_THRESHOLD_M above the class's nominal
+    floor height, the target stands on something (stairs) and the
+    estimate is used; otherwise — and whenever the bbox is too small or cut
+    by the frame edge, so its size can't be trusted — the nominal floor
+    height is. Limitation: with the robot itself on the stairs, a floor
+    target looks lower than nominal; that is not detected (the estimate
+    only ever raises the target)."""
+    nominal = _NOMINAL_CENTER_HEIGHTS_M.get(object_class, 0.0)
+    if (detection is None or frame_shape is None
+            or object_class not in _ELEVATION_CLASSES):
+        return nominal
+    frame_height = frame_shape[0]
+    target_height = _TARGET_HEIGHTS_M.get(object_class)
+    x1, y1, x2, y2 = detection.bbox
+    bbox_height = y2 - y1
+    if (target_height is None or frame_height <= 0
+            or bbox_height < _ELEVATION_MIN_BBOX_PX
+            or y1 <= _ELEVATION_EDGE_MARGIN_PX
+            or y2 >= frame_height - _ELEVATION_EDGE_MARGIN_PX):
+        return nominal
+    focal_length_px = frame_height / (
+        2.0 * math.tan(math.radians(_CAMERA_VERTICAL_FOV_DEG) / 2.0))
+    camera_forward = focal_length_px * target_height / bbox_height
+    image_down_angle = math.atan(((y1 + y2) / 2.0 - frame_height / 2.0)
+                                 / focal_length_px)
+    ray_down_angle = math.radians(_CAMERA_DOWN_PITCH_DEG) + image_down_angle
+    estimate = camera_z - camera_forward * math.tan(ray_down_angle)
+    if math.isfinite(estimate) and estimate - nominal >= _ELEVATED_THRESHOLD_M:
+        return estimate
+    return nominal
 
 
 def _estimated_planar_distance(pose: RobotPose, detection,

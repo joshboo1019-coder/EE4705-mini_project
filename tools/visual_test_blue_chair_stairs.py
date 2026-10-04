@@ -1,4 +1,8 @@
 """
+Change contributed by Student B (assist), pending review by Student C:
+the range log passes the live bbox (no simulator ground truth for the
+chair's height; assist/no-gt-height).
+
 tools/visual_test_blue_chair_stairs.py -- detect blue_chair from the base of
 the gentle staircase, climb to just short of it, then do the final precise
 approach/stop.
@@ -85,8 +89,8 @@ def _log_blue_chair_range(stage: str, skills, perception) -> None:
     using the exact same range-estimation helpers navigation.py's own
     goto_object() uses internally -- not a separate/different distance
     computation. The shared projection uses the measured trunk world z
-    and this scene's known blue-chair center z, so elevated targets use
-    the same height-aware estimate as every other navigation target."""
+    and the chair's centre height estimated from its bbox (no simulator
+    ground truth), the same estimate goto_object() uses."""
     frame = skills.get_camera_frame()
     detections = perception.detect(frame)
     target = navigation._pick_target(detections, "chair", "blue")
@@ -97,7 +101,7 @@ def _log_blue_chair_range(stage: str, skills, perception) -> None:
         return
 
     camera_height = navigation._camera_height_above_ground(
-        skills, "chair", "blue"
+        skills, "chair", "blue", target, frame.shape
     )
     estimated = navigation._estimated_planar_distance(
         pose, target, frame.shape, camera_height

@@ -147,34 +147,68 @@ def test_steer_to_center_accepts_target_within_wider_tolerance():
     assert skills.turns == [-5.0]
 
 
-def test_camera_height_is_relative_to_target_center():
-    class _MeasuredHeightSkills(_Skills):
-        _model = SimpleNamespace(
-            ngeom=6,
-            geom_matid=(0, 0, 0, 0, 0, 0),
-            geom_bodyid=(3, 3, 3, 3, 3, 3),
-            geom_size=(
-                (0.02, 0.02, 0.21), (0.02, 0.02, 0.21),
-                (0.02, 0.02, 0.21), (0.02, 0.02, 0.21),
-                (0.22, 0.22, 0.02), (0.22, 0.02, 0.22),
-            ),
-            mat=lambda material_id: SimpleNamespace(
-                name="custom_scene_chair_blue_mat"
-            ),
-        )
-        _data = SimpleNamespace(
-            xpos=((0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
-                  (0.0, 0.0, 0.0), (0.0, 0.0, 2.5))
-        )
+def _bbox_for(center_z, distance, camera_z, class_height, frame_h=480):
+    """A bbox of a target whose centre is at center_z, `distance` m ahead of
+    the camera (ideal pinhole, the module's own camera constants)."""
+    import math
+    f = frame_h / (2 * math.tan(math.radians(navigation._CAMERA_VERTICAL_FOV_DEG) / 2))
+    ray = math.atan((camera_z - center_z) / distance)
+    cy = frame_h / 2 + f * math.tan(ray - math.radians(navigation._CAMERA_DOWN_PITCH_DEG))
+    h = f * class_height / distance
+    return (300.0, cy - h / 2, 340.0, cy + h / 2)
+
+
+def test_camera_height_never_reads_the_simulator():
+    """assist/no-gt-height: the target's height is not ground truth. A skills
+    object whose simulator state explodes on access must still work."""
+    class _NoSimSkills(_Skills):
+        @property
+        def _model(self):
+            raise AssertionError("navigation read skills._model")
+
+        @property
+        def _data(self):
+            raise AssertionError("navigation read skills._data")
 
         def get_trunk_height(self):
-            return 1.2
+            return 0.33
 
-    assert navigation._camera_height_above_ground(
-        _MeasuredHeightSkills(), "chair", "blue"
-    ) == pytest.approx(
-        1.2 + navigation._CAMERA_HEIGHT_ABOVE_TRUNK_M - (2.5 + 0.44)
-    )
+    camera_z = 0.33 + navigation._CAMERA_HEIGHT_ABOVE_TRUNK_M
+    for cls, nominal in navigation._NOMINAL_CENTER_HEIGHTS_M.items():
+        assert navigation._camera_height_above_ground(
+            _NoSimSkills(), cls, "blue") == pytest.approx(camera_z - nominal)
+
+
+def test_floor_target_uses_the_nominal_height():
+    camera_z = 0.49
+    bbox = _bbox_for(0.44, 2.5, camera_z, navigation._TARGET_HEIGHTS_M["chair"])
+    det = Detection("chair", "green", 0.9, bbox)
+    assert navigation._target_center_height("chair", det, (480, 640, 3), camera_z) == 0.44
+
+
+def test_elevated_target_height_is_estimated_from_the_bbox():
+    """The blue chair on the stairs: centre ~0.84 m (0.40 m up)."""
+    camera_z = 0.49
+    for distance in (1.5, 2.5, 3.5):
+        bbox = _bbox_for(0.84, distance, camera_z, navigation._TARGET_HEIGHTS_M["chair"])
+        det = Detection("chair", "blue", 0.9, bbox)
+        z = navigation._target_center_height("chair", det, (480, 640, 3), camera_z)
+        assert z == pytest.approx(0.84, abs=1e-6)
+
+
+def test_cut_or_tiny_bbox_falls_back_to_the_nominal_height():
+    camera_z = 0.49
+    cut = Detection("chair", "blue", 0.9, (300.0, 0.0, 340.0, 200.0))       # touches the top edge
+    tiny = Detection("chair", "blue", 0.9, (300.0, 100.0, 310.0, 110.0))    # 10 px tall
+    for det in (cut, tiny):
+        assert navigation._target_center_height("chair", det, (480, 640, 3), camera_z) == 0.44
+
+
+def test_stop_signs_keep_the_nominal_height():
+    camera_z = 0.49
+    bbox = _bbox_for(0.85, 2.0, camera_z, navigation._TARGET_HEIGHTS_M["stop sign"])
+    det = Detection("stop sign", "red", 0.9, bbox)
+    assert navigation._target_center_height("stop sign", det, (480, 640, 3), camera_z) == 0.50
 
 
 def test_target_projection_uses_bbox_center_without_fixed_range_bias():
