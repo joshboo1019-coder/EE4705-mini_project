@@ -458,7 +458,7 @@ def test_program_never_calls_the_llm(fake_llm):
     ex.queue = queue
     chat_interface.handle_utterance("walk in a square with 1 metre sides", [], queue)
     ex._run_batch_starting_with(queue.pop(timeout=0))
-    assert len(fake_llm.calls) == 1 and len(skills.turns) == 4     # fake would raise on a 2nd call
+    assert len(fake_llm.calls) == 1 and len(skills.turns) == 8     # 4 x 90 deg in 45-deg chunks; fake would raise on a 2nd call
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +523,7 @@ def test_estop_aborts_a_running_program_from_the_chat_thread(fake_llm, capsys):
     # a later command runs normally: the flag is per batch, never "stuck"
     fake_llm.replies.append(_actions({"action": "turn", "angle_deg": -90}))
     chat_interface.handle_utterance("turn right", history, queue)
-    assert _wait(lambda: skills.turns and skills.turns[-1] == -90)
+    assert _wait(lambda: skills.turns and skills.turns[-1] == -45)   # -90 in two 45-deg chunks
     assert _wait(lambda: not ex._busy)     # don't leave a batch printing into the next test
 
 
@@ -782,7 +782,7 @@ def test_undo_a_turn_turns_back(capsys):
     ex, skills, _ = _kin()
     _do(ex, TurnCommand(90.0))
     _do(ex, UndoCommand())
-    assert skills.turns == [90.0, -90.0]
+    assert skills.turns == [45.0, 45.0, -45.0, -45.0]      # 45-deg chunks
     out = capsys.readouterr().out
     assert "[EXEC] action=1/1 undo of=turn left 90°" in out and "[PLAN] undo: turn right 90°" in out
 
@@ -831,7 +831,7 @@ def test_undo_twice_walks_back_the_stack_and_never_undoes_an_undo(capsys):
     _do(ex, UndoCommand())
     out = capsys.readouterr().out
     assert "Robot: There's nothing to undo." in out
-    assert skills.turns == [90.0, -90.0]
+    assert skills.turns == [45.0, 45.0, -45.0, -45.0]      # 45-deg chunks
 
 
 def test_return_home_after_a_wander(capsys):
@@ -1154,26 +1154,48 @@ def test_snapshot_caps_a_long_last_command():
 # ---------------------------------------------------------------------------
 
 class _TurnRecorder:
-    def __init__(self):
+    """Ideal turning robot: records each turn() and integrates its yaw."""
+    def __init__(self, gain: float = 1.0):
         self.turns = []
+        self.yaw = 0.0
+        self.gain = gain              # < 1 = undershoots every turn
 
     def turn(self, a):
         self.turns.append(round(a, 3))
+        self.yaw = (self.yaw + a * self.gain + 180.0) % 360.0 - 180.0
+
+    def get_robot_pose(self):
+        return RobotPose(0.0, 0.0, self.yaw)
 
 
-def test_turns_over_180_are_split_into_chunks():
-    """RealSkills.turn() takes the short way to wrap(start + angle):
-    turn(360) would not move and turn(270) would turn right 90."""
+def test_large_turns_are_chunked_against_the_absolute_heading():
+    """F3: turns > 45 deg run in <= 45-deg chunks against the absolute target
+    (the robot's own yaw), so the e-stop is checked every <= 45 deg and turns
+    > 180 deg are correct (RealSkills.turn() alone goes the short way)."""
     from dialogue.executor import _AbortableSkills
-    for angle, expected in [(360, [120.0] * 3), (270, [90.0] * 3), (-450, [-112.5] * 4),
-                            (180, [180.0]), (-90, [-90.0]), (720, [120.0] * 6)]:
+    for angle, expected in [(360, [45.0] * 8), (270, [45.0] * 6), (-450, [-45.0] * 10),
+                            (180, [45.0] * 4), (-90, [-45.0] * 2), (30, [30.0]), (45, [45.0])]:
         rec = _TurnRecorder()
         _AbortableSkills(rec, lambda: False).turn(angle)
         assert rec.turns == expected, angle
         assert abs(sum(rec.turns) - angle) < 1e-6
 
 
-def test_a_split_turn_stops_between_chunks_on_estop():
+def test_chunk_errors_do_not_accumulate():
+    """A robot that undershoots every turn by 10 %: each chunk aims at the
+    absolute target, and one final correction removes the residual."""
+    from dialogue.executor import _AbortableSkills
+    _AbortableSkills.TURN_SETTLE_S, saved = 0.0, _AbortableSkills.TURN_SETTLE_S
+    try:
+        rec = _TurnRecorder(gain=0.9)
+        _AbortableSkills(rec, lambda: False).turn(180)
+        assert len(rec.turns) == 5                       # 4 chunks + 1 correction
+        assert abs(rec.yaw - 180.0) < 2.5 or abs(rec.yaw + 180.0) < 2.5
+    finally:
+        _AbortableSkills.TURN_SETTLE_S = saved
+
+
+def test_a_chunked_turn_stops_between_chunks_on_estop():
     from dialogue.executor import _AbortableSkills, ExecutionAborted
     rec = _TurnRecorder()
     calls = {"n": 0}
@@ -1184,7 +1206,7 @@ def test_a_split_turn_stops_between_chunks_on_estop():
     import pytest
     with pytest.raises(ExecutionAborted):
         _AbortableSkills(rec, aborted).turn(360)
-    assert rec.turns == [120.0]
+    assert rec.turns == [45.0]
 
 
 def test_goal_count_is_capped_through_loops():

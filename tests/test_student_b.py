@@ -283,7 +283,13 @@ class _FailingMoveSkills(MockSkills):
 
     def turn(self, angle_deg):
         self.turns.append(angle_deg)
-        self.turned.set()
+        self._yaw = getattr(self, "_yaw", 0.0) + angle_deg      # turns like a real robot
+        if len(self.turns) >= 2:
+            self.turned.set()
+
+    def get_robot_pose(self):
+        from core.schema import RobotPose
+        return RobotPose(0.0, 0.0, (getattr(self, "_yaw", 0.0) + 180.0) % 360.0 - 180.0)
 
     def stop(self):
         self.stops += 1
@@ -303,7 +309,7 @@ def test_failing_skill_skips_the_batch_and_the_loop_keeps_going(capsys):
     queue.push_many([TurnCommand(-90.0)])            # a later batch
 
     assert skills.turned.wait(timeout=2.0)
-    assert skills.turns == [-90.0]                   # 2/2 of the failed batch was skipped
+    assert skills.turns == [-45.0, -45.0]            # 2/2 of the failed batch was skipped; -90 in 45-deg chunks
     assert skills.stops == 1
     out = capsys.readouterr().out
     assert "[EXEC] action=1/2 failed reason=RuntimeError: joint limit exceeded" in out
@@ -323,9 +329,9 @@ def test_goto_object_error_does_not_kill_the_loop(capsys):
     queue.push_many([TurnCommand(-90.0)])
 
     deadline = time.time() + 2.0
-    while len(skills.turns) < 2 and time.time() < deadline:
+    while len(skills.turns) < 4 and time.time() < deadline:
         time.sleep(0.01)
-    assert skills.turns == [90.0, -90.0]
+    assert skills.turns == [45.0, 45.0, -45.0, -45.0]   # 45-deg chunks
     assert skills.stops == 1
     out = capsys.readouterr().out
     assert "[EXEC] action=2/3 failed reason=KeyError: 'purple_chair'" in out

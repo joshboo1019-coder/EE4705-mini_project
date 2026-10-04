@@ -68,18 +68,47 @@ class _AbortableSkills:
             raise ExecutionAborted()
         return self._inner.move(vx, vy, wz, duration)
 
-    # RealSkills.turn() aims at wrap(start + angle), so a turn of more than
-    # 180 deg goes the short way (turn(360) does nothing, turn(270) turns
-    # right 90). Larger turns are split into equal chunks of at most this.
-    MAX_TURN_CHUNK_DEG = 120.0
+    # Turns larger than this are executed in chunks against an ABSOLUTE
+    # target heading (the robot's own yaw from get_robot_pose(), the same
+    # signal RealSkills.turn() closes the loop on), with the e-stop checked
+    # between chunks: a running RealSkills.turn() can't be preempted, so the
+    # chunk size bounds the e-stop latency during a turn. Chunking also keeps
+    # turns > 180 deg correct (RealSkills.turn() goes the short way to
+    # wrap(start + angle): turn(360) alone would not move). Turns of at most
+    # this size (navigation's steering turns, small corrections) are passed
+    # through unchanged.
+    MAX_TURN_CHUNK_DEG = 45.0
+    TURN_TOL_DEG = 2.5         # final correction only if the settled residual is larger
+    TURN_SETTLE_S = 0.35
 
     def turn(self, angle_deg: float) -> None:
-        n = max(1, math.ceil(abs(angle_deg) / self.MAX_TURN_CHUNK_DEG - 1e-9)) \
-            if abs(angle_deg) > 180.0 else 1
-        for _ in range(n):
+        if abs(angle_deg) <= self.MAX_TURN_CHUNK_DEG or not hasattr(self._inner, "get_robot_pose"):
             if self._aborted():
                 raise ExecutionAborted()
-            self._inner.turn(angle_deg / n)
+            return self._inner.turn(angle_deg)
+        yaw = self._inner.get_robot_pose().yaw_deg
+        turned = 0.0                      # unwrapped rotation so far
+        n = math.ceil(abs(angle_deg) / self.MAX_TURN_CHUNK_DEG - 1e-9)
+        for k in range(1, n + 1):
+            if self._aborted():
+                raise ExecutionAborted()
+            goal = angle_deg * k / n      # absolute (relative to the start heading)
+            # clamped, so a robot that doesn't rotate (stuck) never gets a chunk > 45
+            m = self.MAX_TURN_CHUNK_DEG
+            self._inner.turn(max(-m, min(m, goal - turned)))
+            new_yaw = self._inner.get_robot_pose().yaw_deg
+            turned += wrap_deg(new_yaw - yaw)
+            yaw = new_yaw
+        # one settle-and-correct step against the absolute target
+        time.sleep(self.TURN_SETTLE_S)
+        new_yaw = self._inner.get_robot_pose().yaw_deg
+        turned += wrap_deg(new_yaw - yaw)
+        residual = angle_deg - turned
+        if abs(residual) > self.TURN_TOL_DEG:
+            if self._aborted():
+                raise ExecutionAborted()
+            m = self.MAX_TURN_CHUNK_DEG
+            self._inner.turn(max(-m, min(m, residual)))
 
     def __getattr__(self, name):
         return getattr(self._inner, name)
