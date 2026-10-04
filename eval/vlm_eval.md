@@ -68,3 +68,104 @@ is billed as about 390 input tokens. The parser call that produced the `look` ad
 - n = 3 frames, one launch, one VLM. This is a spot check, not an accuracy rate. The probe comparison in
   `task3_eval.md` adds 2 more frames × 4 questions × 4 models.
 - The VLM still misses small or occluded things: the half-hidden ball and the green-chair sliver in frame 1.
+
+## Scaled comparison (n≈30)
+
+2026-10-04, branch `docs/vlm-scaled`, Student B. Offline only: no simulator run, no control-code change. Script:
+`tools/vlm_scaled_eval.py` (`run`, then `report`). Per-frame results: `docs/report_assets/final/vlm_vs_yolo_scaled.csv`;
+raw YOLO boxes and VLM answers: `eval/results/vlm/scaled/results.jsonl`.
+
+**Frames (31, all onboard 640×480 `dog_front_camera`).** The e2e run folders don't hold onboard frames:
+`eval/e2e/results/*/frames/` and `~/Videos/e2e/*_raw/**/frames/` are empty or hold the 960×540 screen-recording
+frame (terminal + third-person GUI view) of each clip, and the close-range frames at the S3 stops were never saved,
+only their `[DETECT]` lines. So the set mixes two sources:
+
+- **12 real runtime frames**, saved by the robot's own camera path during real-sim sessions: the 3 frames of the
+  live look check above, the third S4 look of e2e run `20261004-0101_baseline`, the 2 VLM probe frames
+  (`task3_eval.md`, "VLM choice"), and the 6 Task 2 camera-evidence frames
+  (`docs/report_assets/task2/yolo_screenshots/raw/`, incl. the yellow sign at 1.8 m and the red chair at 1.6 m).
+  The other 21 saved look frames are the same three scripted S4 poses in later runs, so they were left out as
+  near-duplicates. **These are labelled by hand from the image** (Student B): "expected" = clearly visible;
+  objects cut by the frame edge or mostly hidden (e.g. the half-hidden ball behind the red sign's pole) are
+  "marginal": not required, and not a false positive if reported.
+- **19 rendered frames** from the main scene (square "+" sign plates), made earlier with
+  `tools/task4_color_testset.py render` (runtime robot, lighting and camera; trunk teleported to views around each
+  object). They stand in for the S3 goal views: 9 **stop-sign** views (S3_05/06/09 targets; red, yellow and green
+  sign at 1.1, 1.4–1.7 and 2.3–2.5 m), 6 **close-range red chair** views (S3_01/04 target at 0.8 m, the
+  closest rendered range; includes the view where yolo11n says "bed"), 2 green-chair, 1 blue-chair and 1 ball view.
+  The pick is stratified and seeded (`random.Random(4705)`). **Labels are geometric:** an object is expected if its
+  segmentation mask has ≥ 400 visible pixels in the frame (1–399 px = marginal). Sign views start at 1.1 m: at
+  0.8 m the plate (z = 0.85 m) is above the camera's view and only the grey pole is in frame.
+
+**Scoring.** One YOLO pass per frame, `RealPerception.detect` with the Task 4 config (`yolo11n.pt`, conf 0.2,
+imgsz 736, current colour grounding). One VLM call per frame: `qwen3-vl-flash` through the project's client
+(`dialogue.vlm.VLM_SERVICES`, `llm_parser._get_client`, `vlm._png_data_url`), with a detection prompt instead of the
+free-text QA prompt: list the objects (not floor, sky or terrain) as JSON `{label, color, bbox}`. A hit needs class
+**and** colour. VLM labels are mapped by keyword: chair/seat → chair; sign/flag/plate/board → stop sign (the
+scene's only signs are the three "stop signs"); ball/sphere → sports ball. False positive (FP) = a task
+class + colour that isn't in the frame. Wrong-class label = any other label: for YOLO every non-task COCO class
+(the scene has none of them); for the VLM, labels other than scene structure (pole, stairs, platform are not
+counted). bboxes are logged but not scored.
+
+| Object (class + colour) | n visible | YOLO recall | VLM recall |
+|---|---|---|---|
+| red chair | 16 | 11/16 (69%) | 15/16 (94%) |
+| green chair | 10 | 2/10 (20%) | 9/10 (90%) |
+| blue chair | 6 | 4/6 (67%) | 6/6 (100%) |
+| orange sports ball | 6 | **6/6 (100%)** | 3/6 (50%) |
+| red stop sign | 8 | 0/8 (0%) | 8/8 (100%) |
+| yellow stop sign | 11 | 0/11 (0%) | 11/11 (100%) |
+| green stop sign | 13 | 0/13 (0%) | 13/13 (100%) |
+| **all** | **70** | **23/70 (33%)**, Wilson 95% [0.23, 0.44] | **65/70 (93%)**, [0.84, 0.97] |
+
+| Errors (31 frames) | YOLO | VLM |
+|---|---|---|
+| False positives (class + colour not in the frame) | 1 ("yellow chair" for a far green chair) | 4 (ball called **yellow** ×3, a "blue sign" in a far cluttered view) |
+| Wrong-class labels | 6: bed, bench, umbrella, airplane, traffic light | 3: "table" (edge of the red chair), "barrel" (green chair behind a sign), "block" |
+
+| Subset | n frames | n objects | YOLO | VLM |
+|---|---|---|---|---|
+| **Stop-sign frames** (signs only) | 10 | 13 | 0/13 (0%) | 13/13 (100%) |
+| Signs in all frames | 31 | 32 | 0/32 (0%) | 32/32 (100%) |
+| **Close-range red chair** (0.8 m, the red chair) | 6 | 6 | 2/6 (33%) | 6/6 (100%) |
+| Close-range red chair (all objects in those frames) | 6 | 12 | 4/12 (33%) | 11/12 (92%) |
+| Real runtime frames | 12 | 26 | 8/26 (31%) | 25/26 (96%) |
+| Rendered frames | 19 | 44 | 15/44 (34%) | 40/44 (91%) |
+
+- **Stop signs.** yolo11n never labels the "+" plates as "stop sign" (once as "traffic light"), the same result as
+  the 7/387 in `docs/task4_color_grounding.md`. The VLM finds every sign plate with the right colour, but calls it a
+  "sign" or "flag", not a "stop sign". The class match comes from the keyword mapping, which is fair here only
+  because the scene has no other signs.
+- **Close-range red chair.** At 0.8 m the chair fills the lower frame. Per view, YOLO gives: "bed" red 0.47; "chair"
+  red + "bench"; only the ball; nothing; "chair" red; "chair" **blue** 0.21. So it gets "red chair" in 2 of the 6.
+  The VLM says "red chair" in all 6. The e2e logs show the same failure at the real stops, e.g. `class=bed color=red conf=0.47` in
+  `20261004-0128_p2b_c2_margin_v2/S3_01.log` and `20261004-0118_p2b_c2_margin/S3_04.log`.
+- **Where YOLO is better.** The orange ball: YOLO 6/6, VLM 3/6. The VLM calls it yellow in 2 of the misses (and in
+  1 frame where it's marginal), and leaves it out of a close red-chair view once. YOLO also gives a usable bbox and
+  range, while the VLM boxes aren't checked here.
+- **Latency and cost.** YOLO: median 0.007 s per frame (local GPU, after warm-up), p90 0.014 s. VLM: median
+  1.15 s, p90 2.33 s, max 3.39 s, about 2× the free-text look calls above, because the JSON answer is longer
+  (470 / 121 tokens in / out on average). **Total VLM spend: $0.0022 for 31 calls** ($0.000072 per frame), at the
+  price given above.
+
+**Caption** (also in `docs/report_assets/final/CAPTIONS.md`, manual additions): `vlm_vs_yolo_scaled.png` shows recall (class + colour) of YOLO
+(yolo11n, conf 0.2, imgsz 736, perception_real colour grounding) vs the VLM (qwen3-vl-flash, one JSON-detection
+call per frame) on 31 onboard 640×480 dog_front_camera frames (12 saved by real-sim runs, hand-labelled; 19 rendered
+from the main scene with tools/task4_color_testset.py, labelled from segmentation pixel counts), 70 visible objects.
+The left panel is per object and the right panel per subset (n = objects). The legend gives false positives and
+wrong-class labels. Source: docs/report_assets/final/vlm_vs_yolo_scaled.csv (tools/vlm_scaled_eval.py).
+
+**Limitations.**
+- n = 31 frames and 70 object instances. Objects in the same frame aren't independent, so the Wilson intervals are
+  only indicative. Each frame got one VLM call at temperature 0, so run-to-run variance isn't measured.
+- 19 of the 31 frames are rendered views, not frames from the e2e runs. They use the runtime camera and scene, but
+  the poses are set (standing, level trunk) rather than taken from a walk. The close-range set is 0.8 m from the
+  chair centre, a little farther than the real S3 stops (true 0.57–0.64 m).
+- The real frames are labelled by hand by one person, and the 6 Task 2 frames were framed to show one object.
+- The VLM was asked to list the objects it sees, and its labels were mapped to the 3 task classes by keyword. YOLO
+  has to pick from 80 COCO classes. That makes this a test of "what is in view, in which colour" (what `look`
+  answers), not of `goto_object` detection. The VLM gives no range and takes ~1 s per call, so YOLO stays the
+  navigation detector, as in the 3-frame check above.
+- The rendered frames live in a scratch folder and aren't committed. Regenerate them with
+  `MUJOCO_GL=egl python tools/task4_color_testset.py render --out DIR/tune` and `... render --out DIR/hold
+  --holdout`, then `python tools/vlm_scaled_eval.py run --render-dir DIR` (frame ids are in the CSV).
