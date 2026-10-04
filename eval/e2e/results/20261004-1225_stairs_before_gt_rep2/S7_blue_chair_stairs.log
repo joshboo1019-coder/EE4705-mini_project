@@ -1,0 +1,216 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+Booting RealSkills (loads the ONNX policy + opens the MuJoCo scene)...
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+
+>>> Walking to stairs_gentle's approach point (0.3, 2.0)...
+[TURN] target=81.4 deg final_error=1.5 deg
+    [1/~4] x=0.04 y=0.44 yaw=78.8 trunk_z=0.247 m (dist remaining=1.58 m)
+[TURN] target=1.8 deg final_error=1.8 deg
+    [2/~4] x=0.11 y=0.91 yaw=77.8 trunk_z=0.246 m (dist remaining=1.10 m)
+[TURN] target=2.4 deg final_error=1.7 deg
+    [3/~4] x=0.19 y=1.38 yaw=78.0 trunk_z=0.252 m (dist remaining=0.63 m)
+[TURN] target=2.2 deg final_error=1.9 deg
+    [4/~4] x=0.27 y=1.86 yaw=77.1 trunk_z=0.248 m (dist remaining=0.14 m)
+    approach outcome='completed'  pose: x=0.27 y=1.86 yaw=77.1
+[DETECT] stage=at_base blue_chair not visible this frame
+
+>>> Climbing toward (0.5, 2.0) (just short of blue_chair)...
+  [CLIMB] raising stance height to 0.35 m (from 0.25 m) before the climb -- see climb_stairs()'s own docstring for why this is only a PROXY for 'lift legs higher', not a literal one
+[HEIGHT] step 1/4 target=0.28 m trunk_z=0.30 m
+[HEIGHT] step 2/4 target=0.30 m trunk_z=0.32 m
+[HEIGHT] step 3/4 target=0.32 m trunk_z=0.33 m
+[HEIGHT] step 4/4 target=0.35 m trunk_z=0.33 m
+[HEIGHT] target=0.35 m trunk_z_before=0.26 m trunk_z_after=0.33 m
+[TURN] target=-66.6 deg final_error=-1.4 deg
+    [1/~1] x=0.59 y=1.96 yaw=10.8 trunk_z=0.333 m (dist remaining=0.10 m)
+  [CLIMB] restoring stance height to 0.25 m after the climb
+[HEIGHT] step 1/3 target=0.33 m trunk_z=0.34 m
+[HEIGHT] step 2/3 target=0.30 m trunk_z=0.33 m
+[HEIGHT] step 3/3 target=0.28 m trunk_z=0.33 m
+[HEIGHT] target=0.28 m trunk_z_before=0.33 m trunk_z_after=0.33 m
+    climb outcome='completed'  pose: x=0.60 y=1.97 yaw=8.9 trunk_z=0.328 m
+
+>>> Just short of the chair -- handing off to goto_object() for the final centered approach/stop...
+
+[CMD] action=goto_object(class=chair, color=blue)
+[DETECT] class=chair color=blue conf=0.90 bbox=[338.44, 56.64, 400.61, 183.58]
+[DETECT] class=chair color=blue conf=0.89 bbox=[338.76, 55.17, 400.26, 182.88]
+[RANGE] estimated_planar=2.74 m ground_truth=2.85 m phase=approach
+[DETECT] class=chair color=blue conf=0.90 bbox=[336.22, 21.65, 402.10, 161.50]
+[RANGE] estimated_planar=2.67 m ground_truth=2.78 m phase=approach
+[DETECT] class=chair color=blue conf=0.90 bbox=[338.86, 66.40, 406.92, 198.43]
+[RANGE] estimated_planar=2.55 m ground_truth=2.66 m phase=approach
+[DETECT] class=chair color=blue conf=0.89 bbox=[337.07, 77.63, 408.07, 213.23]
+[RANGE] estimated_planar=2.43 m ground_truth=2.54 m phase=approach
+[DETECT] class=chair color=blue conf=0.85 bbox=[335.94, 91.36, 408.25, 232.54]
+[RANGE] estimated_planar=2.29 m ground_truth=2.41 m phase=approach
+[DETECT] class=chair color=blue conf=0.87 bbox=[341.96, 98.50, 416.54, 246.48]
+[TURN] target=-5.0 deg final_error=-2.0 deg
+[DETECT] class=chair color=blue conf=0.91 bbox=[327.18, 108.34, 401.09, 254.46]
+[RANGE] estimated_planar=2.16 m ground_truth=2.27 m phase=approach
+[DETECT] class=chair color=blue conf=0.80 bbox=[320.34, 78.73, 400.35, 239.95]
+[RANGE] estimated_planar=2.05 m ground_truth=2.16 m phase=approach
+[DETECT] class=chair color=blue conf=0.71 bbox=[313.44, 110.62, 394.67, 274.76]
+[DETECT] class=airplane color=unknown conf=0.26 bbox=[0.17, 255.03, 38.86, 283.03]
+[RANGE] estimated_planar=1.96 m ground_truth=2.07 m phase=approach
+[DETECT] class=chair color=blue conf=0.84 bbox=[291.72, 107.69, 372.62, 271.33]
+[RANGE] estimated_planar=1.96 m ground_truth=2.07 m phase=approach
+[DETECT] class=chair color=blue conf=0.91 bbox=[295.85, 59.27, 385.08, 240.90]
+[RANGE] estimated_planar=1.84 m ground_truth=1.96 m phase=approach
+[DETECT] class=chair color=blue conf=0.93 bbox=[291.08, 63.59, 389.45, 260.39]
+[RANGE] estimated_planar=1.71 m ground_truth=1.82 m phase=approach
+[DETECT] class=chair color=blue conf=0.90 bbox=[278.50, 53.56, 385.87, 268.05]
+[RANGE] estimated_planar=1.59 m ground_truth=1.71 m phase=approach
+[DETECT] class=chair color=blue conf=0.91 bbox=[277.49, 83.65, 392.55, 308.33]
+[RANGE] estimated_planar=1.46 m ground_truth=1.57 m phase=approach
+[DETECT] class=chair color=blue conf=0.95 bbox=[268.31, 46.87, 399.35, 309.89]
+[RANGE] estimated_planar=1.34 m ground_truth=1.45 m phase=approach
+[DETECT] class=chair color=blue conf=0.94 bbox=[241.28, 96.76, 370.96, 353.35]
+[RANGE] estimated_planar=1.34 m ground_truth=1.45 m phase=approach
+[DETECT] class=chair color=blue conf=0.85 bbox=[217.61, 2.51, 372.87, 296.68]
+[RANGE] estimated_planar=1.23 m ground_truth=1.34 m phase=approach
+[DETECT] class=chair color=blue conf=0.82 bbox=[217.50, 2.08, 373.32, 288.60]
+[RANGE] estimated_planar=1.22 m ground_truth=1.33 m phase=approach
+[DETECT] class=chair color=blue conf=0.94 bbox=[212.13, 23.42, 379.75, 359.10]
+[DETECT] class=airplane color=unknown conf=0.49 bbox=[420.10, 257.21, 639.49, 340.51]
+[RANGE] estimated_planar=1.10 m ground_truth=1.22 m phase=approach
+[DETECT] class=chair color=blue conf=0.85 bbox=[200.97, 2.47, 406.76, 354.62]
+[DETECT] class=airplane color=unknown conf=0.56 bbox=[427.33, 237.58, 639.48, 313.42]
+[DETECT] class=chair color=blue conf=0.27 bbox=[201.58, 152.82, 404.88, 354.80]
+[RANGE] estimated_planar=0.99 m ground_truth=1.10 m phase=approach
+[DETECT] class=chair color=blue conf=0.78 bbox=[164.01, 2.56, 423.86, 393.29]
+[DETECT] class=airplane color=unknown conf=0.67 bbox=[425.36, 240.40, 639.43, 322.39]
+[DETECT] class=chair color=blue conf=0.22 bbox=[165.42, 142.18, 419.54, 392.28]
+[RANGE] estimated_planar=0.86 m ground_truth=0.97 m phase=approach
+[DETECT] class=airplane color=unknown conf=0.30 bbox=[435.82, 259.12, 639.38, 347.89]
+[TRACK] recovered blue chair in live frame score=0.99
+[TURN] target=5.0 deg final_error=1.7 deg
+[TRACK] recovered blue chair in live frame score=0.99
+[RANGE] estimated_planar=0.66 m ground_truth=0.77 m phase=approach
+[DETECT] class=bed color=blue conf=0.22 bbox=[4.89, 133.12, 527.58, 476.08]
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=-30.0 deg final_error=-1.2 deg
+[DETECT] class=chair color=blue conf=0.56 bbox=[144.86, 0.00, 489.20, 474.02]
+[DETECT] class=chair color=blue conf=0.66 bbox=[182.83, 0.00, 520.04, 476.54]
+[DETECT] class=umbrella color=unknown conf=0.24 bbox=[482.99, 224.72, 639.87, 339.30]
+[RANGE] estimated_planar=inf m ground_truth=0.81 m phase=approach
+[DETECT] class=chair color=blue conf=0.38 bbox=[105.50, 3.54, 636.80, 479.37]
+[RANGE] estimated_planar=0.98 m ground_truth=0.72 m phase=approach
+[DETECT] class=bed color=blue conf=0.23 bbox=[2.83, 163.16, 533.93, 475.73]
+[TRACK] recovered blue chair in live frame score=0.97
+[RANGE] estimated_planar=0.80 m ground_truth=0.53 m phase=approach
+[DETECT] class=umbrella color=unknown conf=0.53 bbox=[2.91, 202.89, 609.32, 475.72]
+[TRACK] recovered blue chair in live frame score=0.81
+[RANGE] estimated_planar=0.79 m ground_truth=0.53 m phase=approach
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=-12.7 deg final_error=-1.6 deg
+[TRACK] recovered blue chair in live frame score=0.79
+[RANGE] estimated_planar=1.10 m ground_truth=0.45 m phase=approach
+[DETECT] class=umbrella color=unknown conf=0.39 bbox=[107.23, 176.62, 639.85, 476.98]
+[DETECT] class=umbrella color=unknown conf=0.22 bbox=[1.04, 190.16, 551.85, 478.18]
+[TRACK] recovered blue chair in live frame score=0.79
+[RANGE] estimated_planar=1.10 m ground_truth=0.45 m phase=approach
+[APPROACH] forward progress blocked for 4 s; backing up and strafing to retry
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[DETECT] class=umbrella color=blue conf=0.48 bbox=[128.73, 200.76, 629.09, 477.91]
+[SEARCH] target lost, strafing right 2.2 s (attempt 2/4)
+[DETECT] class=umbrella color=unknown conf=0.23 bbox=[0.54, 234.41, 250.28, 282.37]
+[TRACK] recovered blue chair in live frame score=0.82
+[TURN] target=5.0 deg final_error=1.5 deg
+[TRACK] recovered blue chair in live frame score=0.85
+[TURN] target=5.0 deg final_error=1.8 deg
+[SEARCH] target lost, strafing left 3.3 s (attempt 3/4)
+[DETECT] class=chair color=blue conf=0.54 bbox=[304.61, 6.87, 639.21, 473.53]
+[DETECT] class=umbrella color=blue conf=0.47 bbox=[312.87, 3.53, 639.73, 467.88]
+[DETECT] class=umbrella color=blue conf=0.33 bbox=[312.38, 187.44, 639.24, 474.52]
+[DETECT] class=umbrella color=blue conf=0.42 bbox=[312.91, 3.52, 639.74, 468.51]
+[DETECT] class=umbrella color=blue conf=0.35 bbox=[312.43, 187.49, 639.21, 474.68]
+[TRACK] recovered blue chair in live frame score=0.79
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=umbrella color=blue conf=0.41 bbox=[303.44, 1.89, 639.89, 465.49]
+[DETECT] class=umbrella color=blue conf=0.35 bbox=[303.83, 187.88, 639.19, 474.69]
+[TRACK] recovered blue chair in live frame score=0.79
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[SEARCH] target lost, strafing right 4.4 s (attempt 4/4)
+[DETECT] class=bed color=unknown conf=0.34 bbox=[224.55, 239.60, 639.62, 475.45]
+[SEARCH] re-acquire failed, falling back to rotating search
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=chair color=blue conf=0.75 bbox=[136.83, 3.69, 377.72, 443.31]
+[DETECT] class=chair color=blue conf=0.48 bbox=[168.82, 3.07, 391.55, 453.38]
+[DETECT] class=airplane color=unknown conf=0.36 bbox=[549.31, 288.59, 639.68, 361.85]
+[DETECT] class=airplane color=unknown conf=0.21 bbox=[0.27, 256.62, 73.41, 345.12]
+[DETECT] class=chair color=blue conf=0.66 bbox=[164.04, 2.37, 387.85, 447.93]
+[DETECT] class=bench color=unknown conf=0.23 bbox=[543.09, 289.22, 639.63, 366.90]
+[RANGE] estimated_planar=inf m ground_truth=1.04 m phase=approach
+[DETECT] class=chair color=blue conf=0.89 bbox=[136.22, 3.74, 400.08, 444.24]
+[DETECT] class=airplane color=unknown conf=0.79 bbox=[544.33, 269.00, 639.89, 344.09]
+[DETECT] class=airplane color=unknown conf=0.43 bbox=[0.18, 237.13, 58.42, 317.37]
+[RANGE] estimated_planar=inf m ground_truth=0.95 m phase=approach
+[DETECT] class=airplane color=unknown conf=0.47 bbox=[569.50, 301.58, 639.80, 371.59]
+[DETECT] class=chair color=blue conf=0.21 bbox=[112.61, 0.00, 407.01, 472.92]
+[TURN] target=5.0 deg final_error=1.6 deg
+[DETECT] class=airplane color=unknown conf=0.40 bbox=[573.69, 298.75, 639.80, 371.42]
+[TRACK] recovered blue chair in live frame score=0.99
+[RANGE] estimated_planar=1.16 m ground_truth=0.81 m phase=approach
+[TRACK] recovered blue chair in live frame score=0.89
+[RANGE] estimated_planar=1.06 m ground_truth=0.71 m phase=approach
+[DETECT] class=bed color=blue conf=0.32 bbox=[82.87, 201.89, 636.72, 477.20]
+[SEARCH] target lost, strafing left 1.1 s (attempt 1/4)
+[TURN] target=-26.6 deg final_error=-1.9 deg
+[TRACK] recovered blue chair in live frame score=0.84
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[TRACK] recovered blue chair in live frame score=0.87
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[SEARCH] target lost, strafing right 2.2 s (attempt 2/4)
+[TRACK] recovered blue chair in live frame score=0.85
+[TURN] target=5.0 deg final_error=1.2 deg
+[TRACK] recovered blue chair in live frame score=0.84
+[TURN] target=5.0 deg final_error=1.3 deg
+[SEARCH] target lost, strafing left 3.3 s (attempt 3/4)
+[DETECT] class=chair color=blue conf=0.47 bbox=[506.73, 220.10, 639.15, 431.91]
+[DETECT] class=chair color=blue conf=0.72 bbox=[551.07, 228.41, 639.58, 459.91]
+[TURN] target=-5.0 deg final_error=-1.1 deg
+[DETECT] class=chair color=blue conf=0.66 bbox=[537.50, 227.15, 639.55, 453.62]
+[TURN] target=-5.0 deg final_error=-1.4 deg
+[DETECT] class=chair color=blue conf=0.52 bbox=[485.21, 226.05, 639.47, 463.51]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=blue conf=0.36 bbox=[459.69, 223.97, 639.20, 475.12]
+[TURN] target=-5.0 deg final_error=-1.8 deg
+[DETECT] class=chair color=blue conf=0.85 bbox=[429.10, 30.47, 639.52, 477.52]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=blue conf=0.32 bbox=[416.47, 223.40, 639.49, 476.29]
+[DETECT] class=chair color=blue conf=0.27 bbox=[414.36, 15.83, 639.40, 475.90]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=blue conf=0.44 bbox=[384.93, 2.35, 639.58, 472.05]
+[TURN] target=-5.0 deg final_error=-1.2 deg
+[TRACK] recovered blue chair in live frame score=0.95
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=blue conf=0.43 bbox=[338.65, 184.64, 637.76, 476.72]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=blue conf=0.53 bbox=[298.50, 15.38, 639.49, 470.02]
+[TURN] target=-5.0 deg final_error=-1.9 deg
+[DETECT] class=chair color=blue conf=0.86 bbox=[265.85, 3.07, 639.87, 457.56]
+[TURN] target=-5.0 deg final_error=-1.5 deg
+[DETECT] class=chair color=blue conf=0.82 bbox=[245.13, 2.63, 638.63, 455.68]
+[TURN] target=-5.0 deg final_error=-1.6 deg
+[DETECT] class=chair color=blue conf=0.65 bbox=[217.72, 2.06, 508.05, 467.14]
+[DETECT] class=chair color=blue conf=0.27 bbox=[219.41, 1.75, 626.32, 479.25]
+[RANGE] estimated_planar=0.99 m ground_truth=0.89 m phase=approach
+[DETECT] class=umbrella color=unknown conf=0.25 bbox=[474.22, 215.24, 639.45, 336.35]
+[DETECT] class=chair color=blue conf=0.20 bbox=[157.36, 2.13, 493.90, 478.72]
+[RANGE] estimated_planar=0.90 m ground_truth=0.80 m phase=approach
+[TRACK] recovered blue chair in live frame score=0.91
+[RANGE] estimated_planar=0.73 m ground_truth=0.63 m phase=approach
+[TRACK] recovered blue chair in live frame score=0.80
+[TURN] target=5.0 deg final_error=1.3 deg
+[MISSION] status=FAIL reason=timeout
+
+goto_object returned success=False
+Robot final pose: RobotPose(x=2.983844366500802, y=2.23623978997324, yaw_deg=-20.014893973667196)
+Ctrl+C to exit (the sim keeps running otherwise).
