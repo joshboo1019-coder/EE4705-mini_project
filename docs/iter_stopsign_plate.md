@@ -72,7 +72,7 @@ On `final-r2`, all 15 S3 stop-sign trials (05, 06 and 09, n = 5) failed.
 **False `[FOUND]`: 0.** Every `[FOUND]` was the commanded sign at a true range of 0.65–0.74 m. No plate detection
 landed on a chair or the ball in these logs.
 
-Full S3 run (10 scenarios, final commit): **8/10 strict** (`20261004-1526_iter2_full_r1`). The `final-r2` reference is 5–7/10 per run.
+Full S3 run (10 scenarios, final commit): **7/10 strict** (`20261004-1526_iter2_full_r1`). The `final-r2` reference is 5–7/10 per run.
 - Passed: 02, 03, 05 (d = 0.60 m, 95 s, 3 contact samples with the sign), 07, 08, 09 (d = 0.70 m) and 10.
 - Failed: 01 and 04, red-chair runs that also fail on `final-r2`; chair goals never use the plate path. 06 failed
   as above.
