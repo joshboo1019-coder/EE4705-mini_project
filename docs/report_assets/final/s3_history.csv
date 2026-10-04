@@ -1,8 +1,8 @@
 run,dir,n_s3_scenarios,k_strict,fraction,era,stop_margin,plotted,note
 20261004-0101_baseline,eval/e2e/results/20261004-0101_baseline,10,3,0.30,GT height (sim xpos) + v4/v5,0,yes,merged main before the per-class stop margin
-20261004-0111_p2a_task4_via_main,eval/e2e/results/20261004-0111_p2a_task4_via_main,10,3,0.30,GT height (sim xpos) + v4/v5,0,yes,"S3 via main.py --scenario, before the stop margin"
-20261004-0118_p2b_c2_margin,eval/e2e/results/20261004-0118_p2b_c2_margin,10,4,0.40,GT height (sim xpos) + v4/v5,1,yes,stop margin v1 (one margin for all classes)
-20261004-0128_p2b_c2_margin_v2,eval/e2e/results/20261004-0128_p2b_c2_margin_v2,10,6,0.60,GT height (sim xpos) + v4/v5,1,yes,per-class stop margin
+20261004-0111_p2a_task4_via_main,eval/e2e/results/20261004-0111_p2a_task4_via_main,10,3,0.30,,,no,"excluded: iter/chair-safety gate (partial, not merged)"
+20261004-0118_p2b_c2_margin,eval/e2e/results/20261004-0118_p2b_c2_margin,10,4,0.40,,,no,excluded: iter/avoid runs (not merged)
+20261004-0128_p2b_c2_margin_v2,eval/e2e/results/20261004-0128_p2b_c2_margin_v2,10,6,0.60,,,no,excluded: iter/avoid runs (not merged)
 20261004-0138_stopsign_eval,eval/e2e/results/20261004-0138_stopsign_eval,10,5,0.50,,,no,"excluded: assist/stopsign, never merged (COMPARISON.md)"
 20261004-0206_final,eval/e2e/results/20261004-0206_final,10,6,0.60,,,no,excluded: superseded by 0221_final (S2 STATE regression re-run)
 20261004-0221_final,eval/e2e/results/20261004-0221_final,10,5,0.50,GT height (sim xpos) + v4/v5,1,yes,b/overnight-all final
@@ -23,3 +23,9 @@ run,dir,n_s3_scenarios,k_strict,fraction,era,stop_margin,plotted,note
 20261004-1429_video_task4_tag,docs/report_assets/final/e2e_runs/20261004-1429_video_task4_tag,2,2,1.00,,,no,"excluded: video takes, 2 scenarios only"
 20261004-1438_tag_s3_r4,docs/report_assets/final/e2e_runs/20261004-1438_tag_s3_r4,10,7,0.70,"final (fix/final, tag final)",1,yes,"tag final S3 repeat (stats, n = 5 with the fixfinal runs)"
 20261004-1445_tag_s3_r5,docs/report_assets/final/e2e_runs/20261004-1445_tag_s3_r5,10,5,0.50,"final (fix/final, tag final)",1,yes,"tag final S3 repeat (stats, n = 5 with the fixfinal runs)"
+20261004-1455_iter1_s3_r1,eval/e2e/results/20261004-1455_iter1_s3_r1,10,6,0.60,,,no,"excluded: iter/close-range-c1, never merged"
+20261004-1502_iter1_s3_r2,eval/e2e/results/20261004-1502_iter1_s3_r2,10,7,0.70,,,no,"excluded: iter/close-range-c1, never merged"
+20261004-1508_iter1_s3_r3,eval/e2e/results/20261004-1508_iter1_s3_r3,10,6,0.60,,,no,"excluded: iter/close-range-c1, never merged"
+20261004-1716_rc_s3_r1,eval/e2e/results/20261004-1716_rc_s3_r1,10,5,0.50,rc (final-r3 candidate),1,yes,rc: final-r2 + iter/close-range-c1 + v5.1 + fix/hygiene
+20261004-1739_rc_s3_r2,eval/e2e/results/20261004-1739_rc_s3_r2,10,7,0.70,rc (final-r3 candidate),1,yes,rc: final-r2 + iter/close-range-c1 + v5.1 + fix/hygiene
+20261004-1754_rc_s3_r3,eval/e2e/results/20261004-1754_rc_s3_r3,10,6,0.60,rc (final-r3 candidate),1,yes,rc: final-r2 + iter/close-range-c1 + v5.1 + fix/hygiene

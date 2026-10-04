@@ -25,11 +25,11 @@ the LLM call runs on CPU.
 ```bash
 # 0. Clone this repo and the example platform SIDE BY SIDE — eval/run_env.sh
 #    looks for ../quadruped_mujoco (override with $QUADRUPED_MUJOCO_ROOT).
-#    run_env.sh checks for the platform on EVERY run, --mock included.
-#    Graders: clone the submitted tag (--branch final), not the default branch.
+#    run_env.sh checks for the platform on every run except --mock.
+#    Graders: clone the submitted tag (--branch final-r4), not the default branch.
 #    Skip the platform if your group chose a different one (Section V of the
 #    handout) and point skills/skills_real.py's TODOs at its API instead.
-git clone --branch final https://github.com/joshboo1019-coder/EE4705-mini_project.git
+git clone --branch final-r4 https://github.com/joshboo1019-coder/EE4705-mini_project.git
 git clone https://github.com/aoqianz/quadruped_mujoco.git
 cd EE4705-mini_project
 
@@ -97,9 +97,9 @@ and how `core/config.LLM_SERVICE` selects between them.
 Always through `eval/run_env.sh` from the repo root. Type English commands at
 the prompt ("walk forward 1 m", "turn left 90 degrees", "go to the red
 chair", "look: what is in front of you?"); `v` + Enter records a spoken command
-(bonus, needs a microphone); Ctrl+C quits (end of stdin does NOT quit:
-the chat thread stops but the sim keeps running, so a piped run needs
-`timeout` or Ctrl+C).
+(bonus, needs a microphone); Ctrl+C quits, and so does Ctrl+D / the end of
+piped input, after the queued commands have run (`[CHAT] input closed (EOF)`),
+e.g. `printf 'go to the green chair\n' | eval/run_env.sh main.py --scenario 3`.
 
 | Flag | Effect |
 |---|---|
@@ -166,7 +166,7 @@ eval/run_env.sh -m pytest -q tests/test_architecture.py   # enforces the dialogu
 eval/run_env.sh -m pytest -q tests/test_handoff.py        # main.py's wiring (real flags on: boots headless sim + YOLO)
 ```
 
-On the `final` tag the whole offline suite passes (283 passed, 1 xfailed,
+On the `final-r3` tag the whole offline suite passes (290 passed, 1 xfailed,
 ~31 s). [`docs/REPRODUCE.md`](docs/REPRODUCE.md) records an EARLIER
 fresh-clone check of `main` (95 passed, 6 failed, segfault) and is
 historical only.
@@ -190,7 +190,7 @@ minutes). Results land in `eval/results/` (Task 3), `eval/e2e/results/<run>/`
 (e2e) and `docs/report_assets/` (Task 2 / Task 4).
 
 ```bash
-# Unit / contract tests (fake LLM, no sim): 283 passed, 1 xfailed
+# Unit / contract tests (fake LLM, no sim): 290 passed, 1 xfailed
 eval/run_env.sh -m pytest -q tests/
 eval/run_env.sh -m pytest -q tests/test_no_ground_truth.py   # no OBJECT_POSITIONS / xpos in decision code
 
