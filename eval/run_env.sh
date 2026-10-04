@@ -23,7 +23,8 @@ if [[ " $* " != *" --native "* ]]; then
     export MUJOCO_GL="${MUJOCO_GL:-egl}"
 fi
 
-if [[ ! -f "$QUADRUPED_MUJOCO_ROOT/eg/play.py" ]]; then
+# --mock (MockSkills + MockPerception) never imports the platform.
+if [[ " $* " != *" --mock "* && ! -f "$QUADRUPED_MUJOCO_ROOT/eg/play.py" ]]; then
     echo "quadruped_mujoco not found at $QUADRUPED_MUJOCO_ROOT" >&2
     echo "clone it: git clone https://github.com/aoqianz/quadruped_mujoco \"$QUADRUPED_MUJOCO_ROOT\"" >&2
     exit 1

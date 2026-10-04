@@ -60,6 +60,16 @@ deg) n=1` … `[DONE]`, headless `main.py --scenario 3` + "go to the green chair
 `[MISSION] status=SUCCESS`. The failures listed below were fixed on `chore/cli-tests` (merged); they describe the
 state of `main` at ee9593f only.
 
+## Launch race ("never became ready"), fix/hygiene
+
+2 of ~150 e2e launches (f1gate_r1 S3_01, iter1_s3_r1 S3_06) never printed the prompt: both logs stop after the camera's
+`[CAMERA] render failed (EGL_BAD_ACCESS) … attempting to recreate the offscreen renderer` line and before
+`[SCENARIO] robot placed`, i.e. `main.py` hung inside `scenarios.place_robot`, which teleported the robot at a fixed
+1.0 s after boot while the sim thread was re-creating the EGL renderer (good runs show the same EGL line, then the
+placement). Probable cause, not proven (rare). Fix: `main._wait_until_sim_ready` waits until the sim is stepping, a
+camera frame is available and ≥ 2 s have passed (`[SCENARIO] sim ready after … s`), and the e2e harness relaunches a
+scenario once if it is not ready within 90 s (`relaunched: true` in results.jsonl).
+
 ## Known failures on `main` (ee9593f), for the owners to decide — historical, fixed since
 
 - `test_handoff::test_main_wires_mocks_by_default` asserts

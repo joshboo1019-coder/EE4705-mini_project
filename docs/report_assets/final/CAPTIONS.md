@@ -8,3 +8,6 @@
 - `parser_latency_cost.png` — LLM command-parser latency (p50 bar, p95 tick; LLM calls only, n = 43 per model/prompt) and cost per 100 commands (logged prompt/completion tokens × eval/task3_eval.py PRICES, USD per 1M tokens; precheck rejects cost 0) on the Standard set (45 commands, 1 run) for prompts v4 and v5; source eval/results/{v4,v5}/<model>.jsonl.
 
 Regenerate (repo root): `env -u PYTHONPATH .venv/bin/python docs/report_assets/final/make_assets.py --results-root eval/e2e/results docs/report_assets/final/e2e_runs --s3-runs 20261004-1357_fixfinal_s3_r1 20261004-1404_fixfinal_s3_r2 20261004-1410_fixfinal_s3_r3 20261004-1438_tag_s3_r4 20261004-1445_tag_s3_r5 --v6`
+
+<!-- manual additions: not produced by make_assets.py; re-append after regenerating -->
+- `vlm_vs_yolo_scaled.png` — Recall (class + colour) of YOLO (yolo11n, conf 0.2, imgsz 736, perception_real colour grounding) vs the VLM (qwen3-vl-flash, one JSON-detection call per frame) on 31 onboard 640×480 dog_front_camera frames (12 saved by real-sim runs, hand-labelled; 19 rendered from the main scene with tools/task4_color_testset.py, labelled from segmentation pixel counts), 70 visible objects; left per object, right per subset (n = objects); legend gives false positives and wrong-class labels; source docs/report_assets/final/vlm_vs_yolo_scaled.csv (tools/vlm_scaled_eval.py).
