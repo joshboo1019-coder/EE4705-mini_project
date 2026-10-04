@@ -210,9 +210,10 @@ def fig_s3_success(args, runs, out):
 
 # era of a run (S3 history); the first matching rule wins.
 ERA_GT, ERA_NOGT, ERA_FINAL = ("GT height (sim xpos) + v4/v5", "no-GT height", "final (fix/final, tag final)")
-ERA_R3 = "rc (final-r3 candidate)"
+ERA_R3 = "final-r3 (rc + tag)"
 ERA_RULES = [
     ("rc_s3_r", ERA_R3, True, "rc: final-r2 + iter/close-range-c1 + v5.1 + fix/hygiene"),
+    ("r3tag_s3_r", ERA_R3, True, "tag final-r3/r4 S3 repeat (n = 5 with the rc runs)"),
     ("p2a_", None, True, "excluded: iter/chair-safety gate (partial, not merged)"),
     ("p2b_", None, True, "excluded: iter/avoid runs (not merged)"),
     ("iter2_", None, True, "excluded: iter/stopsign-plate runs (not merged)"),

@@ -26,10 +26,10 @@ the LLM call runs on CPU.
 # 0. Clone this repo and the example platform SIDE BY SIDE — eval/run_env.sh
 #    looks for ../quadruped_mujoco (override with $QUADRUPED_MUJOCO_ROOT).
 #    run_env.sh checks for the platform on every run except --mock.
-#    Graders: clone the submitted tag (--branch final-r4), not the default branch.
+#    Graders: clone the submitted tag (--branch final-r6), not the default branch.
 #    Skip the platform if your group chose a different one (Section V of the
 #    handout) and point skills/skills_real.py's TODOs at its API instead.
-git clone --branch final-r4 https://github.com/joshboo1019-coder/EE4705-mini_project.git
+git clone --branch final-r6 https://github.com/joshboo1019-coder/EE4705-mini_project.git
 git clone https://github.com/aoqianz/quadruped_mujoco.git
 cd EE4705-mini_project
 
@@ -166,7 +166,7 @@ eval/run_env.sh -m pytest -q tests/test_architecture.py   # enforces the dialogu
 eval/run_env.sh -m pytest -q tests/test_handoff.py        # main.py's wiring (real flags on: boots headless sim + YOLO)
 ```
 
-On the `final-r3` tag the whole offline suite passes (290 passed, 1 xfailed,
+On the `final-r3`..`final-r6` tags the whole offline suite passes (290 passed, 1 xfailed,
 ~31 s). [`docs/REPRODUCE.md`](docs/REPRODUCE.md) records an EARLIER
 fresh-clone check of `main` (95 passed, 6 failed, segfault) and is
 historical only.
