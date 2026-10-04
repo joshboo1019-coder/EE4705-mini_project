@@ -1,0 +1,36 @@
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /home/jiamo/EE4705/EE4705-mini_project/.worktrees/final/assets/scenes/custom_scene.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=turn(90 deg) n=1
+User: [EXEC] action=1/1 turn angle=90.0 deg
+[TURN] target=45.0 deg final_error=1.7 deg
+[TURN] target=45.0 deg final_error=1.7 deg
+[TURN] target=5.0 deg final_error=1.7 deg
+[DONE] actions=1 t=2.8 s
+Robot: Done: net turn 88° left.
+[CMD] actions=move(vx=0.8, 1.0 m), turn(90 deg), move(vx=0.8, 1.0 m), turn(90 deg), move(vx=0.8, 1.0 m), turn(90 deg), move(vx=0.8, 1.0 m) n=7
+[PLAN] walk forward 1 m at 0.8, then turn left 90°, then walk forward 1 m at 0.8, then turn left 90°, then walk forward 1 m at 0.8, then turn left 90°, then walk forward 1 m at 0.8
+User: [EXEC] action=1/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOVE] target=1.00 m final_error=-0.01 m
+[EXEC] action=2/7 turn angle=90.0 deg
+[TURN] target=45.0 deg final_error=1.8 deg
+[TURN] target=45.0 deg final_error=1.9 deg
+[TURN] target=5.4 deg final_error=2.0 deg
+[EXEC] action=3/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOVE] target=1.00 m final_error=-0.01 m
+[EXEC] action=4/7 turn angle=90.0 deg
+[TURN] target=45.0 deg final_error=1.4 deg
+[TURN] target=45.0 deg final_error=1.5 deg
+[EXEC] action=5/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOVE] target=1.00 m final_error=-0.03 m
+[EXEC] action=6/7 turn angle=90.0 deg
+[TURN] target=45.0 deg final_error=1.5 deg
+[TURN] target=45.0 deg final_error=1.8 deg
+[EXEC] action=7/7 move vx=0.8 vy=0.0 wz=0.0 distance=1.0 m
+[MOVE] target=1.00 m final_error=-0.01 m
+[DONE] actions=7 t=15.5 s
+Robot: Done: walked about 4.3 m, ending 0.3 m from where I began, net turn 114° right.

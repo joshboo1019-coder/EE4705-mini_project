@@ -479,7 +479,8 @@ def _eval_s5(rec: dict, lines: List[str], ev: dict) -> dict:
     elif name == "non_english":
         checks = {"rejected_non_english": has(r"^\[CMD\] rejected reason=non-English"),
                   "suggestion": any("Did you mean" in l for l in robot),
-                  "redirect_turned": has(r"^\[TURN\] target=90\.0 deg")}
+                  # the redirect is parsed as turn(90 deg); since F3 it runs as 45-deg chunks
+                  "redirect_turned": has(r"^\[CMD\] actions=turn\(90 deg\) n=1") and has(r"^\[TURN\] ")}
     elif name == "spin":
         yaws = [r["yaw"] for r in tr]
         total = 0.0
