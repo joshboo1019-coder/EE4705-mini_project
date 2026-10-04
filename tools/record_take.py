@@ -11,7 +11,8 @@ pixels), moves the platform's browser panel to the right half, grabs a test
 frame, records the monitor region with ffmpeg (optionally with microphone
 audio, `--audio`), and stops when `--done` appears in the terminal output.
 `--type LINE` (repeatable) types command lines into the terminal, each after
-the previous `[DONE]` / `[CMD] rejected`; `--interactive` instead waits for the
+the previous `[DONE]` / `[CMD] rejected` ("!LINE": don't wait for it to finish;
+"&2.5 LINE": wait 2.5 s, then type — e.g. a stop while a program runs); `--interactive` instead waits for the
 person at the keyboard (they type `v` + ENTER and speak) until ENTER is pressed
 in the shell that runs this script.
 """
@@ -70,6 +71,13 @@ def main():
         t0 = time.time()
         time.sleep(1.0)
         for line in args.type:
+            if line.startswith("!"):          # type, don't wait (e.g. a program to stop)
+                st.type_line(line[1:])
+                st.wait_for(r"\[(REPEAT|MOVE|EXEC)\]", 30)
+                continue
+            if line.startswith("&"):          # "&<s> text": wait <s> seconds, then type
+                delay, _, line = line[1:].partition(" ")
+                time.sleep(float(delay))
             st.type_line(line)
             st.wait_for(END, 300)
             st.wait_for(r"^\0never$", 2.5)
