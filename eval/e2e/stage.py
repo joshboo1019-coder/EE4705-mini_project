@@ -271,12 +271,16 @@ class Stage:
     def close(self) -> None:
         self.stop_recording()
         if self.term and self.term.poll() is None:
-            # Ctrl+C the program under test first, so the sim shuts down cleanly.
-            try:
-                xdotool(self.display, "key", "--window", self.term_win, "ctrl+c", check=False)
-                time.sleep(3.0)
-            except Exception:
-                pass
+            # Interrupt the program under test first (what Ctrl+C typed in that
+            # terminal does), so the sim shuts down cleanly: a real SIGINT to the
+            # terminal's foreground process group. Not a synthetic `xdotool key
+            # ctrl+c`, which left Ctrl and C held on the X server's XTEST keyboard.
+            for pgid in _child_pgids(self.term.pid):
+                try:
+                    os.killpg(pgid, signal.SIGINT)
+                except (ProcessLookupError, PermissionError):
+                    pass
+            time.sleep(3.0)
         for p in (self.browser, self.term):
             if p and p.poll() is None:
                 _killpg(p, signal.SIGTERM)
@@ -296,6 +300,47 @@ class Stage:
                 break
             time.sleep(0.25)
         _kill_stray_sims()
+        release_keys(self.display)
+
+
+def _child_pgids(pid: int) -> List[int]:
+    """Process groups of `pid`'s direct children (for the xterm: the shell
+    running the command under test and its pipeline)."""
+    pgids = []
+    for d in Path("/proc").iterdir():
+        if not d.name.isdigit():
+            continue
+        try:
+            fields = (d / "stat").read_text().rsplit(")", 1)[1].split()
+        except (OSError, IndexError):
+            continue
+        if int(fields[1]) == pid and int(fields[2]) not in pgids:
+            pgids.append(int(fields[2]))
+    return pgids
+
+
+MODIFIER_KEYS = ("Control_L", "Control_R", "Shift_L", "Shift_R", "Alt_L", "Alt_R", "c")
+
+
+def release_keys(display: str) -> None:
+    """Safety net after any keystroke automation: key-up for the modifiers and
+    'c', so nothing stays held on the display's XTEST keyboard."""
+    try:
+        xdotool(display, "keyup", *MODIFIER_KEYS, check=False)
+    except Exception:
+        pass
+
+
+def held_keys(display: str) -> Optional[int]:
+    """Number of keys held down on the XTEST keyboard (None if xinput is missing)."""
+    try:
+        r = subprocess.run(["xinput", "query-state", "Virtual core XTEST keyboard"],
+                           env=_xenv(display), capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode != 0:
+        return None
+    return len(re.findall(r"key\[\d+\]=down", r.stdout))
 
 
 def _killpg(p: subprocess.Popen, sig) -> None:

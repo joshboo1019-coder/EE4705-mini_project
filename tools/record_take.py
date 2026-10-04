@@ -92,6 +92,9 @@ def main():
     finally:
         st.stop_recording()
         st.close()
+        held = stg.held_keys(args.display)
+        if held is not None:
+            print(f"[REC] keys held on {args.display} after close: {held}", flush=True)
     d = video_duration(out)
     grab_frame(out, max(d - 1.5, 0.5), out.with_suffix(".lastframe.jpg"), scale="1280:720")
     print(f"[REC] wrote {out} ({d:.1f} s)", flush=True)
