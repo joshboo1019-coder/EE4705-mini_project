@@ -317,7 +317,7 @@ def parse_once(text, history, pacer, spend, snapshot=None, call=None):
         stats = dict(llm_parser.last_call_stats, llm_called=True,
                      api_retries=attempt, raw=raw)
         stats["cost_usd"] = spend.add(config.LLM_SERVICE, stats)
-        return llm_parser._to_parse_result(raw), stats, None
+        return llm_parser._to_parse_result(raw, text), stats, None
     return (llm_parser._reject(f"llm_error:{type(err).__name__}"),
             dict(llm_parser.last_call_stats, llm_called=True,
                  api_retries=API_ERROR_RETRIES), type(err).__name__)

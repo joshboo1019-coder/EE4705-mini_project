@@ -391,7 +391,7 @@ def parse_command(user_text: str, history: List[Dict[str, str]],
         return _reject(f"llm_error:{type(e).__name__}")
     finally:
         _snapshot = None
-    return _to_parse_result(raw)
+    return _to_parse_result(raw, user_text)
 
 
 def user_message(user_text: str, snapshot: Optional[str]) -> str:
@@ -557,10 +557,18 @@ def _strip_fences(raw: str) -> str:
     return m.group(1) if m else (raw or "")
 
 
-def _to_parse_result(raw_json: str) -> ParseResult:
+def _to_parse_result(raw_json: str, user_text: Optional[str] = None) -> ParseResult:
     """Validate the model's raw reply and print the [CMD] line (plus [PLAN]
-    for a move or a multi-action batch, see talkback.plan_line)."""
+    for a move or a multi-action batch, see talkback.plan_line). A reject
+    whose ONLY reason is "object not seen" becomes the plain goto it was
+    (see _unseen_goto_fallback): goto_object searches for its target itself."""
     r = _validate(raw_json)
+    if (not r.accepted and user_text
+            and _UNSEEN_REASON.match((r.reject_reason or "").lower())):
+        fallback = _unseen_goto_fallback(user_text)
+        if fallback is not None:
+            print("[PLAN] note=object not seen yet -> search")
+            r = fallback
     if not r.accepted:
         print(f"[CMD] rejected reason={r.reject_reason}")
         return r
@@ -570,6 +578,43 @@ def _to_parse_result(raw_json: str) -> ParseResult:
     if plan:
         print(plan)
     return r
+
+
+# [B] fix/unseen-goto. Even with the v5.1 sentence the model sometimes rejects
+# "go to <colour> <object>" as impossible:object_not_seen once the dialogue
+# history holds `look` answers that don't mention the object (Bonus take,
+# 2/2). Deterministic, after the single LLM call: if that is the ONLY reason
+# and the utterance is nothing but goto words around known colour + class
+# targets, run the gotos (validated like any LLM output). goto_object searches
+# and reports [MISSION] status=FAIL for an absent object (S3 sc10). Safety
+# rejects (unsafe, non-English, out_of_range, injection, ...) never match.
+_UNSEEN_REASON = re.compile(
+    r"^(impossible:)?(object_|target_)?(not_(yet_)?seen|unseen|never_seen|not_visible|not_in_view)(_yet)?$")
+# the colour names perception grounds (perception_real._COLOR_HUE_RANGES)
+_FALLBACK_COLOURS = ("red", "orange", "yellow", "green", "blue", "purple", "pink")
+_GOTO_VERBS = {"go", "walk", "head", "move", "find", "approach", "reach", "navigate",
+               "run", "drive", "get", "travel", "proceed"}
+_GOTO_FILLER = _GOTO_VERBS | {
+    "to", "the", "a", "an", "over", "then", "and", "after", "that", "please", "towards",
+    "toward", "next", "first", "finally", "now", "also", "afterwards", "lastly", "up", "on",
+    "can", "you", "could", "would"}
+_TARGET_RX = re.compile(
+    r"\b(" + "|".join(_FALLBACK_COLOURS) + r") ("
+    + "|".join(re.escape(c) for c in sorted(COCO_CLASSES | set(_CLASS_ALIASES), key=len, reverse=True))
+    + r")\b")
+
+
+def _unseen_goto_fallback(user_text: str) -> Optional[ParseResult]:
+    """The goto(s) a pure goto utterance asks for, or None if anything else
+    is in it (then the reject stands)."""
+    text = " ".join(re.sub(r"[^a-z ]+", " ", (user_text or "").lower()).split())
+    targets = _TARGET_RX.findall(text)
+    rest = _TARGET_RX.sub(" ", text).split()
+    if not targets or not set(rest) & _GOTO_VERBS or any(w not in _GOTO_FILLER for w in rest):
+        return None
+    actions = [{"action": "goto_object", "class": cls, "color": col} for col, cls in targets]
+    r = _validate(json.dumps({"actions": actions}))
+    return r if r.accepted else None
 
 
 def _validate(raw_json: str) -> ParseResult:
