@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/demo_bonus.py — Student B. Typed demo for Video_Bonus (one take).
 
@@ -71,12 +72,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(Path.home() / "Videos" / "Video_Bonus_typed_auto.mp4"))
     ap.add_argument("--display", default=":99")
+    ap.add_argument("--segments", nargs="*", default=None,
+                    help="subset by number, e.g. 1 2 (look x2, multi-goal); default all")
+    ap.add_argument("--geom", default=None, help="record WxH+X+Y of the X screen (one monitor)")
+    ap.add_argument("--font", type=int, default=12)
     args = ap.parse_args()
     out = Path(args.out).expanduser()
     raw = out.with_name(out.stem + "_raw.mp4")
     log = out.with_name(out.stem + "_terminal.log")
-    ensure_xvfb(args.display)
-    st = Stage(args.display)
+    if args.geom:
+        from eval.e2e import stage as _stage
+        _stage.set_geometry(args.geom)
+    if args.display == ":99":
+        ensure_xvfb(args.display)
+    st = Stage(args.display, font_size=args.font)
     marks = {"segments": []}
     lines = []
     try:
@@ -87,7 +96,8 @@ def main():
         st.start_recording(raw)
         t0 = time.time()
         time.sleep(2.0)
-        for title, steps in SEGMENTS:
+        chosen = [sg for sg in SEGMENTS if not args.segments or sg[0].split()[0] in args.segments]
+        for title, steps in chosen:
             seg = {"title": title, "start": round(time.time() - t0, 2), "steps": []}
             for text, wait, timeout, pause in steps:
                 ts = time.time() - t0

@@ -1,3 +1,5 @@
+# Owner: Student C (Task 4)
+# Change contributed by Student B (assist), pending review by Student C
 """
 tools/c2_margin_analysis.py — Student B (assist), pending review by Student C.
 

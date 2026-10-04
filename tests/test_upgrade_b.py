@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 tests/test_upgrade_b.py — STUDENT B. Offline tests for the Task 3 upgrade:
 talk-back, programs (repeat / until_see / distance moves), the stop fast
@@ -458,7 +459,7 @@ def test_program_never_calls_the_llm(fake_llm):
     ex.queue = queue
     chat_interface.handle_utterance("walk in a square with 1 metre sides", [], queue)
     ex._run_batch_starting_with(queue.pop(timeout=0))
-    assert len(fake_llm.calls) == 1 and len(skills.turns) == 4     # fake would raise on a 2nd call
+    assert len(fake_llm.calls) == 1 and len(skills.turns) == 8     # 4 x 90 deg in 45-deg chunks; fake would raise on a 2nd call
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +524,7 @@ def test_estop_aborts_a_running_program_from_the_chat_thread(fake_llm, capsys):
     # a later command runs normally: the flag is per batch, never "stuck"
     fake_llm.replies.append(_actions({"action": "turn", "angle_deg": -90}))
     chat_interface.handle_utterance("turn right", history, queue)
-    assert _wait(lambda: skills.turns and skills.turns[-1] == -90)
+    assert _wait(lambda: skills.turns and skills.turns[-1] == -45)   # -90 in two 45-deg chunks
     assert _wait(lambda: not ex._busy)     # don't leave a batch printing into the next test
 
 
@@ -566,6 +567,121 @@ def test_stopish_phrases_still_go_through_the_llm(fake_llm):
     r = chat_interface.handle_utterance("careful, stop there", [], queue)
     assert len(fake_llm.calls) == 1 and r.commands == [StopCommand()]
     assert isinstance(queue.pop(timeout=0), StopCommand)
+
+
+# ---------------------------------------------------------------------------
+# One utterance = one batch (F2)
+# ---------------------------------------------------------------------------
+
+def test_two_utterances_queued_back_to_back_run_as_two_batches(fake_llm, capsys):
+    queue = CommandQueue()
+    ex = CommandExecutor(MockSkills(), MockPerception(), queue)
+    fake_llm.replies += [_actions(MOVE_3S, TURN_BACK),
+                         _actions({"action": "turn", "angle_deg": -90})]
+    history = []
+    chat_interface.handle_utterance("walk forward 3 s, then turn back", history, queue)
+    chat_interface.handle_utterance("turn right", history, queue)  # before any pop
+    capsys.readouterr()
+    assert ex.run_next(0) and ex.run_next(0) and not ex.run_next(0)
+    out = capsys.readouterr().out
+    seq = [" ".join(l.split()[:2]) for l in _lines(out, "[EXEC]", "[DONE]", "Robot:")]
+    assert seq == ["[EXEC] action=1/2", "[EXEC] action=2/2", "[DONE] actions=2", "Robot: Done:",
+                   "[EXEC] action=1/1", "[DONE] actions=1", "Robot: Done:"]
+    assert "[EXEC] action=1/1 turn angle=-90.0 deg" in out
+    assert queue.empty()
+
+
+def test_utterances_typed_while_a_batch_runs_are_separate_batches(fake_llm, capsys):
+    skills = KinematicSkills(sleep_scale=0.2, quiet=True)
+    goals = []
+
+    def fake_goto(object_class, color, sk, perception):
+        goals.append(f"{color} {object_class}")
+        return True
+
+    queue = CommandQueue()
+    ex = CommandExecutor(skills, MockPerception(), queue, goto_object_fn=fake_goto)
+    _background(ex)
+    fake_llm.replies += [
+        _actions(MOVE_3S, TURN_BACK),
+        _actions({"action": "goto_object", "class": "chair", "color": "green"},
+                 {"action": "goto_object", "class": "sports ball", "color": "orange"}),
+        _actions({"action": "turn", "angle_deg": -90}),
+    ]
+    history = []
+    chat_interface.handle_utterance("walk forward 3 s, then turn back", history, queue)
+    assert _wait(lambda: ex._busy)
+    chat_interface.handle_utterance("go to the green chair, then the orange ball", history, queue)
+    chat_interface.handle_utterance("turn right", history, queue)
+    assert _wait(lambda: skills.turns[-2:] == [-45, -45])        # -90 in 45-deg chunks (F3)
+    assert _wait(lambda: not ex._busy)
+    out = capsys.readouterr().out
+    done = _lines(out, "[DONE]")
+    assert [d.split()[1] for d in done] == ["actions=2", "actions=2", "actions=1"]
+    assert "[EXEC] action=1/2 goto_object class=chair color=green" in out
+    assert "[EXEC] action=1/1 turn angle=-90.0 deg" in out
+    multi = _lines(out, "[MULTI]")                  # the mission is the 2nd utterance only
+    assert len(multi) == 1 and multi[0].startswith("[MULTI] status=SUCCESS reached=2/2 ")
+    assert goals == ["green chair", "orange sports ball"]
+
+
+def test_estop_clears_a_later_utterance_queued_behind_the_running_batch(fake_llm, capsys):
+    skills = KinematicSkills(sleep_scale=0.2, quiet=True)
+    queue = CommandQueue()
+    ex = CommandExecutor(skills, MockPerception(), queue)
+    _background(ex)
+    fake_llm.replies += [_actions(MOVE_3S), _actions({"action": "turn", "angle_deg": 90})]
+    history = []
+    chat_interface.handle_utterance("walk forward 3 s", history, queue)
+    assert _wait(lambda: ex._busy)
+    chat_interface.handle_utterance("turn left", history, queue)     # queued behind it
+    chat_interface.handle_utterance("stop", history, queue)          # fast path
+    assert _wait(lambda: not ex._busy)
+    time.sleep(0.2)
+    out = capsys.readouterr().out
+    assert skills.turns == [] and queue.empty() and not ex._busy
+    assert len(_lines(out, "[DONE]")) == 1 and "turn angle=90" not in out
+
+
+def test_estop_clears_a_carried_over_utterance(fake_llm, capsys):
+    """Untagged commands, then an utterance, queued before the pop: draining
+    the untagged batch pops the utterance's command early (carry-over). An
+    e-stop during the first batch must drop it like anything else queued."""
+    queue = CommandQueue()
+    history = []
+
+    def goto_then_estop(object_class, color, sk, perception):
+        chat_interface.handle_utterance("halt", history, queue)       # "chat thread"
+        return False
+
+    skills = KinematicSkills(quiet=True)
+    ex = CommandExecutor(skills, MockPerception(), queue, goto_object_fn=goto_then_estop)
+    fake_llm.replies.append(_actions({"action": "turn", "angle_deg": 90}))
+    queue.push_many([GotoObjectCommand("chair", "green")])            # untagged
+    chat_interface.handle_utterance("turn left", history, queue)
+    ex._run_batch_starting_with(queue.pop(timeout=0))
+    assert ex._carry is None and queue.empty()
+    assert not ex.run_next(0)
+    out = capsys.readouterr().out
+    assert skills.turns == [] and "[ESTOP] latency=" in out
+    assert len(_lines(out, "[DONE]")) == 1 and "turn angle=90" not in out
+    # untouched afterwards: a new utterance runs normally
+    fake_llm.replies.append(_actions({"action": "turn", "angle_deg": -90}))
+    chat_interface.handle_utterance("turn right", history, queue)
+    assert ex.run_next(0) and skills.turns == [-45, -45]          # -90 in 45-deg chunks (F3)
+
+
+def test_untagged_commands_keep_the_old_drain_rule(capsys):
+    """queue.push_many() without an utterance id: contiguous untagged
+    commands are one batch; a tagged utterance after them is not merged."""
+    queue = CommandQueue()
+    ex = CommandExecutor(MockSkills(), MockPerception(), queue)
+    queue.push_many([TurnCommand(10.0), TurnCommand(20.0)])
+    from dialogue import runtime
+    runtime.push_utterance(queue, [TurnCommand(30.0)])
+    assert ex.run_next(0) and ex.run_next(0) and not ex.run_next(0)
+    done = _lines(capsys.readouterr().out, "[DONE]")
+    assert [d.split()[1] for d in done] == ["actions=2", "actions=1"]
 
 
 def test_no_fast_path_without_a_bound_executor(fake_llm):
@@ -782,7 +898,7 @@ def test_undo_a_turn_turns_back(capsys):
     ex, skills, _ = _kin()
     _do(ex, TurnCommand(90.0))
     _do(ex, UndoCommand())
-    assert skills.turns == [90.0, -90.0]
+    assert skills.turns == [45.0, 45.0, -45.0, -45.0]      # 45-deg chunks
     out = capsys.readouterr().out
     assert "[EXEC] action=1/1 undo of=turn left 90°" in out and "[PLAN] undo: turn right 90°" in out
 
@@ -831,7 +947,7 @@ def test_undo_twice_walks_back_the_stack_and_never_undoes_an_undo(capsys):
     _do(ex, UndoCommand())
     out = capsys.readouterr().out
     assert "Robot: There's nothing to undo." in out
-    assert skills.turns == [90.0, -90.0]
+    assert skills.turns == [45.0, 45.0, -45.0, -45.0]      # 45-deg chunks
 
 
 def test_return_home_after_a_wander(capsys):
@@ -1154,26 +1270,48 @@ def test_snapshot_caps_a_long_last_command():
 # ---------------------------------------------------------------------------
 
 class _TurnRecorder:
-    def __init__(self):
+    """Ideal turning robot: records each turn() and integrates its yaw."""
+    def __init__(self, gain: float = 1.0):
         self.turns = []
+        self.yaw = 0.0
+        self.gain = gain              # < 1 = undershoots every turn
 
     def turn(self, a):
         self.turns.append(round(a, 3))
+        self.yaw = (self.yaw + a * self.gain + 180.0) % 360.0 - 180.0
+
+    def get_robot_pose(self):
+        return RobotPose(0.0, 0.0, self.yaw)
 
 
-def test_turns_over_180_are_split_into_chunks():
-    """RealSkills.turn() takes the short way to wrap(start + angle):
-    turn(360) would not move and turn(270) would turn right 90."""
+def test_large_turns_are_chunked_against_the_absolute_heading():
+    """F3: turns > 45 deg run in <= 45-deg chunks against the absolute target
+    (the robot's own yaw), so the e-stop is checked every <= 45 deg and turns
+    > 180 deg are correct (RealSkills.turn() alone goes the short way)."""
     from dialogue.executor import _AbortableSkills
-    for angle, expected in [(360, [120.0] * 3), (270, [90.0] * 3), (-450, [-112.5] * 4),
-                            (180, [180.0]), (-90, [-90.0]), (720, [120.0] * 6)]:
+    for angle, expected in [(360, [45.0] * 8), (270, [45.0] * 6), (-450, [-45.0] * 10),
+                            (180, [45.0] * 4), (-90, [-45.0] * 2), (30, [30.0]), (45, [45.0])]:
         rec = _TurnRecorder()
         _AbortableSkills(rec, lambda: False).turn(angle)
         assert rec.turns == expected, angle
         assert abs(sum(rec.turns) - angle) < 1e-6
 
 
-def test_a_split_turn_stops_between_chunks_on_estop():
+def test_chunk_errors_do_not_accumulate():
+    """A robot that undershoots every turn by 10 %: each chunk aims at the
+    absolute target, and one final correction removes the residual."""
+    from dialogue.executor import _AbortableSkills
+    _AbortableSkills.TURN_SETTLE_S, saved = 0.0, _AbortableSkills.TURN_SETTLE_S
+    try:
+        rec = _TurnRecorder(gain=0.9)
+        _AbortableSkills(rec, lambda: False).turn(180)
+        assert len(rec.turns) == 5                       # 4 chunks + 1 correction
+        assert abs(rec.yaw - 180.0) < 2.5 or abs(rec.yaw + 180.0) < 2.5
+    finally:
+        _AbortableSkills.TURN_SETTLE_S = saved
+
+
+def test_a_chunked_turn_stops_between_chunks_on_estop():
     from dialogue.executor import _AbortableSkills, ExecutionAborted
     rec = _TurnRecorder()
     calls = {"n": 0}
@@ -1184,7 +1322,7 @@ def test_a_split_turn_stops_between_chunks_on_estop():
     import pytest
     with pytest.raises(ExecutionAborted):
         _AbortableSkills(rec, aborted).turn(360)
-    assert rec.turns == [120.0]
+    assert rec.turns == [45.0]
 
 
 def test_goal_count_is_capped_through_loops():

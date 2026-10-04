@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/trace.py — Student B. Ground-truth trace for the e2e harness ONLY.
 
@@ -66,6 +67,7 @@ def start_trace(skills, path: str, hz: float = 10.0) -> threading.Thread:
                     pitch = math.degrees(math.asin(max(-1.0, min(1.0, 2 * (w * y - z * x)))))
                     yaw = math.degrees(math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)))
                     contacts = set()
+                    bodies = {}
                     for i in range(int(data.ncon)):
                         c = data.contact[i]
                         g1, g2 = int(c.geom1), int(c.geom2)
@@ -74,12 +76,19 @@ def start_trace(skills, path: str, hz: float = 10.0) -> threading.Thread:
                         rg, og = (g1, g2) if robot_geom[g1] else (g2, g1)
                         if plane[og]:
                             continue
-                        contacts.add(f"{_geom_name(model, rg)}|{_geom_name(model, og)}")
+                        name = f"{_geom_name(model, rg)}|{_geom_name(model, og)}"
+                        contacts.add(name)
+                        # contacted body's world xy (logging only: lets the
+                        # harness tell target / other object / terrain apart)
+                        b = int(model.geom_bodyid[og])
+                        bodies[name] = [round(float(data.xpos[b][0]), 3),
+                                        round(float(data.xpos[b][1]), 3)]
                     rec = {"t": round(time.time(), 3), "x": round(q[0], 4), "y": round(q[1], 4),
                            "yaw": round(yaw, 2), "z": round(q[2], 4),
                            "roll": round(roll, 2), "pitch": round(pitch, 2)}
                     if contacts:
                         rec["contacts"] = sorted(contacts)
+                        rec["contact_xy"] = bodies
                     f.write(json.dumps(rec) + "\n")
                     f.flush()
                 except Exception as e:  # never take the sim down

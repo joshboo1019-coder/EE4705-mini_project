@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 tests/test_bonus_b.py — STUDENT B. Offline tests for the bonus features
 (speech input). No microphone, model download or API key needed: the

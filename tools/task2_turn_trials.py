@@ -1,3 +1,5 @@
+# Owner: Student A (Task 2)
+# Change contributed by Student B (assist), pending review by Student A
 """
 tools/task2_turn_trials.py -- open-loop vs closed-loop turn trials (Task 2).
 
@@ -154,6 +156,13 @@ def run_trial(skills, track, mode, target, trial, cal_rate, log_f, meta):
         with contextlib.redirect_stdout(printed):
             skills.turn(target)
         rec.update(cmd="turn", cmd_wz=None, cmd_t_s=None)
+    elif mode == "exec":
+        # F3 [B]: the executor's turn path (dialogue/executor._AbortableSkills):
+        # <= 45-deg chunks against the absolute target heading + one correction
+        from dialogue.executor import _AbortableSkills
+        with contextlib.redirect_stdout(printed):
+            _AbortableSkills(skills, lambda: False).turn(target)
+        rec.update(cmd="exec_turn", cmd_wz=None, cmd_t_s=None)
     else:
         if mode == "open_A":
             t_cmd = A_BASE_DURATION * abs(target) / A_BASE_ANGLE
@@ -208,7 +217,7 @@ def main():
     ap.add_argument("--angles", type=float, nargs="+", default=[45, 90, 180])
     ap.add_argument("--trials", type=int, default=6)
     ap.add_argument("--modes", nargs="+", default=["closed", "open_A", "open_cal"],
-                    choices=["closed", "open_A", "open_cal"])
+                    choices=["closed", "exec", "open_A", "open_cal"])
     ap.add_argument("--cal-rate", type=float, default=None,
                     help="deg/s at wz=0.6 for open_cal; default: measure it first "
                          f"(--cal-trials x move(0,0,+-0.6,{CAL_DURATION_S}s) in the "

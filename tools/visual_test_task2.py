@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tools/visual_test_task2.py — WATCH Task 2 (Student A) run in the real sim.
 

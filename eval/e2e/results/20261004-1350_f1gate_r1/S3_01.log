@@ -1,0 +1,13 @@
+
+=== Scenario 1: baseline_facing ===
+Original 6-object layout, robot faces the cluster.
+Robot start: x=0.0 y=0.0 yaw=180.0 deg | target visible at start (expected): True
+Valid targets: green chair, red chair, orange sports ball, red stop sign, yellow stop sign, green stop sign
+Example: go to the green chair
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_ls1j5sst/scenario_01_baseline_facing.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_ls1j5sst/scenario_01_baseline_facing.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.

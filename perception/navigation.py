@@ -252,6 +252,10 @@ def goto_object(object_class: str, color: str,
                     skills, perception, object_class, color, t0,
                     target_position):
                 return True
+            if _reverify_after_backoff(
+                    skills, perception, object_class, color, t0,
+                    target_position):
+                return True
             print("[MISSION] status=FAIL reason=stop_verification")
             skills.stop()
             return False
@@ -541,6 +545,46 @@ def _finish_if_found(skills, perception, object_class, color, t0,
           f"t={time.time() - t0:.1f} s d={d:.2f} m")          # C3
     print("[MISSION] status=SUCCESS")
     return True
+
+
+def _reverify_after_backoff(skills, perception, object_class, color, t0,
+                            target_position) -> bool:
+    """One retry when the stop check fails (C1 lost / mislabelled at close
+    range, e.g. a frame-filling chair labelled "bed", or C2): back up
+    VERIFY_BACKOFF_M with the move skill, re-scan the heading and +/-
+    VERIFY_SCAN_DEG, re-centre on the target and re-run the same stop check.
+    Live frames and the robot's own pose only; no ground truth.
+    Change contributed by Student B (assist), pending review by Student C."""
+    backoff = float(getattr(config, "VERIFY_BACKOFF_M", 0.15))
+    scan = float(getattr(config, "VERIFY_SCAN_DEG", 20.0))
+    print(f"[VERIFY] retry=1 backoff={backoff:.2f}m")
+    vx = abs(config.APPROACH_VX)
+    skills.move(vx=-vx, vy=0.0, wz=0.0, duration=backoff / vx)
+    skills.stop()
+    turned = 0.0
+    for offset in (0.0, scan, -2.0 * scan):
+        if offset:
+            skills.turn(offset)
+            turned += offset
+        time.sleep(0.4)  # settle, fresh frame
+        frame = skills.get_camera_frame()
+        target = _pick_target(
+            perception.detect(frame, conf_threshold=config.FOUND_DETECTION_CONF_THRESHOLD),
+            object_class, color)
+        if target is None:
+            continue
+        for _ in range(3):  # re-centre (small steering turns)
+            if _steer_to_center(target, skills, frame.shape[1]):
+                break
+            frame = skills.get_camera_frame()
+            target = _pick_target(perception.detect(frame), object_class, color)
+            if target is None:
+                break
+        return _finish_if_found(skills, perception, object_class, color, t0,
+                                target_position)
+    if turned:
+        skills.turn(-turned)  # back to the original heading
+    return False
 
 
 def _ground_truth_distance(pose: RobotPose, object_class: str, color: str) -> float:

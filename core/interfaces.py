@@ -1,3 +1,4 @@
+# Owner: ALL (backbone)
 """
 interfaces.py — The contracts between task modules. THIS is the backbone.
 

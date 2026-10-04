@@ -1,0 +1,96 @@
+
+=== Scenario 10: absent_target ===
+'blue chair' is accepted by the CLI but NOT in the scene (red/green chairs are): expect [MISSION] status=FAIL reason=target_not_found.
+Robot start: x=-1.0 y=0.0 yaw=180.0 deg | target visible at start (expected): True
+Valid targets: green chair, red chair, yellow stop sign, blue chair
+Example: go to the green chair
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_4n3ojpag/scenario_10_absent_target.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_4n3ojpag/scenario_10_absent_target.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-0.98 y=0.00 yaw=179.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=chair, color=blue) n=1
+User: [EXEC] action=1/1 goto_object class=chair color=blue
+[CMD] action=goto_object(class=chair, color=blue)
+[DETECT] class=chair color=red conf=0.46 bbox=[0.17, 104.55, 87.61, 258.42]
+[DETECT] class=chair color=red conf=0.48 bbox=[0.18, 104.30, 87.61, 258.35]
+[DETECT] class=chair color=green conf=0.21 bbox=[543.90, 84.09, 639.92, 255.76]
+[DETECT] class=chair color=red conf=0.48 bbox=[0.18, 104.30, 87.61, 258.35]
+[DETECT] class=chair color=green conf=0.21 bbox=[543.90, 84.09, 639.92, 255.76]
+[DETECT] class=chair color=red conf=0.48 bbox=[0.18, 104.30, 87.61, 258.35]
+[DETECT] class=chair color=green conf=0.21 bbox=[543.90, 84.09, 639.92, 255.76]
+[DETECT] class=chair color=red conf=0.48 bbox=[0.18, 104.30, 87.61, 258.35]
+[DETECT] class=chair color=green conf=0.21 bbox=[543.90, 84.09, 639.92, 255.76]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[DETECT] class=chair color=red conf=0.79 bbox=[184.38, 122.31, 271.64, 244.12]
+[DETECT] class=chair color=red conf=0.79 bbox=[184.38, 122.31, 271.64, 244.12]
+[DETECT] class=chair color=red conf=0.79 bbox=[184.38, 122.31, 271.64, 244.12]
+[DETECT] class=chair color=red conf=0.79 bbox=[184.38, 122.31, 271.64, 244.12]
+[DETECT] class=chair color=red conf=0.90 bbox=[197.08, 123.90, 281.52, 244.90]
+[DETECT] class=chair color=yellow conf=0.23 bbox=[478.30, 125.81, 517.37, 225.82]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.4 deg
+[DETECT] class=chair color=red conf=0.85 bbox=[348.70, 122.28, 427.93, 239.67]
+[DETECT] class=chair color=red conf=0.88 bbox=[370.65, 124.69, 452.11, 245.15]
+[DETECT] class=chair color=red conf=0.88 bbox=[370.65, 124.69, 452.11, 245.15]
+[DETECT] class=chair color=red conf=0.88 bbox=[370.65, 124.69, 452.11, 245.15]
+[DETECT] class=chair color=red conf=0.88 bbox=[370.65, 124.69, 452.11, 245.15]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=2.0 deg
+[DETECT] class=chair color=red conf=0.73 bbox=[553.92, 112.53, 639.57, 270.80]
+[DETECT] class=chair color=red conf=0.73 bbox=[553.92, 112.53, 639.57, 270.80]
+[DETECT] class=chair color=red conf=0.24 bbox=[575.83, 113.21, 639.92, 259.19]
+[DETECT] class=chair color=red conf=0.24 bbox=[575.83, 113.21, 639.92, 259.19]
+[DETECT] class=chair color=red conf=0.24 bbox=[575.83, 113.21, 639.92, 259.19]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.1 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=2.0 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.4 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[DETECT] class=bench color=unknown conf=0.27 bbox=[271.55, 179.97, 590.66, 260.95]
+[DETECT] class=bench color=unknown conf=0.27 bbox=[271.55, 179.97, 590.66, 260.95]
+[DETECT] class=bench color=unknown conf=0.27 bbox=[271.55, 179.97, 590.66, 260.95]
+[DETECT] class=bench color=unknown conf=0.27 bbox=[271.55, 179.97, 590.66, 260.95]
+[DETECT] class=bench color=unknown conf=0.27 bbox=[271.55, 179.97, 590.66, 260.95]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=airplane color=unknown conf=0.33 bbox=[154.35, 196.24, 307.27, 213.16]
+[DETECT] class=bench color=unknown conf=0.33 bbox=[431.00, 183.23, 639.32, 284.79]
+[DETECT] class=airplane color=unknown conf=0.33 bbox=[154.35, 196.24, 307.27, 213.16]
+[DETECT] class=bench color=unknown conf=0.33 bbox=[431.00, 183.23, 639.32, 284.79]
+[DETECT] class=airplane color=unknown conf=0.33 bbox=[154.35, 196.24, 307.27, 213.16]
+[DETECT] class=bench color=unknown conf=0.33 bbox=[431.00, 183.23, 639.32, 284.79]
+[DETECT] class=airplane color=unknown conf=0.33 bbox=[154.35, 196.24, 307.27, 213.16]
+[DETECT] class=bench color=unknown conf=0.33 bbox=[431.00, 183.23, 639.32, 284.79]
+[DETECT] class=airplane color=unknown conf=0.33 bbox=[154.35, 196.24, 307.27, 213.16]
+[DETECT] class=bench color=unknown conf=0.33 bbox=[431.00, 183.23, 639.32, 284.79]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[DETECT] class=chair color=green conf=0.89 bbox=[38.96, 99.66, 165.08, 249.30]
+[DETECT] class=chair color=green conf=0.89 bbox=[38.96, 99.66, 165.08, 249.30]
+[DETECT] class=chair color=green conf=0.89 bbox=[38.96, 99.66, 165.08, 249.30]
+[DETECT] class=chair color=green conf=0.89 bbox=[38.96, 99.66, 165.08, 249.30]
+[DETECT] class=chair color=green conf=0.89 bbox=[38.96, 99.66, 165.08, 249.30]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.49 bbox=[270.18, 118.99, 347.38, 241.15]
+[DETECT] class=chair color=green conf=0.49 bbox=[270.18, 118.99, 347.38, 241.15]
+[DETECT] class=chair color=green conf=0.39 bbox=[283.73, 120.92, 359.50, 241.64]
+[DETECT] class=chair color=green conf=0.39 bbox=[283.73, 120.92, 359.50, 241.64]
+[DETECT] class=chair color=green conf=0.39 bbox=[283.73, 120.92, 359.50, 241.64]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.2 deg
+[MISSION] status=FAIL reason=target_not_found
+[DONE] actions=1 t=11.0 s
+Robot: Done: did not reach the blue chair; net turn 12° right.

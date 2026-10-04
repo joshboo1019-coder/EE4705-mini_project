@@ -1,3 +1,4 @@
+# Owner: Student C (Task 4)
 """Interactive Task 4 entry point with scenario and object-search prompts.
 
 Run with ``python -m perception.task4_cli`` from the project root.

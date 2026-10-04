@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/run_all.py — Student B. End-to-end harness on the real sim.
 
@@ -223,7 +224,7 @@ class Run:
         rec = {"suite": sc.suite, "scenario": sc.name, "launch": sc.launch,
                "clip": str(clip.relative_to(VIDEOS)) if clip else None,
                "meta": sc.meta, "steps": [], "crash": False}
-        st = Stage(self.display)
+        st = Stage(self.display, font_size=getattr(self, "font", 12))
         t_start = time.time()
         try:
             st.open_terminal(sc.launch, log, title=f"demo {sc.sid}",
@@ -322,6 +323,30 @@ def _frame_check(img: Path) -> dict:
 # ---------------------------------------------------------------------------
 # Evaluation
 # ---------------------------------------------------------------------------
+
+def _classify_contacts(trace: List[dict], objects: dict, target: Optional[str]) -> dict:
+    """F5 (logging only): count trace samples in contact with the target, with
+    another scene object, or with terrain, by matching each contacted body's
+    world xy to the scenario's object positions (within 0.35 m)."""
+    out = {"target": 0, "objects": 0, "terrain": 0, "objects_hit": []}
+    hit = set()
+    for r in trace:
+        kinds = set()
+        for name, xy in (r.get("contact_xy") or {}).items():
+            best = min(objects.items(), key=lambda kv: math.hypot(kv[1][0] - xy[0], kv[1][1] - xy[1]),
+                       default=None)
+            if best and math.hypot(best[1][0] - xy[0], best[1][1] - xy[1]) <= 0.35:
+                kinds.add("target" if best[0] == target else "objects")
+                hit.add(best[0])
+            else:
+                kinds.add("terrain")
+        if not r.get("contact_xy") and r.get("contacts"):
+            kinds.add("terrain")       # old traces without body xy
+        for k in kinds:
+            out[k] += 1
+    out["objects_hit"] = sorted(hit)
+    return out
+
 
 def _trace_checks(trace: List[dict]) -> dict:
     if not trace:
@@ -454,7 +479,8 @@ def _eval_s5(rec: dict, lines: List[str], ev: dict) -> dict:
     elif name == "non_english":
         checks = {"rejected_non_english": has(r"^\[CMD\] rejected reason=non-English"),
                   "suggestion": any("Did you mean" in l for l in robot),
-                  "redirect_turned": has(r"^\[TURN\] target=90\.0 deg")}
+                  # the redirect is parsed as turn(90 deg); since F3 it runs as 45-deg chunks
+                  "redirect_turned": has(r"^\[CMD\] actions=turn\(90 deg\) n=1") and has(r"^\[TURN\] ")}
     elif name == "spin":
         yaws = [r["yaw"] for r in tr]
         total = 0.0
@@ -516,6 +542,7 @@ def _eval_s3(rec: dict, lines: List[str], ev: dict) -> dict:
         success = status == meta["expected"]
     else:
         success = status == "SUCCESS" and true_d is not None and true_d <= 0.80 and c1
+    ev["contact_classes"] = _classify_contacts(rec.get("trace") or [], objs, key)
     ev.update(cmd=cmd, rejected=rejected,
               search=any("[SEARCH]" in l for l in lines),
               detect_total=len(relevant), detect_correct=len(correct),
@@ -572,8 +599,8 @@ def write_summary(run: Run, records: List[dict]) -> Path:
         out += ["## S3 — Task 4 (C's 10 scenarios, typed utterance)", "",
                 "Success = `[MISSION] status=SUCCESS` and true d ≤ 0.80 m and C1 (scenario 10: "
                 "the correct `FAIL reason=target_not_found`). True d is ground truth, logged only.", "",
-                "| # | Typed | [CMD] ok | Search | DETECT correct | Mission | Time (s) | Est. d at stop | True d | C1 | C2 est | C2 true | C3 | Success | Clip |",
-                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                "| # | Typed | [CMD] ok | Search | DETECT correct | Mission | Time (s) | Est. d at stop | True d | C1 | C2 est | C2 true | C3 | Success | Contacts (target / other objects / terrain, samples) | Clip |",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         n_ok = 0
         for r in by["S3"]:
             e = r["eval"]
@@ -585,8 +612,9 @@ def write_summary(run: Run, records: List[dict]) -> Path:
                 f"{e.get('detect_correct')}/{e.get('detect_total')} (target {e.get('target_detections')}) | "
                 f"{e.get('mission')} | {e.get('time_s')} | {e.get('est_d_stop')} | {e.get('true_d')} | "
                 f"{_yn(e.get('C1'))} | {_yn(e.get('C2_est'))} | {_yn(e.get('C2_true'))} | "
-                f"{_yn(e.get('C3'))} | {_yn(e.get('pass'))} | {_clip(r)} |")
-        out += ["", f"**S3 success: {n_ok}/{len(by['S3'])}**", ""]
+                f"{_yn(e.get('C3'))} | {_yn(e.get('pass'))} | {_cc(e)} | {_clip(r)} |")
+        tgt_hits = sum(1 for r in by["S3"] if (r["eval"].get("contact_classes") or {}).get("target"))
+        out += ["", f"**S3 success: {n_ok}/{len(by['S3'])}** · runs with target contact: {tgt_hits}", ""]
     if "S4" in by:
         out += ["## S4 — Bonus", ""]
         for r in by["S4"]:
@@ -637,6 +665,14 @@ def write_summary(run: Run, records: List[dict]) -> Path:
     return path
 
 
+def _cc(e):
+    c = e.get("contact_classes") or {}
+    if not c:
+        return "–"
+    hit = f" ({', '.join(c.get('objects_hit', []))})" if c.get("objects_hit") else ""
+    return f"{c.get('target', 0)} / {c.get('objects', 0)} / {c.get('terrain', 0)}{hit}"
+
+
 def _clip(r):
     if not r.get("clip"):
         return "–"
@@ -676,14 +712,21 @@ def main():
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--only", nargs="*", default=None, help="scenario ids, e.g. S3_03")
     ap.add_argument("--display", default=":99")
+    ap.add_argument("--geom", default=None, help="record WxH+X+Y of the X screen (one monitor)")
+    ap.add_argument("--font", type=int, default=12)
     ap.add_argument("--reeval", metavar="RUN_DIR", help="re-score a finished run offline")
     args = ap.parse_args()
     if args.reeval:
         reeval(Path(args.reeval))
         return
 
-    ensure_xvfb(args.display)
+    if args.geom:
+        from eval.e2e import stage as _stage
+        _stage.set_geometry(args.geom)
+    if args.display == ":99":
+        ensure_xvfb(args.display)
     run = Run(args.label, not args.no_video, args.display)
+    run.font = args.font
     scen: List[Scenario] = []
     for s in args.suites:
         scen += {"S1": suite_s1, "S2": suite_s2, "S3": lambda: suite_s3(args.s3_path),

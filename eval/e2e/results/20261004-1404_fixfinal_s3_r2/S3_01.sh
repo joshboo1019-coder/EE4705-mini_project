@@ -1,0 +1,7 @@
+#!/bin/bash
+cd /home/jiamo/EE4705/EE4705-mini_project/.worktrees/final
+export PS1='$ '
+export E2E_TRACE_FILE=/home/jiamo/EE4705/EE4705-mini_project/.worktrees/final/eval/e2e/results/20261004-1404_fixfinal_s3_r2/S3_01.trace.jsonl
+printf '$ %s\n' 'eval/run_env.sh main.py --gui --scenario 1'
+eval/run_env.sh main.py --gui --scenario 1 2>&1 | tee -a /home/jiamo/EE4705/EE4705-mini_project/.worktrees/final/eval/e2e/results/20261004-1404_fixfinal_s3_r2/S3_01.log
+sleep 3600

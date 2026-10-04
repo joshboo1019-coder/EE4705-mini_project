@@ -1,3 +1,4 @@
+# Owner: Student B (Task 3 + bonuses)
 """
 eval/e2e/compare.py — Student B. Baseline vs final e2e comparison.
 

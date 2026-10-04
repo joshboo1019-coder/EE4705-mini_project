@@ -1,3 +1,4 @@
+# Owner: Student A (Task 2)
 """
 tools/capture_camera_evidence.py — STUDENT A. Standalone evidence capture
 for Task 2's camera-pipeline report requirement: "save annotated frames or
