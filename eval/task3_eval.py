@@ -11,7 +11,7 @@ eval/task3_eval.py — STUDENT B OWNS THIS FILE. Task 3.iv evaluation.
     python eval/task3_eval.py --spend       # running USD total of every upgrade-eval call
 
 --prompt v1 / v2 / v3 / v4 are the frozen prompts in eval/prompt_v1.py ... prompt_v4.py;
-v5 is the current llm_parser.SYSTEM_PROMPT.
+v5 is frozen in eval/prompt_v5.py; v6 is the current llm_parser.SYSTEM_PROMPT.
 
 (If ROS's PYTHONPATH is set in your shell: `env -u PYTHONPATH .venv/bin/python ...`.)
 
@@ -43,6 +43,7 @@ from eval.prompt_v1 import SYSTEM_PROMPT_V1  # noqa: E402
 from eval.prompt_v2 import SYSTEM_PROMPT_V2  # noqa: E402
 from eval.prompt_v3 import SYSTEM_PROMPT_V3  # noqa: E402
 from eval.prompt_v4 import SYSTEM_PROMPT_V4  # noqa: E402
+from eval.prompt_v5 import SYSTEM_PROMPT_V5  # noqa: E402
 from dialogue.commands import LookCommand  # noqa: E402
 
 PING_SERVICES = ["qwen-flash", "gemini-3.8-flash", "gpt-5-nano"]
@@ -229,7 +230,7 @@ CASES = [
 # ---------------------------------------------------------------------------
 
 PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2, "v3": SYSTEM_PROMPT_V3,
-           "v4": SYSTEM_PROMPT_V4, "v5": llm_parser.SYSTEM_PROMPT}
+           "v4": SYSTEM_PROMPT_V4, "v5": SYSTEM_PROMPT_V5, "v6": llm_parser.SYSTEM_PROMPT}
 
 
 class QuotaExhausted(Exception):
@@ -316,7 +317,7 @@ def parse_once(text, history, pacer, spend, snapshot=None, call=None):
         stats = dict(llm_parser.last_call_stats, llm_called=True,
                      api_retries=attempt, raw=raw)
         stats["cost_usd"] = spend.add(config.LLM_SERVICE, stats)
-        return llm_parser._to_parse_result(raw), stats, None
+        return llm_parser._to_parse_result(raw, text), stats, None
     return (llm_parser._reject(f"llm_error:{type(err).__name__}"),
             dict(llm_parser.last_call_stats, llm_called=True,
                  api_retries=API_ERROR_RETRIES), type(err).__name__)
@@ -437,7 +438,7 @@ def run_hard(service, prompt, runs, case_ids, spend, out_root=None, call=None, t
 
 
 # Every directory the Task 3 upgrade evaluation writes to (for --spend).
-UPGRADE_DIRS = ["v5", "hard", "ablation", "dev"]
+UPGRADE_DIRS = ["v5", "v6", "v6_iter1", "hard", "ablation", "dev"]
 
 
 def spend_total(root=None):

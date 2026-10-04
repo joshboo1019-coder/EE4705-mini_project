@@ -123,11 +123,14 @@ def _get_client(provider: str):
 
 
 # ---------------------------------------------------------------------------
-# Prompt v5 (v4 is frozen in eval/prompt_v4.py). v5 = v4 + distance_m,
-# repeat / until_see programs, status / undo / return_home, the reject
-# "suggestion", the STATE line, explicit limits, and injection rules. Its
-# few-shot examples are NOT Hard-set phrasings (eval/hard_cases.py; checked
-# by tests/test_upgrade_b.py).
+# Prompt v6 (v4 / v5 are frozen in eval/prompt_v4.py / prompt_v5.py).
+# v5 = v4 + distance_m, repeat / until_see programs, status / undo /
+# return_home, the reject "suggestion", the STATE line, explicit limits, and
+# injection rules. v6 = v5 with a softer language rule (misspelt or misheard
+# English is English; only a real foreign word makes it non-English) and
+# three typo few-shot examples. Its few-shot examples are NOT Hard-set,
+# Standard-set or set-N phrasings (checked by tests/test_prompt_v6.py).
+# The code-side language guard (language_guard) backs the rule up.
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """You are the command parser for a quadruped robot dog. Convert
@@ -206,10 +209,19 @@ Conventions:
   written out as plain actions with the change applied (repeat is only for
   an explicit number of times). A correction of what the robot just did
   may use undo first.
-- Decide the language first: an instruction that is not in English is
-  rejected as "non-English" even if you understand it. This includes an
-  instruction that mixes in words or numbers from another language. Give
-  the English meaning as "suggestion".
+- Decide the language first. Users type or speak ENGLISH, often through
+  speech recognition, so expect typos, swapped, missing or doubled letters,
+  run-together words, and wrong English words that sound like the meant
+  ones ("tree" for three, "fore" for four). That is still English: read
+  it as the English that was meant and parse it normally; it is never
+  "non-English" (if you truly cannot tell what is wanted, ask with a chat
+  action). An instruction is "non-English" only when it contains at least
+  one real word or number word of ANOTHER language (e.g. derecha, rechts,
+  vite, or any non-Latin script), even if the rest is English and you
+  understand it. A typo is a misspelt ENGLISH word; a correctly spelt word
+  of another language is foreign even when it looks like an English word
+  or like a typo of one. Reject it as "non-English" with the English
+  meaning as "suggestion".
 - Limits: one move <= 30 s (a distance move: distance_m / speed <= 30 s);
   repeat times and until_see max_iter <= 8; all motion in one request
   <= 60 s (turns count about 45 degrees per second); speeds within [-1, 1].
@@ -281,10 +293,18 @@ User: head back to your starting point
 {"actions": [{"action": "return_home"}]}
 User: back up for five minutes
 {"rejected": true, "reason": "out_of_range:duration", "suggestion": "back up for 30 seconds"}
+User: tunr rihgt then go stright for one secnd
+{"actions": [{"action": "turn", "angle_deg": -90}, {"action": "move", "vx": 0.8, "vy": 0.0, "wz": 0.0, "duration": 1.0}]}
+User: move backward for tree seconds
+{"actions": [{"action": "move", "vx": -0.8, "vy": 0.0, "wz": 0.0, "duration": 3.0}]}
+User: go to the yelow botle
+{"actions": [{"action": "goto_object", "class": "bottle", "color": "yellow"}]}
 User: gira a la derecha
 {"rejected": true, "reason": "non-English", "suggestion": "turn right"}
 User: por favor turn right
 {"rejected": true, "reason": "non-English", "suggestion": "please turn right"}
+User: andiamo to the red chair
+{"rejected": true, "reason": "non-English", "suggestion": "go to the red chair"}
 """
 
 # ---------------------------------------------------------------------------
@@ -381,7 +401,7 @@ def parse_command(user_text: str, history: List[Dict[str, str]],
         return _reject(f"llm_error:{type(e).__name__}")
     finally:
         _snapshot = None
-    return _to_parse_result(raw)
+    return _to_parse_result(raw, user_text)
 
 
 def user_message(user_text: str, snapshot: Optional[str]) -> str:
@@ -402,7 +422,17 @@ def precheck(user_text: str) -> Optional[str]:
         non_ascii = sum(1 for c in letters if ord(c) > 127)
         if non_ascii / len(letters) > NON_ASCII_LETTER_RATIO:
             return "non-English"
+        # v6: even ONE letter of a non-Latin script (Chinese, Cyrillic,
+        # Greek, Arabic, ...) makes it code-switched, so non-English.
+        # Accented Latin letters (café) still go to the LLM.
+        if any(ord(c) > 127 and not _is_latin(c) for c in letters):
+            return "non-English"
     return None
+
+
+def _is_latin(c: str) -> bool:
+    import unicodedata
+    return unicodedata.name(c, "").startswith("LATIN")
 
 
 def _call_llm(user_text: str, history: List[Dict[str, str]],
@@ -542,15 +572,152 @@ def _command_to_dict(c) -> Dict:
 _FENCE_RE = re.compile(r"^\s*```(?:json|JSON)?\s*\n?(.*?)\n?\s*```\s*$", re.S)
 
 
+# ---------------------------------------------------------------------------
+# Language guard (v6). The LLM's "non-English" verdict is only believed when
+# a cheap, deterministic check of the user's text agrees; otherwise the
+# model has most likely mistaken misspelt / misheard English for a foreign
+# language, and the robot asks the user to say it again (a chat action: no
+# motion, nothing executed). No second LLM call is made.
+#
+# The text "looks non-English" if
+#   (a) it contains any non-ASCII letter (é, ß, 三, ...), or
+#   (b) at least one alphabetic token of 3+ letters is not English-like.
+# A token is English-like if it is in _ENGLISH_WORDS (the command domain,
+# numbers, colours, COCO class words, common function words and common
+# sound-alikes of command words), or, for a token of 4+ letters, within one
+# edit (insert / delete / substitute / swap two neighbours: optimal string
+# alignment distance) of such a word -- a typo -- or within two edits for
+# a token of 8+ letters. One foreign word is enough, because one foreign
+# word already makes an instruction code-switched (the prompt's rule).
+# ---------------------------------------------------------------------------
+
+CLARIFY_TEXT = "Sorry, I didn't catch that. Could you say it again?"
+
+_ENGLISH_WORDS = frozenset("""
+a an the to too two for four fore of in on at by up down out off over under
+into onto from with without and or then than that this these those it its
+is are was were be been am do does did done go goes going gone went get got
+can could would should will shall may might must let lets please pls thanks
+thank you your yours yourself me my mine we us our they them he she him her
+what whats where when which who why how there here now again also just only
+very more less much many some any all each every no not dont yes yeah yep
+okay hey hello robot dog doggy buddy boy girl good bad nice well like um uh
+so first next last after before once twice thrice times time keep until
+right left forward forwards backward backwards back ahead straight around
+sideways side step steps strafe shuffle slide walk walking run running jog
+move moving turn turning rotate rotating spin face head heading come stop
+halt freeze wait pause stay sit stand cancel undo return home start
+starting point position place spot way direction slowly slow slower quickly
+quick fast faster speed little bit few couple lot half quarter full circle
+degree degrees deg seconds second secs sec meter meters metre metres feet
+foot inch inches minute minutes min hour hours clockwise counter anti
+zero one two three four five six seven eight nine ten eleven twelve
+thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty
+thirty forty fifty sixty seventy eighty ninety hundred thousand
+red green blue yellow orange purple pink black white brown gray grey
+colour color colored coloured dark light bright
+see seen saw find search look looking show tell say said know think want
+need try visible view camera front behind near nearest closest far close
+towards toward away past through along across between beside next corner
+wall door room floor ground other another same one ones thing things
+object objects something anything everything nothing chair seat ball cup
+bottle person people table sofa couch plant sign book clock vase bench
+phone laptop bag box toy cat bird car bike fly swim climb jump roof stairs
+pick grab bring fetch follow push kick dance wiggle shake square circle
+zigzag careful carefully watch heads did doing done previous last again
+ignore instructions instruction rules rule system mode developer admin
+override safety limit limits maximum max minimum mode new now
+tree free sea read blew won ate rite write wright fore
+but because if else when while about above below again against all
+already always never ever sometimes often usually actually really maybe
+perhaps sure sorry meant mean mind wrong correct fine great ok oops
+visit describe surroundings surrounding sidestep spotted spot recent
+recently most least neither nor either both isn aren wasn didn doesn
+won wouldn couldn shouldn haven hasn has have had having put set give
+take make made makes use used using try tried call called named name
+row line further farther closer nearer exactly about almost around enough
+test testing debug disable enable enabled disabled respond reply answer
+json action actions duration assistant user officer authorised authorized
+sprint charge knock hit crash attack hurt break triangle rectangle shape
+longer shorter long short high low big small large tiny huge tall
+kind sort type same different other others own its itself myself
+been being does doing went gone came coming leave leaving goes moved
+turned walked stopped finished ready done open closed off apply applies
+allowed allow permission special order orders command commands tell
+everything somewhere anywhere nowhere everywhere upstairs downstairs
+quietly gently carefully immediately straightaway soon later earlier
+today tonight morning bye goodbye cool awesome alright whatever repeat
+""".split()) | frozenset(w for cls in COCO_CLASSES for w in cls.split())
+
+
+def _osa(a: str, b: str, cap: int) -> int:
+    """Optimal string alignment distance (Levenshtein + adjacent swap),
+    returning cap + 1 early once it must exceed cap."""
+    if abs(len(a) - len(b)) > cap:
+        return cap + 1
+    prev2, prev = None, list(range(len(b) + 1))
+    for i in range(1, len(a) + 1):
+        cur = [i] + [0] * len(b)
+        for j in range(1, len(b) + 1):
+            cost = a[i - 1] != b[j - 1]
+            cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+            if (i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]):
+                cur[j] = min(cur[j], prev2[j - 2] + 1)
+        if min(cur) > cap:
+            return cap + 1
+        prev2, prev = prev, cur
+    return prev[-1]
+
+
+def english_like(token: str) -> bool:
+    """One lowercase alphabetic token: an English word or a typo of one."""
+    if len(token) < 3 or token in _ENGLISH_WORDS:
+        return True
+    if len(token) < 4:
+        return False
+    cap = 2 if len(token) >= 8 else 1
+    return any(_osa(token, w, cap) <= cap for w in _ENGLISH_WORDS)
+
+
+def looks_non_english(text: str) -> bool:
+    """The deterministic check behind language_guard (see above)."""
+    text = text or ""
+    if any(c.isalpha() and ord(c) > 127 for c in text):
+        return True
+    return not all(english_like(t) for t in re.findall(r"[a-z]+", text.lower()))
+
+
+def language_guard(r: ParseResult, user_text: str) -> ParseResult:
+    """A "non-English" rejection from the LLM stands only if
+    looks_non_english(user_text) agrees; otherwise it becomes a request to
+    say it again (a chat action: nothing moves). Every other result, and
+    the local precheck's own verdict, pass through unchanged."""
+    if r.accepted or r.reject_reason != "non-English" or getattr(r, "precheck", False):
+        return r
+    if looks_non_english(user_text):
+        return r
+    reply = CLARIFY_TEXT
+    s = getattr(r, "suggestion", None)
+    norm = lambda t: " ".join(re.findall(r"[a-z0-9]+", (t or "").lower()))
+    if s and norm(s) != norm(user_text):
+        reply = f'Sorry, I didn\'t catch that. Did you mean "{s}"? Please say it again.'
+    out = ParseResult(accepted=True, commands=[ChatCommand(reply)])
+    out.language_guard = True
+    return out
+
+
 def _strip_fences(raw: str) -> str:
     m = _FENCE_RE.match(raw or "")
     return m.group(1) if m else (raw or "")
 
 
-def _to_parse_result(raw_json: str) -> ParseResult:
+def _to_parse_result(raw_json: str, user_text: Optional[str] = None) -> ParseResult:
     """Validate the model's raw reply and print the [CMD] line (plus [PLAN]
-    for a move or a multi-action batch, see talkback.plan_line)."""
+    for a move or a multi-action batch, see talkback.plan_line). user_text:
+    the user's words, for the language guard (see language_guard)."""
     r = _validate(raw_json)
+    if user_text is not None:
+        r = language_guard(r, user_text)
     if not r.accepted:
         print(f"[CMD] rejected reason={r.reject_reason}")
         return r
