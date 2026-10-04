@@ -94,7 +94,9 @@ def handle_utterance(user_text: str, history: List[Dict[str, str]],
     remember(user_text, result, history)
 
     if result.accepted:
-        queue.push_many(result.commands)
+        # tagged with this utterance's id: the executor runs it as ONE
+        # batch, separate from any utterance queued before or after it
+        runtime.push_utterance(queue, result.commands)
         # NOTE: do not wait for [DONE] here — the executor thread handles
         # execution independently, which is what keeps this loop responsive
         # for the next typed command.
