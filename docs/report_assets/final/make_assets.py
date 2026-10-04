@@ -210,7 +210,13 @@ def fig_s3_success(args, runs, out):
 
 # era of a run (S3 history); the first matching rule wins.
 ERA_GT, ERA_NOGT, ERA_FINAL = ("GT height (sim xpos) + v4/v5", "no-GT height", "final (fix/final, tag final)")
+ERA_R3 = "rc (final-r3 candidate)"
 ERA_RULES = [
+    ("rc_s3_r", ERA_R3, True, "rc: final-r2 + iter/close-range-c1 + v5.1 + fix/hygiene"),
+    ("p2a_", None, True, "excluded: iter/chair-safety gate (partial, not merged)"),
+    ("p2b_", None, True, "excluded: iter/avoid runs (not merged)"),
+    ("iter2_", None, True, "excluded: iter/stopsign-plate runs (not merged)"),
+    ("video_task4", None, True, "excluded: video takes, 2 scenarios only"),
     ("fixfinal_s3_r", ERA_FINAL, True, "fix/final S3 repeat"),
     ("tag_s3_r", ERA_FINAL, True, "tag final S3 repeat (stats, n = 5 with the fixfinal runs)"),
     ("video_task4", None, True, "excluded: video takes, 2 scenarios only"),
@@ -256,7 +262,7 @@ def fig_s3_history(args, runs, out):
     write_csv(out / "s3_history.csv",
               ["run", "dir", "n_s3_scenarios", "k_strict", "fraction", "era", "stop_margin", "plotted", "note"], rows)
 
-    era_col = {ERA_GT: C1, ERA_NOGT: C2, ERA_FINAL: C3}
+    era_col = {ERA_GT: C1, ERA_NOGT: C2, ERA_FINAL: C3, ERA_R3: "#7b4fa8"}
     fig, ax = plt.subplots(figsize=(7.2, 3.6))
     x = np.arange(len(plot))
     for xi, (name, k, n, era, margin) in zip(x, plot):
