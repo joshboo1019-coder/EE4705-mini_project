@@ -86,3 +86,21 @@ back", Mandarin "向前走三秒" (rejected by whisper's language ID before any 
 - Left on disk (outside the repo, not deleted per your rule): fresh-clone venvs (~13 GB) under the session
   scratchpad, `/tmp/himloco_runtime_ui_*` Chrome profiles created by the platform's panel, `/tmp/minilab_scenario_*`
   scene files.
+
+## Morning round (2026-10-04 12:00–12:35)
+
+- **Merge of main `bdee10a` → `b/overnight-all`: no conflicts.** That commit only edits `assets/scenes/README.md`
+  (object table + removed risk section); its positions equal `core/config.OBJECT_POSITIONS` and the scene XML,
+  which are unchanged. Kept: main's scene README, the root README fixes. Re-run: pytest **256 passed, 1 xfailed**
+  (same as last night); S2 **7/7** (turns 1.4/−0.9/−1.5°); S3 **6/10** strict (last night's final 5/10; n=3 16/30).
+  Per-class stops still hold: every SUCCESS stop at true 0.59–0.71 m; chair error +0.171 ± 0.046 m (p95 0.24 →
+  same 0.56 m stop), ball −0.106 m. Run `eval/e2e/results/20261004-1206_morning_merge`.
+- **`assist/no-gt-height`** (from `b/overnight-all`): `navigation.py` no longer reads `data.xpos` — nominal per-class
+  floor heights + a bbox elevation estimate for elevated chairs/balls; `docs/task4_no_gt_height.md`. pytest 260+1x;
+  S3 **6/10 → 6/10**; stairs (S7, n=2 per side): **0/2 strict both** — before: accurate estimate but the chair is
+  lost close in (`target_not_found`, `timeout`); after: estimate ~0.4 m short → stops at 0.91–0.95 m.
+- **PRs:** not opened — `gh` isn't installed here and I won't read stored git credentials to call the API.
+  One-click pre-filled "create PR" links + texts: `pr1_url.txt` / `pr2_url.txt` (session scratchpad `pr/`).
+- **Video_Task4:** `~/Videos/candidates/Video_Task4_final.mp4` (46 s) = (a) scenario 8 blue chair, hidden at start
+  → `[SEARCH]` → `[FOUND] … d=0.70 m` + (b) scenario 3 green chair among red/blue → `[FOUND] … d=0.67 m`, both typed
+  into `main.py --gui --scenario N` on `assist/no-gt-height`; singles `Video_Task4_candidate_{a,b}_v2.mp4`.
