@@ -41,14 +41,15 @@ computing each one's actual clearance to the nearest track geom (center
 distance minus that geom's half-extent), and picking a cluster with good
 clearance west of the robot's spawn:
 
-| Object | Position (x, y) | Clearance to nearest track geom |
-| --- | --- | --- |
-| `green_chair` | (-2.0, 2.0) | 2.00 m |
-| `red_chair` | (-2.0, -2.0) | 2.46 m |
-| `orange_sports_ball` | (-3.5, 0.0) | 3.50 m |
-| `red_stop_sign` | (-1.3, 0.0) | 1.30 m |
-| `yellow_stop_sign` | (-4.5, 2.0) | 3.59 m |
-| `green_stop_sign` | (-4.5, -2.0) | 4.77 m |
+| Object | Position (x, y) |
+| --- | --- |
+| `green_chair` | (-2.0, 2.0) |
+| `red_chair` | (-2.0, -2.0) | 
+| 'Blue_chair'| (3.45, 2.0) | 
+| `orange_sports_ball` | (-3.5, 0.0) |
+| `red_stop_sign` | (-1.3, 0.0) |
+| `yellow_stop_sign` | (-4.5, 2.0) | 
+| `green_stop_sign` | (-4.5, -2.0) |
 
 Every pair of objects is also ≥2.1 m apart from each other. These numbers
 match `core.config.OBJECT_POSITIONS` exactly — if you move an object in
@@ -56,33 +57,3 @@ one, update the other. The scene file's own header comment has the full
 methodology writeup, in case the terrain or objects are adjusted again
 later and this needs re-verifying.
 
-## ⚠️ Known risk: chairs/signs are primitive geoms, not real meshes
-
-The handout is explicit: *"A plain colored box will not be detected as a
-'chair'; free meshes can be found on Objaverse or Sketchfab."*
-`custom_scene.xml`'s chairs (4 leg boxes + seat + backrest) and stop
-signs (pole + two perpendicular plates) are exactly that — flat-color
-primitive `<geom>`s, not real meshes. They're geometrically
-chair-/sign-shaped and human-scale, but not photorealistic, so YOLO
-detection confidence on them is a real, acknowledged risk, not
-hypothetical.
-
-**`custom_scene_meshes.xml`** is a prepared (but not yet active) mesh
-variant — same terrain, same object positions/colors, but the 6 object
-bodies use `<geom type="mesh">` referencing `meshes/chair.obj` and
-`meshes/stop_sign.obj` instead of primitives. Those two `.obj` files
-**do not exist in this repo yet** — they need to be downloaded on a
-machine with real internet access (this project was largely built from
-a sandbox that could not reach Objaverse/Sketchfab/even plain GitHub
-file downloads). `custom_scene_meshes.xml`'s own header comment has the
-full step-by-step: run `tools/fetch_scene_meshes.py` to download +
-convert the meshes, `tools/fit_mesh_scale.py` to compute the right MJCF
-`<mesh scale="..."/>`, then test-load and visually fix orientation
-(`euler="0 0 0"` placeholders on each mesh geom are almost certainly
-wrong for whatever orientation the downloaded mesh comes in) before
-switching `core.config.SCENE_PATH` over to it.
-
-Until that's done, `core.config.SCENE_PATH` still points at the
-original `custom_scene.xml` — nothing is broken by
-`custom_scene_meshes.xml` existing, it's just inert until you finish
-setting it up.
