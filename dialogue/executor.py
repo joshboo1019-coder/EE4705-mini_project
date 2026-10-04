@@ -27,6 +27,14 @@ already running stops moving immediately (its call still returns at its
 original end time); a closed-loop turn() already in progress runs to its
 end (RealSkills.turn re-commands wz every 20 ms), and then nothing else
 starts. The counter is never reset, so a later command runs normally.
+
+One utterance = one batch: chat_interface tags every command with its
+utterance (runtime.push_utterance), and a batch drains only the commands of
+the utterance it started with. If draining pops the first command of the
+NEXT utterance it is carried over (self._carry) and starts the next batch,
+with its own [EXEC] numbering, [DONE] line, talk-back and [MULTI] mission.
+The carry-over counts as queued: an e-stop (or a stop action) drops it
+together with the queue.
 """
 
 import math
@@ -113,6 +121,7 @@ class CommandExecutor:
         self._estop_count = 0
         self._batch_estop = 0       # _estop_count when the running batch started
         self._busy = False
+        self._carry = None          # (cmd, estop) of the next utterance, popped early
         self._motion = _AbortableSkills(skills, self._aborted)
         self._pose()              # the first pose seen is "home"
         runtime.bind(queue, self)
@@ -130,8 +139,14 @@ class CommandExecutor:
             self.skills.stop()
         except Exception as e:
             print(f"[ESTOP] skills.stop() failed reason={_short_error(e)}")
-        self.queue.clear()
+        self._clear_queued()
         return self._busy
+
+    def _clear_queued(self) -> None:
+        """Drop every queued command, including a carried-over utterance."""
+        with self._estop_lock:
+            self._carry = None
+        self.queue.clear()
 
     def _aborted(self) -> bool:
         return self._estop_count != self._batch_estop
@@ -148,13 +163,27 @@ class CommandExecutor:
         """Call this from the main thread's loop (not the chat thread) so
         the simulation keeps stepping while it also executes commands."""
         while True:
+            self.run_next(poll_timeout)
+
+    def run_next(self, timeout: float = 0.2) -> bool:
+        """Run the next queued utterance (a carried-over one first) as one
+        batch. Returns False if there was nothing to run."""
+        with self._estop_lock:
+            carry, self._carry = self._carry, None
+        if carry is not None:
+            cmd, estop = carry
+            if estop != self._estop_count:    # e-stopped after it was popped:
+                return False                  # it counts as cleared
+        else:
             estop = self._estop_count       # read BEFORE pop: an e-stop during
-            cmd = self.queue.pop(timeout=poll_timeout)   # the pop aborts what it returns
-            if cmd is not None:
-                self._run_batch_starting_with(cmd, _estop=estop)
+            cmd = self.queue.pop(timeout=timeout)   # the pop aborts what it returns
+            if cmd is None:
+                return False
+        self._run_batch_starting_with(cmd, _estop=estop)
+        return True
 
     def _run_batch_starting_with(self, first_cmd, _estop=None) -> None:
-        """Runs `first_cmd` and then drains any remaining queued commands
+        """Runs `first_cmd` and then drains the remaining queued commands
         from the SAME parsed utterance as one [EXEC]...[DONE] sequence."""
         self._batch_estop = self._estop_count if _estop is None else _estop
         self._busy = True
@@ -163,13 +192,30 @@ class CommandExecutor:
         finally:
             self._busy = False
 
-    def _run_batch(self, first_cmd) -> None:
+    # a tagged utterance is pushed command by command: wait this long for
+    # the rest of it rather than splitting it into two batches
+    DRAIN_WAIT_S = 0.5
+
+    def _drain_utterance(self, first_cmd) -> list:
+        """`first_cmd` plus the queued commands of the same utterance (for
+        untagged commands: the contiguous untagged ones, the old rule). The
+        first command of another utterance is carried over to the next batch."""
         batch = [first_cmd]
-        while not self.queue.empty():
-            nxt = self.queue.pop(timeout=0.0)
+        tag = runtime.utterance_of(first_cmd)
+        while tag is None or len(batch) < tag[1]:
+            wait = self.DRAIN_WAIT_S if tag is not None and not self._aborted() else 0.0
+            nxt = self.queue.pop(timeout=wait)
             if nxt is None:
                 break
+            if runtime.utterance_of(nxt) != tag:
+                with self._estop_lock:
+                    self._carry = (nxt, self._batch_estop)
+                break
             batch.append(nxt)
+        return batch
+
+    def _run_batch(self, first_cmd) -> None:
+        batch = self._drain_utterance(first_cmd)
 
         t0 = time.time()
         n = len(batch)
@@ -305,7 +351,7 @@ class CommandExecutor:
         elif isinstance(cmd, StopCommand):
             print(f"[EXEC] action={i}/{n} stop")
             self.skills.stop()
-            self.queue.clear()
+            self._clear_queued()
         elif isinstance(cmd, ChatCommand):
             print(f"Robot: {cmd.reply}")
         elif isinstance(cmd, LookCommand):
