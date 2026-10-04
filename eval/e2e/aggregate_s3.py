@@ -38,7 +38,11 @@ def main():
          "|---|---|" + "---|" * len(groups)]
     for i in range(1, 11):
         sc = f"{i:02d}"
-        tgt = groups[0][1][0][sc]["meta"]["target"].replace("_", " ")
+        # partial runs (--only): skip scenarios no run in any group has
+        have = [r[sc] for _, runs in groups for r in runs if sc in r]
+        if not have:
+            continue
+        tgt = have[0]["meta"]["target"].replace("_", " ")
         cells = []
         for _, runs in groups:
             rs = [r[sc] for r in runs if sc in r]
