@@ -1,4 +1,7 @@
 # Change contributed by Student B (assist), reviewed by Student C (colour-grounding fix)
+# Change contributed by Student B (assist), pending review by Student C:
+# colour-plate fallback for "stop sign" (detect_color_plate, branch
+# iter/stopsign-plate, docs/iter_stopsign_plate.md). Image pixels only.
 """
 perception_real.py — STUDENT C OWNS THIS FILE (half of Task 4, 60% w/ nav).
 
@@ -57,6 +60,74 @@ _GROUND_BIN_FINE = 2.0          # background-model hue cell (deg)
 _GROUND_CENTER_SIGMA = 0.5      # centre weighting of the hue vote (1.0 = bbox half-size)
 _GROUND_MIN_FG_PX = 12          # fewer foreground pixels than this -> "unknown"
 _GROUND_MIN_FG_FRAC = 0.002     # ... or than this fraction of the bbox area
+
+
+# Colour-plate fallback for "stop sign" (docs/iter_stopsign_plate.md). The
+# scene's signs are a "+" of two flat 0.30 m plates at z 0.70-1.00 m on a
+# grey pole; yolo11n almost never calls them "stop sign". Only used by
+# navigation when the requested class is "stop sign" and YOLO has no
+# matching detection. Image pixels only, no simulator state.
+_PLATE_MIN_SATURATION = 160      # same cut as colour grounding
+_PLATE_MIN_VALUE = 32
+_PLATE_MAX_VALUE = 250
+_PLATE_MIN_AREA_PX = 40          # ~6 m away the plate is still ~14x14 px
+_PLATE_MIN_FILL = 0.45           # blob area / bbox area (plate is solid)
+_PLATE_ASPECT_RANGE = (0.55, 2.2)  # bbox height / width, whole plate in view
+_PLATE_MAX_BOTTOM_FRAC = 0.35    # plate bottom (z 0.70 m) sits above the camera:
+                                 # its bbox ends in the upper ~third of the frame;
+                                 # chairs/balls and floor reflections reach lower
+_PLATE_MAX_HEIGHT_FRAC = 0.30    # a whole plate never fills a third of the frame height
+_PLATE_EDGE_PX = 1               # bbox touching the top edge = plate cut by the frame
+_PLATE_CUT_MIN_WIDTH_PX = 20
+_PLATE_CUT_MAX_ASPECT = 1.6     # cut plate: visible height / width
+
+
+def detect_color_plate(frame: np.ndarray, color: str) -> Optional[Detection]:
+    """Find a flat sign plate of `color`: the largest compact blob of that
+    colour whose bbox ends in the upper part of the image (the plate is
+    mounted above the camera). Returns a Detection labelled "stop sign" or
+    None. A plate cut by the top edge (close range) is accepted with a
+    looser shape test."""
+    if (color not in _COLOR_HUE_RANGES or frame.ndim < 3
+            or frame.shape[2] < 3):
+        return None
+    rgb = np.ascontiguousarray(np.asarray(frame)[..., :3], dtype=np.uint8)
+    height, width = rgb.shape[:2]
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    hue = hsv[..., 0].astype(np.float32) * 2.0
+    mask = (_hue_color_mask(hue, color)
+            & (hsv[..., 1] >= _PLATE_MIN_SATURATION)
+            & (hsv[..., 2] >= _PLATE_MIN_VALUE)
+            & (hsv[..., 2] <= _PLATE_MAX_VALUE)).astype(np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    n, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    best = None
+    for i in range(1, n):
+        x, y, w, h, area = (int(v) for v in stats[i])
+        if area < _PLATE_MIN_AREA_PX or w <= 0 or h <= 0:
+            continue
+        if y + h > _PLATE_MAX_BOTTOM_FRAC * height:
+            continue
+        fill = area / float(w * h)
+        if fill < _PLATE_MIN_FILL:
+            continue
+        cut_top = y <= _PLATE_EDGE_PX
+        if cut_top:
+            if w < _PLATE_CUT_MIN_WIDTH_PX or h > _PLATE_CUT_MAX_ASPECT * w:
+                continue
+        else:
+            aspect = h / float(w)
+            if not (_PLATE_ASPECT_RANGE[0] <= aspect <= _PLATE_ASPECT_RANGE[1]):
+                continue
+            if h > _PLATE_MAX_HEIGHT_FRAC * height:
+                continue
+        score = 0.25 + 0.5 * min(1.0, fill)
+        if best is None or area > best[0]:
+            best = (area, score, (float(x), float(y), float(x + w), float(y + h)))
+    if best is None:
+        return None
+    return Detection(class_name="stop sign", color=color, conf=best[1],
+                     bbox=best[2])
 
 
 class RealPerception(PerceptionAPI):
@@ -123,6 +194,16 @@ class RealPerception(PerceptionAPI):
                     f"bbox=[{', '.join(f'{coord:.2f}' for coord in detection.bbox)}]"
                 )
         return detections
+
+    def detect_plate(self, frame: np.ndarray, color: str) -> Optional[Detection]:
+        """Colour-plate fallback for a requested "stop sign" (see
+        detect_color_plate). Logs an extra [PLATE] line; handout lines unchanged."""
+        detection = detect_color_plate(frame, color)
+        if detection is not None:
+            print(f"[PLATE] class=stop sign color={color} "
+                  f"conf={detection.conf:.2f} "
+                  f"bbox=[{', '.join(f'{c:.2f}' for c in detection.bbox)}]")
+        return detection
 
     def clear_target_history(self) -> None:
         self._target_history.clear()
