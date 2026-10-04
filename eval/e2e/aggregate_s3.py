@@ -44,7 +44,13 @@ def main():
             rs = [r[sc] for r in runs if sc in r]
             ok = sum(bool(r["eval"].get("pass")) for r in rs)
             ds = ", ".join(str(r["eval"].get("true_d")) for r in rs)
-            cells.append(f"{ok}/{len(rs)} (true d {ds})")
+            cc = [r["eval"].get("contact_classes") for r in rs]
+            ccs = ""
+            if any(cc):
+                t = sum(1 for c in cc if c and c.get("target"))
+                o = sum(1 for c in cc if c and c.get("objects"))
+                ccs = f"; contact runs target {t}, other {o}"
+            cells.append(f"{ok}/{len(rs)} (true d {ds}{ccs})")
         L.append(f"| {sc} | {tgt} | " + " | ".join(cells) + " |")
     tot = []
     for _, runs in groups:

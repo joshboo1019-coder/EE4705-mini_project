@@ -1,0 +1,91 @@
+
+=== Scenario 9: short_approach ===
+Target only ~1.2 m away: tests stopping at the 0.8 m threshold.
+Robot start: x=-1.0 y=0.0 yaw=180.0 deg | target visible at start (expected): True
+Valid targets: red stop sign, green chair, yellow stop sign
+Example: go to the red stop sign
+
+[SCENARIO] temporary scene written to /tmp/minilab_scenario_b7migpjn/scenario_09_short_approach.xml
+[KEYBOARD] evdev not installed; browser keyboard control is available
+[SCENE] using custom scene: /tmp/minilab_scenario_b7migpjn/scenario_09_short_approach.xml
+[UI] live tuning panel: http://127.0.0.1:8765
+[MAP] switched to custom_scene
+[CAMERA] render failed (EGLError( err=EGL_BAD_ACCESS (EGL_BAD_ACCESS), baseOperation = eglMakeCurrent )) -- get_camera_frame() may be returning a STALE frame; attempting to recreate the offscreen renderer to recover.
+[SCENARIO] robot placed at x=-0.98 y=0.00 yaw=179.5 trunk_z=0.33 m
+Type an English command and press ENTER (Ctrl+C to quit).
+To speak instead, type v + ENTER and talk (up to 5 s).
+User: [CMD] actions=goto_object(class=stop sign, color=red) n=1
+User: [EXEC] action=1/1 goto_object class=stop sign color=red
+[CMD] action=goto_object(class=stop sign, color=red)
+[DETECT] class=chair color=green conf=0.61 bbox=[51.59, 105.12, 167.95, 240.22]
+[DETECT] class=chair color=green conf=0.67 bbox=[51.72, 105.10, 167.97, 240.35]
+[DETECT] class=chair color=green conf=0.67 bbox=[51.72, 105.10, 167.97, 240.35]
+[DETECT] class=chair color=green conf=0.67 bbox=[51.72, 105.10, 167.97, 240.35]
+[DETECT] class=chair color=green conf=0.67 bbox=[51.72, 105.10, 167.97, 240.35]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.7 deg
+[DETECT] class=chair color=green conf=0.77 bbox=[260.04, 129.39, 328.96, 237.64]
+[DETECT] class=chair color=green conf=0.77 bbox=[260.04, 129.39, 328.96, 237.64]
+[DETECT] class=chair color=green conf=0.77 bbox=[260.04, 129.39, 328.96, 237.64]
+[DETECT] class=chair color=green conf=0.77 bbox=[260.04, 129.39, 328.96, 237.64]
+[DETECT] class=chair color=green conf=0.77 bbox=[260.04, 129.39, 328.96, 237.64]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[DETECT] class=chair color=green conf=0.67 bbox=[415.49, 124.85, 496.39, 238.09]
+[DETECT] class=chair color=green conf=0.67 bbox=[415.49, 124.85, 496.39, 238.09]
+[DETECT] class=chair color=green conf=0.67 bbox=[415.49, 124.85, 496.39, 238.09]
+[DETECT] class=chair color=green conf=0.73 bbox=[437.82, 126.58, 525.60, 244.85]
+[DETECT] class=chair color=green conf=0.73 bbox=[437.82, 126.58, 525.60, 244.85]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.9 deg
+[DETECT] class=airplane color=unknown conf=0.21 bbox=[16.44, 178.14, 342.35, 225.30]
+[DETECT] class=airplane color=unknown conf=0.21 bbox=[16.44, 178.14, 342.35, 225.30]
+[DETECT] class=airplane color=unknown conf=0.21 bbox=[16.44, 178.14, 342.35, 225.30]
+[DETECT] class=airplane color=unknown conf=0.21 bbox=[16.44, 178.14, 342.35, 225.30]
+[DETECT] class=airplane color=unknown conf=0.21 bbox=[16.44, 178.14, 342.35, 225.30]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.6 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=bench color=unknown conf=0.28 bbox=[259.47, 176.69, 575.21, 258.28]
+[DETECT] class=bench color=unknown conf=0.28 bbox=[259.47, 176.69, 575.21, 258.28]
+[DETECT] class=bench color=unknown conf=0.28 bbox=[259.47, 176.69, 575.21, 258.28]
+[DETECT] class=bench color=unknown conf=0.28 bbox=[259.47, 176.69, 575.21, 258.28]
+[DETECT] class=bench color=unknown conf=0.28 bbox=[259.47, 176.69, 575.21, 258.28]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.8 deg
+[DETECT] class=airplane color=unknown conf=0.42 bbox=[148.13, 195.24, 302.55, 212.56]
+[DETECT] class=bench color=unknown conf=0.25 bbox=[427.57, 184.74, 639.48, 284.59]
+[DETECT] class=airplane color=unknown conf=0.42 bbox=[148.13, 195.24, 302.55, 212.56]
+[DETECT] class=bench color=unknown conf=0.25 bbox=[427.57, 184.74, 639.48, 284.59]
+[DETECT] class=airplane color=unknown conf=0.42 bbox=[148.13, 195.24, 302.55, 212.56]
+[DETECT] class=bench color=unknown conf=0.25 bbox=[427.57, 184.74, 639.48, 284.59]
+[DETECT] class=airplane color=unknown conf=0.42 bbox=[148.13, 195.24, 302.55, 212.56]
+[DETECT] class=bench color=unknown conf=0.25 bbox=[427.57, 184.74, 639.48, 284.59]
+[DETECT] class=airplane color=unknown conf=0.42 bbox=[148.13, 195.24, 302.55, 212.56]
+[DETECT] class=bench color=unknown conf=0.25 bbox=[427.57, 184.74, 639.48, 284.59]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[DETECT] class=airplane color=unknown conf=0.63 bbox=[529.36, 147.31, 639.89, 222.99]
+[DETECT] class=airplane color=unknown conf=0.45 bbox=[312.44, 193.63, 460.72, 211.21]
+[DETECT] class=airplane color=unknown conf=0.63 bbox=[529.36, 147.31, 639.89, 222.99]
+[DETECT] class=airplane color=unknown conf=0.45 bbox=[312.44, 193.63, 460.72, 211.21]
+[DETECT] class=airplane color=unknown conf=0.63 bbox=[529.36, 147.31, 639.89, 222.99]
+[DETECT] class=airplane color=unknown conf=0.45 bbox=[312.44, 193.63, 460.72, 211.21]
+[DETECT] class=airplane color=unknown conf=0.63 bbox=[529.36, 147.31, 639.89, 222.99]
+[DETECT] class=airplane color=unknown conf=0.45 bbox=[312.44, 193.63, 460.72, 211.21]
+[DETECT] class=airplane color=unknown conf=0.63 bbox=[529.36, 147.31, 639.89, 222.99]
+[DETECT] class=airplane color=unknown conf=0.45 bbox=[312.44, 193.63, 460.72, 211.21]
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.5 deg
+[SEARCH] target not visible, rotating
+[TURN] target=30.0 deg final_error=1.2 deg
+[MISSION] status=FAIL reason=target_not_found
+[DONE] actions=1 t=11.0 s
+Robot: Done: did not reach the red stop sign; net turn 13° right.

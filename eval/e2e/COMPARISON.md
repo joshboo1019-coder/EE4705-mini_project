@@ -2,6 +2,44 @@
 
 Baseline = merged main (ee9593f) before tonight's changes, with S3 started by the scenarios.py mechanism (main.py had no --scenario yet). Final = `b/overnight-all` (all branches that passed their checks; not `assist/stopsign`). Same harness, fresh launch per scenario, real LLM (qwen-flash), every scenario recorded: clips under `~/Videos/e2e/`. Per-run details: `eval/e2e/results/<run>/summary.md`.
 
+## Final round (2026-10-04 14:20): pre-final vs fix/final
+
+Strict criteria per S3 trial: C1 (target in the live stop frame) + C2 (TRUE planar d ≤ 0.80 m, ground truth from
+the trace, logging only) + C3 (`[FOUND]`); scenario 10 = the correct `target_not_found`. Contacts = trace samples
+with the robot touching the target / another scene object (F5, logging only). pre-final = tag `pre-final`
+(no-GT navigation; runs `20261004-1216_no_gt_height`, `20261004-1337_premerge_gate`); fix/final = F1 + F2 + F3 +
+F5 + H1/H2 (runs `20261004-*_fixfinal_s3_r1..r3`, no video).
+
+| # | Target | pre-final (no-GT nav, v5) (n=2) | fix/final (n=3) |
+|---|---|---|---|
+| 01 | red chair | 1/2 (true d 0.76, 0.21) | 1/3 (true d 0.58, 0.64, 0.62; contact runs target 1, other 0) |
+| 02 | orange sports ball | 2/2 (true d 0.67, 0.64) | 3/3 (true d 0.64, 0.67, 0.62; contact runs target 0, other 3) |
+| 03 | green chair | 2/2 (true d 0.72, 0.69) | 3/3 (true d 0.67, 0.69, 0.68; contact runs target 0, other 0) |
+| 04 | red chair | 1/2 (true d 0.58, 0.68) | 0/3 (true d 0.63, 0.64, 0.61; contact runs target 0, other 0) |
+| 05 | yellow stop sign | 0/2 (true d 3.77, 3.78) | 0/3 (true d 3.78, 3.77, 3.78; contact runs target 0, other 0) |
+| 06 | green stop sign | 0/2 (true d 5.04, 5.05) | 0/3 (true d 5.05, 5.04, 5.05; contact runs target 0, other 0) |
+| 07 | orange sports ball | 2/2 (true d 0.59, 0.64) | 3/3 (true d 0.66, 0.62, 0.65; contact runs target 0, other 0) |
+| 08 | blue chair | 2/2 (true d 0.67, 0.62) | 3/3 (true d 0.63, 0.67, 0.65; contact runs target 0, other 0) |
+| 09 | red stop sign | 0/2 (true d 1.27, 1.27) | 0/3 (true d 1.27, 1.26, 1.27; contact runs target 0, other 0) |
+| 10 | blue chair | 2/2 (true d None, None) | 3/3 (true d None, None, None; contact runs target 0, other 0) |
+| | **all** | **12/20** (60 %) | **16/30** (53 %) |
+
+| Class | pre-final (no-GT nav, v5) | fix/final |
+|---|---|---|
+| chair | strict 6/8; SUCCESS 6 (true d mean/max 0.69/0.76, 0 > 0.80 m); stop_verification 1; contact 1 | strict 7/12; SUCCESS 7 (true d mean/max 0.66/0.69, 0 > 0.80 m); stop_verification 4; contact 1 |
+| sports ball | strict 4/4; SUCCESS 4 (true d mean/max 0.64/0.67, 0 > 0.80 m); stop_verification 0; contact 2 | strict 6/6; SUCCESS 6 (true d mean/max 0.64/0.67, 0 > 0.80 m); stop_verification 0; contact 3 |
+| stop sign | strict 0/6; SUCCESS 0 (true d mean/max –, 0 > 0.80 m); stop_verification 0; contact 0 | strict 0/9; SUCCESS 0 (true d mean/max –, 0 > 0.80 m); stop_verification 0; contact 0 |
+
+- **Every SUCCESS stop is within C2** on both sides (fix/final: chairs mean 0.66 m, max 0.69; balls max 0.67).
+- The difference is the red chair: scenario 4 fails `stop_verification` 3/3 here (frame-filling chair labelled
+  "bed"; the F1 `[VERIFY]` retry ran and did not rescue it), but the F1 gate on the same code had 3/3 (2 rescued by
+  `[VERIFY]`), so scenario 4 is 3/6 with F1. F1 only runs after a failed stop check, so it cannot turn a success into
+  a failure. n is small: 16/30 vs 12/20 is within noise.
+- **Contacts:** scenario 1 r1 touched the target red chair for ~18 s, during the 4th re-acquire strafe and the
+  rotating search after it (not at the stop), so no stop-margin change (F5 mitigation not triggered by the stop);
+  scenario 2 touches the red stop-sign pole on the straight path to the ball (3/3) — no obstacle avoidance (known
+  limitation).
+
 ## Summary (per suite)
 
 | Suite | Baseline | Final | Verdict | Why |
