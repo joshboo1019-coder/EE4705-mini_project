@@ -1,0 +1,7 @@
+prompt,model,n_commands,n_llm_calls,latency_p50_s,latency_p95_s,usd_per_100_commands,mean_prompt_tokens,mean_completion_tokens,usd_per_1M_in,usd_per_1M_out,source
+v4,qwen-flash,45,43,0.315,0.548,0.00788,1415,29.4,0.05,0.4,eval/results/v4/qwen-flash.jsonl
+v4,gpt-5-nano,45,43,1.133,1.615,0.00817,1396,39.1,0.05,0.4,eval/results/v4/gpt-5-nano.jsonl
+v4,gemini-3.8-flash,45,43,2.142,2.809,0.11544,1462,29.8,0.75,3.75,eval/results/v4/gemini-3.8-flash.jsonl
+v5,qwen-flash,45,43,0.323,0.517,0.01406,2694,31.3,0.05,0.4,eval/results/v5/qwen-flash.jsonl
+v5,gpt-5-nano,45,43,0.893,1.167,0.01428,2660,41.0,0.05,0.4,eval/results/v5/gpt-5-nano.jsonl
+v5,gemini-3.8-flash,45,43,1.625,1.943,0.21094,2791,30.5,0.75,3.75,eval/results/v5/gemini-3.8-flash.jsonl

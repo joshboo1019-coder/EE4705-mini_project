@@ -1,0 +1,13 @@
+scenario,target,k_strict,n_runs,rate,wilson95_lo,wilson95_hi,true_d_per_run
+01,red chair,2,5,0.400,0.118,0.769,0.58;0.64;0.62;0.68;0.65
+02,orange sports ball,4,5,0.800,0.376,0.964,0.64;0.67;0.62;0.64;0.69
+03,green chair,5,5,1.000,0.566,1.000,0.67;0.69;0.68;0.69;0.72
+04,red chair,2,5,0.400,0.118,0.769,0.63;0.64;0.61;0.66;0.61
+05,yellow stop sign,0,5,0.000,0.000,0.434,3.78;3.77;3.78;3.79;3.78
+06,green stop sign,0,5,0.000,0.000,0.434,5.05;5.04;5.05;5.05;5.03
+07,orange sports ball,5,5,1.000,0.566,1.000,0.66;0.62;0.65;0.64;0.59
+08,blue chair,5,5,1.000,0.566,1.000,0.63;0.67;0.65;0.65;0.68
+09,red stop sign,0,5,0.000,0.000,0.434,1.27;1.26;1.27;1.27;1.27
+10,blue chair (absent),5,5,1.000,0.566,1.000,None;None;None;None;None
+all,pooled over scenarios,28,50,0.560,0.423,0.688,
+#runs,20261004-1357_fixfinal_s3_r1 20261004-1404_fixfinal_s3_r2 20261004-1410_fixfinal_s3_r3 20261004-1438_tag_s3_r4 20261004-1445_tag_s3_r5,,,,,,given on the command line

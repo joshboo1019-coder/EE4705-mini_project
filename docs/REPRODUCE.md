@@ -51,7 +51,16 @@ pip install -e ../quadruped_mujoco && pip install -r requirements.txt`) took
 gave 69 passed, and the headless `skills.skills_real` run worked
 (2 s, clean shutdown).
 
-## Known failures on `main` (ee9593f), for the owners to decide
+## Update for tag `final` (1b95477, 2026-10-04)
+
+A fresh clone of tag `final` following README.md (grader test, 2026-10-04 14:40): install 46 s with a warm pip
+cache (venv 6.4 GB incl. CUDA torch), `eval/run_env.sh -m pytest -q tests/` → **283 passed, 1 xfailed** (31 s, no
+segfault: test_handoff no longer boots the sim), `main.py --mock` + "turn left 90 degrees" → `[CMD] actions=turn(90
+deg) n=1` … `[DONE]`, headless `main.py --scenario 3` + "go to the green chair" → `[FOUND] … d=0.70 m`,
+`[MISSION] status=SUCCESS`. The failures listed below were fixed on `chore/cli-tests` (merged); they describe the
+state of `main` at ee9593f only.
+
+## Known failures on `main` (ee9593f), for the owners to decide — historical, fixed since
 
 - `test_handoff::test_main_wires_mocks_by_default` asserts
   `USE_REAL_SKILLS is False`, but `main.py` now ships with both real flags

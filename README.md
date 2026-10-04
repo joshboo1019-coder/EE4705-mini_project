@@ -25,9 +25,11 @@ the LLM call runs on CPU.
 ```bash
 # 0. Clone this repo and the example platform SIDE BY SIDE — eval/run_env.sh
 #    looks for ../quadruped_mujoco (override with $QUADRUPED_MUJOCO_ROOT).
+#    run_env.sh checks for the platform on EVERY run, --mock included.
+#    Graders: clone the submitted tag (--branch final), not the default branch.
 #    Skip the platform if your group chose a different one (Section V of the
 #    handout) and point skills/skills_real.py's TODOs at its API instead.
-git clone https://github.com/joshboo1019-coder/EE4705-mini_project.git
+git clone --branch final https://github.com/joshboo1019-coder/EE4705-mini_project.git
 git clone https://github.com/aoqianz/quadruped_mujoco.git
 cd EE4705-mini_project
 
@@ -40,6 +42,11 @@ unset PYTHONPATH                 # if ROS set it — it breaks the venv and pyte
 pip install -e ../quadruped_mujoco
 pip install -r requirements.txt  # pulls torch via ultralytics: ~6 GB in .venv/
 ```
+
+If the platform is not the sibling `../quadruped_mujoco` (e.g. you cloned
+it somewhere else), export its path before every `eval/run_env.sh` call:
+`export QUADRUPED_MUJOCO_ROOT=/path/to/quadruped_mujoco` (and use that path
+in the `pip install -e` line).
 
 Conda also works (`conda create -n quadruped_mujoco python=3.11 -y`, then
 the two `pip install` lines), but `eval/run_env.sh` only uses `.venv/`: with
@@ -90,7 +97,9 @@ and how `core/config.LLM_SERVICE` selects between them.
 Always through `eval/run_env.sh` from the repo root. Type English commands at
 the prompt ("walk forward 1 m", "turn left 90 degrees", "go to the red
 chair", "look: what is in front of you?"); `v` + Enter records a spoken command
-(bonus, needs a microphone); Ctrl+C quits.
+(bonus, needs a microphone); Ctrl+C quits (end of stdin does NOT quit:
+the chat thread stops but the sim keeps running, so a piped run needs
+`timeout` or Ctrl+C).
 
 | Flag | Effect |
 |---|---|
@@ -103,8 +112,18 @@ chair", "look: what is in front of you?"); `v` + Enter records a spoken command
 ```bash
 eval/run_env.sh main.py --gui                  # demo used for Video_Task3 / Video_Bonus
 eval/run_env.sh main.py --gui --scenario 3     # Task 4 layout 3, then e.g. "go to the green chair"
+eval/run_env.sh main.py --scenario 3           # same, headless (no browser panel, no port 8765)
 eval/run_env.sh main.py --mock                 # parser + executor only
 eval/run_env.sh -m perception.task4_cli --scenario 3   # C's standalone Task 4 prompt (no LLM)
+```
+
+Headless boot prints one `[CAMERA] render failed (EGLError ... EGL_BAD_ACCESS ...)`
+line; the renderer is recreated and later frames are fine (see `eval/run_env.sh`).
+The first real-perception run downloads `yolo11n.pt` (~5.4 MB) into the repo root.
+Non-interactive example (one LLM call, then the run is stopped):
+
+```bash
+(sleep 45; echo "go to the green chair"; sleep 60) | timeout 120 eval/run_env.sh main.py --scenario 3
 ```
 
 ## What this repository contains
@@ -147,8 +166,10 @@ eval/run_env.sh -m pytest -q tests/test_architecture.py   # enforces the dialogu
 eval/run_env.sh -m pytest -q tests/test_handoff.py        # main.py's wiring (real flags on: boots headless sim + YOLO)
 ```
 
-Known failures on a fresh clone of `main` are listed in
-[`docs/REPRODUCE.md`](docs/REPRODUCE.md).
+On the `final` tag the whole offline suite passes (283 passed, 1 xfailed,
+~31 s). [`docs/REPRODUCE.md`](docs/REPRODUCE.md) records an EARLIER
+fresh-clone check of `main` (95 passed, 6 failed, segfault) and is
+historical only.
 
 And the standalone / real-module commands (all headless unless `--gui`):
 
@@ -169,7 +190,7 @@ minutes). Results land in `eval/results/` (Task 3), `eval/e2e/results/<run>/`
 (e2e) and `docs/report_assets/` (Task 2 / Task 4).
 
 ```bash
-# Unit / contract tests (fake LLM, no sim): 275 passed, 1 xfailed
+# Unit / contract tests (fake LLM, no sim): 283 passed, 1 xfailed
 eval/run_env.sh -m pytest -q tests/
 eval/run_env.sh -m pytest -q tests/test_no_ground_truth.py   # no OBJECT_POSITIONS / xpos in decision code
 
