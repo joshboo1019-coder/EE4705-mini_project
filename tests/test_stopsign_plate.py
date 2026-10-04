@@ -82,6 +82,11 @@ def test_sign_range_model():
     h = b / (2.0 - a)
     d = Detection("stop sign", "red", 0.6, (300, 100, 340, 100 + h))
     assert abs(navigation._sign_planar_range(d, (H, W, 3)) - 2.0) < 1e-6
-    cut = Detection("stop sign", "red", 0.6, (220, 0, 420, 40))
+    cut = Detection("stop sign", "red", 0.6, (220, 0, 420, 60))
     a, b = navigation._SIGN_RANGE_FROM_WIDTH
     assert abs(navigation._sign_planar_range(cut, (H, W, 3)) - (a + b / 200)) < 1e-6
+
+
+def test_bottom_strip_reads_near_range():
+    strip = Detection("stop sign", "red", 0.6, (250, 0, 330, 20))
+    assert navigation._sign_planar_range(strip, (H, W, 3)) == navigation._SIGN_NEAR_RANGE_M

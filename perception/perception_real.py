@@ -70,7 +70,7 @@ _GROUND_MIN_FG_FRAC = 0.002     # ... or than this fraction of the bbox area
 _PLATE_MIN_SATURATION = 160      # same cut as colour grounding
 _PLATE_MIN_VALUE = 32
 _PLATE_MAX_VALUE = 250
-_PLATE_MIN_AREA_PX = 40          # ~6 m away the plate is still ~14x14 px
+_PLATE_MIN_AREA_PX = 120         # ~11x11 px: plate to ~7 m; drops chair-backrest fragments
 _PLATE_MIN_FILL = 0.45           # blob area / bbox area (plate is solid)
 _PLATE_ASPECT_RANGE = (0.55, 2.2)  # bbox height / width, whole plate in view
 _PLATE_MAX_BOTTOM_FRAC = 0.35    # plate bottom (z 0.70 m) sits above the camera:
@@ -79,6 +79,7 @@ _PLATE_MAX_BOTTOM_FRAC = 0.35    # plate bottom (z 0.70 m) sits above the camera
 _PLATE_MAX_HEIGHT_FRAC = 0.30    # a whole plate never fills a third of the frame height
 _PLATE_EDGE_PX = 1               # bbox touching the top edge = plate cut by the frame
 _PLATE_CUT_MIN_WIDTH_PX = 20
+_PLATE_BAR_OPEN_PX = 9           # bars narrower than this are removed (plate >= ~14 px wide to ~7 m)
 _PLATE_CUT_MAX_ASPECT = 1.6     # cut plate: visible height / width
 
 
@@ -100,6 +101,10 @@ def detect_color_plate(frame: np.ndarray, color: str) -> Optional[Detection]:
             & (hsv[..., 2] >= _PLATE_MIN_VALUE)
             & (hsv[..., 2] <= _PLATE_MAX_VALUE)).astype(np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    # a horizontal opening cuts thin vertical bars of the same colour (a
+    # chair's edge-on backrest or leg in front of a far sign) off the plate
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,
+                            np.ones((1, _PLATE_BAR_OPEN_PX), np.uint8))
     n, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
     best = None
     for i in range(1, n):

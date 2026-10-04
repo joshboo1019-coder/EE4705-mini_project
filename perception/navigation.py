@@ -67,6 +67,12 @@ _SAME_HEIGHT_TOLERANCE_M = 0.03
 _SIGN_RANGE_FROM_HEIGHT = (0.75, 91.2)
 _SIGN_RANGE_FROM_WIDTH = (0.31, 94.4)
 _SIGN_EDGE_PX = 1.0
+# Close range: the plate rises out of the top of the frame. Once only its
+# bottom strip (<= _SIGN_NEAR_STRIP_PX rows of a 480-row frame) is left, the
+# sign is ~0.75-0.80 m away (renders + S3_05 logs): report _SIGN_NEAR_RANGE_M
+# so the approach stops while the plate is still in view for the stop check.
+_SIGN_NEAR_STRIP_PX = 40.0
+_SIGN_NEAR_RANGE_M = 0.70
 _NEAR_HORIZONTAL_RAY_ANGLE_DEG = 5.0
 
 def goto_object(object_class: str, color: str,
@@ -250,11 +256,13 @@ def goto_object(object_class: str, color: str,
         camera_height = _camera_height_above_ground(
             skills, target.class_name, target.color, target, frame.shape
         )
-        if target_position is None or (
-                object_class == "stop sign"
-                and _sign_plate_uncut(target, frame.shape)):
-            # signs: refresh while the whole plate is in view (it leaves the
-            # top of the frame near the stop; dead reckoning from there)
+        if object_class == "stop sign":
+            # signs: re-range from every live plate bbox (keep the last
+            # position when this frame gives none)
+            target_position = _estimated_target_position(
+                pose, target, frame.shape, camera_height
+            ) or target_position
+        elif target_position is None:
             target_position = _estimated_target_position(
                 pose, target, frame.shape, camera_height
             )
@@ -343,8 +351,12 @@ def _sign_planar_range(detection, frame_shape) -> float | None:
     if (x1 > _SIGN_EDGE_PX and x2 < frame_width - _SIGN_EDGE_PX
             and x2 - x1 > 0):
         a, b = _SIGN_RANGE_FROM_WIDTH
-        return a + b * scale / (x2 - x1)
-    return None
+        d = a + b * scale / (x2 - x1)
+    else:
+        d = None
+    if y1 <= _SIGN_EDGE_PX and y2 <= _SIGN_NEAR_STRIP_PX * scale:
+        return _SIGN_NEAR_RANGE_M if d is None else min(d, _SIGN_NEAR_RANGE_M)
+    return d
 
 
 def _pick_target(detections, object_class: str, color: str):
