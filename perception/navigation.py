@@ -83,11 +83,23 @@ def goto_object(object_class: str, color: str,
     forward_attempt_start: RobotPose | None = None
     forward_attempt_started_at: float | None = None
     forward_attempt_duration = 0.0
+    # iter/chair-safety: the robot's own last range ESTIMATE to the target
+    # (never ground truth) and the estimated target point it came from.
+    last_estimated_distance = math.inf
+    last_target_position = None
 
     def reacquire_sweep(attempt: int) -> None:
         nonlocal target_position
         nonlocal post_strafe_reacquire
-        _reacquire_sweep(skills, attempt, target_position)
+        nonlocal last_estimated_distance
+        if _too_close_to_strafe(last_estimated_distance, object_class):
+            # Target lost close-up: never strafe (or advance) next to it;
+            # back off, then rotate in place to re-acquire.
+            last_estimated_distance = _close_range_reacquire(
+                skills, perception, object_class, color, attempt,
+                last_target_position, last_estimated_distance)
+        else:
+            _reacquire_sweep(skills, attempt, target_position)
         target_position = None
         post_strafe_reacquire = True
 
@@ -118,10 +130,11 @@ def goto_object(object_class: str, color: str,
             print("[APPROACH] forward progress blocked for "
                   f"{config.APPROACH_STUCK_TIMEOUT_S:.0f} s; backing up "
                   "and strafing to retry")
-            skills.move(
-                vx=-abs(config.APPROACH_VX), vy=0.0, wz=0.0,
-                duration=config.APPROACH_STEP_S,
-            )
+            if not _too_close_to_strafe(last_estimated_distance, object_class):
+                skills.move(
+                    vx=-abs(config.APPROACH_VX), vy=0.0, wz=0.0,
+                    duration=config.APPROACH_STEP_S,
+                )
             reacquire_sweep(0)
 
         forward_attempt_start = None
@@ -247,6 +260,9 @@ def goto_object(object_class: str, color: str,
         )
         print(f"[RANGE] estimated_planar={distance:.2f} m "
               f"ground_truth={ground_truth_distance:.2f} m phase=approach")
+        if math.isfinite(distance):
+            last_estimated_distance = distance
+            last_target_position = target_position
         if distance <= _approach_stop_m(object_class):
             if _finish_if_found(
                     skills, perception, object_class, color, t0,
@@ -259,6 +275,14 @@ def goto_object(object_class: str, color: str,
             print("[MISSION] status=FAIL reason=stop_verification")
             skills.stop()
             return False
+
+        if (detected_target is None
+                and _too_close_to_strafe(last_estimated_distance, object_class)):
+            # Detector lost it close-up (tracker-only target): do not step
+            # toward it; wait for a live detection or the close-range
+            # re-acquire (back off + rotate in place).
+            time.sleep(0.1)
+            continue
 
         if forward_attempt_start is None:
             forward_attempt_start = pose
@@ -322,6 +346,68 @@ def _reacquire_sweep(skills: SkillsAPI, attempt: int, target_position) -> None:
         if abs(err) > 3.0:
             skills.turn(err)
         time.sleep(0.3)
+
+def _too_close_to_strafe(estimated_distance: float,
+                         object_class: str | None = None) -> bool:
+    """True when the robot's own last range ESTIMATE (not ground truth) is
+    within CLOSE_REACQUIRE_MARGIN_M of the class's stop distance: too close
+    to strafe or advance blind next to the target (iter/chair-safety: the red
+    chair was touched during the re-acquire strafe after it was lost
+    close-up). Change contributed by Student B (assist), pending review by
+    Student C."""
+    margin = float(getattr(config, "CLOSE_REACQUIRE_MARGIN_M", 0.15))
+    return estimated_distance < _approach_stop_m(object_class) + margin
+
+
+def _close_range_reacquire(skills: SkillsAPI, perception: PerceptionAPI,
+                           object_class: str, color: str, attempt: int,
+                           target_position, estimated_distance: float) -> float:
+    """Re-acquire a target lost close-up without touching it: back off
+    CLOSE_REACQUIRE_BACKOFF_M (>= 0.25 m) straight back with the move skill,
+    then rotate IN PLACE only — re-face the remembered (estimated) target
+    point, then scan +/- CLOSE_REACQUIRE_SCAN_DEG (growing per attempt) —
+    stopping at the first heading with a live detection. No strafe, no
+    forward motion. Returns the new range estimate (robot pose to the
+    estimated target point; never ground truth).
+    Change contributed by Student B (assist), pending review by Student C."""
+    backoff = max(0.25, float(getattr(config, "CLOSE_REACQUIRE_BACKOFF_M", 0.25)))
+    base_scan = float(getattr(config, "CLOSE_REACQUIRE_SCAN_DEG", 20.0))
+    scan = min(base_scan * (attempt + 1), 60.0)
+    print(f"[REACQUIRE] target lost close-up (estimated {estimated_distance:.2f} m"
+          f" < stop {_approach_stop_m(object_class):.2f} m"
+          f" + {float(getattr(config, 'CLOSE_REACQUIRE_MARGIN_M', 0.15)):.2f} m);"
+          f" backing off {backoff:.2f} m, rotating in place +/-{scan:.0f} deg"
+          f" (attempt {attempt + 1}/{config.REACQUIRE_MAX_ATTEMPTS})")
+    vx = abs(config.APPROACH_VX)
+    skills.move(vx=-vx, vy=0.0, wz=0.0, duration=backoff / vx)
+    skills.stop()
+    time.sleep(0.4)  # let the gait settle and a fresh frame render
+
+    pose = skills.get_robot_pose()
+    new_estimate = estimated_distance + backoff
+    if target_position is not None:
+        new_estimate = math.hypot(target_position[0] - pose.x,
+                                  target_position[1] - pose.y)
+        bearing = math.degrees(math.atan2(target_position[1] - pose.y,
+                                          target_position[0] - pose.x))
+        err = (bearing - pose.yaw_deg + 180.0) % 360.0 - 180.0
+        if abs(err) > 3.0:
+            skills.turn(err)
+
+    turned = 0.0
+    for offset in (0.0, scan, -2.0 * scan):
+        if offset:
+            skills.turn(offset)
+            turned += offset
+        time.sleep(0.4)  # settle, fresh frame
+        frame = skills.get_camera_frame()
+        if _pick_target(perception.detect(frame), object_class, color) is not None:
+            print(f"[REACQUIRE] target re-acquired after rotating {turned:+.0f} deg")
+            return new_estimate
+    if turned:
+        skills.turn(-turned)  # back to the re-faced heading
+    return new_estimate
+
 
 def _approach_stop_m(object_class: str | None = None) -> float:
     """Where the approach stops (estimated range), per target class. Below

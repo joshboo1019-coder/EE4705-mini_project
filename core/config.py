@@ -69,3 +69,11 @@ REACQUIRE_MISSES = 3        # consecutive misses before starting a sweep
 REACQUIRE_MAX_ATTEMPTS = 4  # sweeps before falling back to full rotation search
 REACQUIRE_STRAFE_VY = 0.4   # m/s sideways
 REACQUIRE_STRAFE_S = 1.1    # base sweep duration, grows with each attempt
+# iter/chair-safety (Student B assist, pending review by Student C): when the
+# target is lost and the robot's own last range ESTIMATE is below the class's
+# stop distance + CLOSE_REACQUIRE_MARGIN_M, never strafe or advance toward it:
+# back off CLOSE_REACQUIRE_BACKOFF_M (>= 0.25 m), then rotate in place
+# (+/- CLOSE_REACQUIRE_SCAN_DEG, growing per attempt) to re-acquire.
+CLOSE_REACQUIRE_MARGIN_M = 0.15
+CLOSE_REACQUIRE_BACKOFF_M = 0.25
+CLOSE_REACQUIRE_SCAN_DEG = 20.0
