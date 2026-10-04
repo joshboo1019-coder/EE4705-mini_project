@@ -99,6 +99,10 @@ def main():
 
     executor = CommandExecutor(skills, perception, queue)
     executor.run_forever()  # blocks; keep the sim/physics alive in here
+    # run_forever returns only after EOF on stdin (Ctrl+D / end of piped input)
+    shutdown = getattr(skills, "shutdown", None)
+    if callable(shutdown):
+        shutdown()
     # TODO(Student A): if your platform needs its own physics-stepping loop
     # driven from the main thread (rather than inside skills.move()), that
     # loop belongs here instead of a plain executor.run_forever() call —
